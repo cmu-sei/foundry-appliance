@@ -8,6 +8,10 @@ Foundry Appliance is a virtual machine that integrates cyber workforce developme
 
 This project builds the virtual appliance using Ubuntu and [Microk8s](https://microk8s.io/)&mdash;a development Kubernetes environment. Pre-built OVA images are also available under [Releases](https://github.com/cmu-sei/foundry-appliance/releases).
 
+## Getting Started
+
+After deploying the appliance, visit https://foundry.local to begin using the apps.
+
 ## Apps
 
 The following SEI apps are loaded on the appliance:
