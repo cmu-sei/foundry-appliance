@@ -1,0 +1,5 @@
+.DS_Store
+.vscode/
+packer_cache/
+output-*/
+vsphere-vars.json

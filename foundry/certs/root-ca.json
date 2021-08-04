@@ -1,0 +1,12 @@
+{
+  "names": [
+    {
+      "organization": "Foundry Appliance Root CA"
+    }
+  ],
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "CN": "Foundry Appliance Root CA"
+}

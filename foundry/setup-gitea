@@ -1,0 +1,45 @@
+#!/bin/bash -xe
+# 
+# Copyright 2021 Carnegie Mellon University.
+# Released under a BSD (SEI)-style license, please see LICENSE.md in the
+# project root or contact permission@sei.cmu.edu for full terms.
+
+CURL_OPTS=( --silent --header "accept: application/json" --header "Content-Type: application/json" )
+USER_TOKEN=$( curl "${CURL_OPTS[@]}" \
+                --user administrator:foundry \
+                --request POST "https://foundry.local/gitea/api/v1/users/administrator/tokens" \
+                --data "{ \"name\": \"appliance-setup\"}" | jq -r '.sha1'
+)
+
+# Change to the current directory
+cd "$(dirname "${BASH_SOURCE[0]}")"
+
+# Set git user vars
+git config --global user.name "Foundry Administrator"
+git config --global user.email "administrator@foundry.local"
+
+# Create foundry-docs organization
+curl "${CURL_OPTS[@]}" \
+  --request POST "https://foundry.local/gitea/api/v1/orgs?access_token=$USER_TOKEN" \
+  --data @- <<EOF
+{
+  "username": "foundry",
+  "repo_admin_change_team_access": true
+}
+EOF
+
+# Create repo
+# for repo in $(find $DOCS_DIR -maxdepth 1 -mindepth 1 -type d -printf '%P\n'); do
+curl "${CURL_OPTS[@]}" \
+    --request POST "https://foundry.local/gitea/api/v1/orgs/foundry/repos?access_token=$USER_TOKEN" \
+    --data @- <<EOF
+{
+  "name": "web",
+  "private": false
+}
+EOF
+
+git -C web init
+git -C web add -A
+git -C web commit -m "Initial commit"
+git -C web push -u https://administrator:foundry@foundry.local/gitea/foundry/web.git --all

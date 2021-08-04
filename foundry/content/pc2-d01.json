@@ -1,0 +1,148 @@
+{
+  "Workspace": {
+    "Name": "President's Cup Season 2 - d01",
+    "Description": ""
+  },
+  "Templates": [
+    {
+      "Id": "",
+      "Name": "control",
+      "Description": "",
+      "Networks": "lan",
+      "GuestInfo": "seed=0",
+      "Detail": {
+        "Id": "",
+        "Name": "control",
+        "TopoId": null,
+        "Cpu": "1x2",
+        "Guest": null,
+        "Source": null,
+        "Iso": null,
+        "Floppy": null,
+        "Version": null,
+        "IsolationTag": null,
+        "UseUplinkSwitch": false,
+        "Ram": 4,
+        "VideoRam": 0,
+        "Adapters": 1,
+        "Delay": 0,
+        "AutoStart": true,
+        "Eth": [
+          {
+            "Id": 0,
+            "Net": "lan",
+            "Type": "e1000",
+            "Mac": null,
+            "Ip": null,
+            "Vlan": 0
+          }
+        ],
+        "Disks": [
+          {
+            "Id": 0,
+            "Path": "https://incuspub.blob.core.usgovcloudapi.net/ova/pc2/d01-control.ova",
+            "Source": null,
+            "Controller": "lsilogic",
+            "Size": 10,
+            "Status": 0
+          }
+        ],
+        "GuestSettings": null
+      },
+      "isPublished": false
+    },
+    {
+      "Id": "",
+      "Name": "dhcp-server",
+      "Description": "",
+      "Networks": "lan",
+      "GuestInfo": "",
+      "Detail": {
+        "Id": "",
+        "Name": "dhcp-server",
+        "TopoId": null,
+        "Cpu": "1x1",
+        "Guest": null,
+        "Source": null,
+        "Iso": null,
+        "Floppy": null,
+        "GuestSettings": null,
+        "Version": null,
+        "IsolationTag": null,
+        "UseUplinkSwitch": false,
+        "Ram": 1,
+        "VideoRam": 0,
+        "Adapters": 1,
+        "Delay": 0,
+        "Eth": [
+          {
+            "Id": 0,
+            "Net": "lan",
+            "Type": "e1000",
+            "Mac": null,
+            "Ip": null,
+            "Vlan": 0
+          }
+        ],
+        "Disks": [
+          {
+            "Id": 0,
+            "Path": "https://incuspub.blob.core.usgovcloudapi.net/ova/pc2/d01-dhcp-server.ova",
+            "Source": null,
+            "Controller": "lsilogic",
+            "Size": 2,
+            "Status": 0
+          }
+        ]
+      },
+      "isPublished": false
+    },
+    {
+      "Id": "",
+      "Name": "kali",
+      "Description": "",
+      "Networks": "lan",
+      "GuestInfo": "",
+      "Detail": {
+        "Id": "",
+        "Name": "kali",
+        "TopoId": null,
+        "Cpu": "1x2",
+        "Guest": null,
+        "Source": null,
+        "Iso": null,
+        "Floppy": null,
+        "Version": null,
+        "IsolationTag": null,
+        "UseUplinkSwitch": false,
+        "Ram": 4,
+        "VideoRam": 0,
+        "Adapters": 1,
+        "Delay": 0,
+        "AutoStart": true,
+        "Eth": [
+          {
+            "Id": 0,
+            "Net": "lan",
+            "Type": "e1000",
+            "Mac": null,
+            "Ip": null,
+            "Vlan": 0
+          }
+        ],
+        "Disks": [
+          {
+            "Id": 0,
+            "Path": "https://incuspub.blob.core.usgovcloudapi.net/ova/pc2/d01-kali.ova",
+            "Source": null,
+            "Controller": "lsilogic",
+            "Size": 10,
+            "Status": 0
+          }
+        ],
+        "GuestSettings": null
+      },
+      "isPublished": true
+    }
+  ]
+}

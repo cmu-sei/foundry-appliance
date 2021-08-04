@@ -1,0 +1,20 @@
+#cloud-config
+autoinstall:
+  version: 1
+  early-commands:
+    - systemctl stop ssh
+  identity:
+    hostname: foundry
+    username: foundry
+    password: '$6$afOovK8m0QFt$WXfiPN3SCDetMwzHtZaMFjooafE3X55Mo.R34.za8u0YRm/dnJm4JmzBV9kWQl5w4YFsjwuRpwznmGmKYaUdq/'
+  network:
+    network:
+      version: 2
+      ethernets:
+        ens160:
+          dhcp4: true
+          dhcp-identifier: mac
+  ssh:
+    install-server: true
+  late-commands:
+    - sed -i 's/^#*\(send dhcp-client-identifier\).*$/\1 = hardware;/' /target/etc/dhcp/dhclient.conf

@@ -1,0 +1,13 @@
+{
+  "names": [
+    {
+      "C": "US",
+      "O": "Foundry Appliance Intermediate CA"
+    }
+  ],
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "CN": "Foundry Appliance Intermediate CA"
+}
