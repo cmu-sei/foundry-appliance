@@ -112,8 +112,6 @@
       "inline": [
         "cp ~/foundry/certs/root-ca.pem /usr/local/share/ca-certificates/foundry-appliance-root-ca.crt",
         "update-ca-certificates",
-        "sed -i -r 's/(preserve_hostname: )false/\\1true/' /etc/cloud/cloud.cfg",
-        "(cd /etc/cloud/cloud.cfg.d && rm -f 99-installer.cfg curtin-preserve-sources.cfg subiquity-disable-cloudinit-networking.cfg)",
         "systemctl restart avahi-daemon"
       ]
     },

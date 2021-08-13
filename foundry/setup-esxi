@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 # 
 # Copyright 2021 Carnegie Mellon University.
 # Released under a BSD (SEI)-style license, please see LICENSE.md in the
@@ -96,7 +96,7 @@ fi
 
 # Configure topomojo-api
 sed -i -r "s/(Pod__Url:).*/\1 https:\/\/$ESXI_HOSTNAME/" topomojo.values.yaml 
-helm install --wait -f topomojo.values.yaml topomojo charts/topomojo/
+helm upgrade --install --wait -f topomojo.values.yaml topomojo sei/topomojo
 kubectl rollout restart deployment.apps/topomojo-topomojo-api
 
 echo -e "\nESXi setup completed for $ESXI_HOSTNAME\n"
