@@ -85,6 +85,7 @@ build {
   provisioner "shell" {
     execute_command   = "echo '${var.ssh_password}' | {{ .Vars }} sudo -E -S bash '{{ .Path }}'"
     expect_disconnect = true
+    environment_vars  = [ "DEBIAN_FRONTEND=noninteractive" ]
     inline            = [
       "echo '${var.appliance_version}' > /etc/appliance_version",
       "swapoff -a",
@@ -125,6 +126,7 @@ build {
 
   provisioner "shell" {
     inline = [
+      "sleep 10",
       "ssh-keygen -t rsa -f ~/.ssh/id_rsa -q -N ''",
       "microk8s status --wait-ready",
       "microk8s config -l > ~/.kube/config",

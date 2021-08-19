@@ -1,0 +1,52 @@
+name: build
+
+on:
+  push:
+  pull_request:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: macos-10.15
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Packer cache
+      uses: actions/cache@v2
+      with:
+        path: ~/.cache/packer
+        key: ${{ runner.os }}-packer
+
+    - name: Build VirtualBox OVF image
+      uses: nick-invision/retry@v2
+      with:
+        timeout_minutes: 30
+        max_attempts: 5
+        command: ./build-appliance virtualbox
+
+    - name: Get build_name from OVF file
+      run: echo "build_name=$(sh -c "find . -name '*.ovf' | xargs basename -s '.ovf'")" >> $GITHUB_ENV
+      working-directory: ./output-virtualbox
+
+    - name: Change virtual hardware version
+      run: sed -i '' 's/virtualbox-2.2/vmx-13/' ${{ env.build_name }}.ovf
+      working-directory: ./output-virtualbox
+
+    - name: Create OVA manifest
+      run: openssl sha256 *.ovf *.vmdk > ${{ env.build_name }}.mf
+      working-directory: ./output-virtualbox
+
+    - name: Package OVA image
+      run: tar -cvf ../${{ env.build_name }}.ova --format=ustar ${{ env.build_name }}{.ovf,-disk001.vmdk,.mf}
+      working-directory: ./output-virtualbox
+
+    - name: Upload OVA to Azure Storage
+      run: |
+        az cloud set --name AzureUSGovernment
+        az storage blob upload --file ${{ env.build_name }}.ova \
+                               --container-name ova \
+                               --name appliance/${{ env.build_name }}.ova \
+                               --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
+                               --no-progress

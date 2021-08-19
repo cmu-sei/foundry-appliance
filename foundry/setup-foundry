@@ -1,4 +1,4 @@
-#!/bin/bash -xe
+#!/bin/bash -e
 # 
 # Copyright 2021 Carnegie Mellon University.
 # Released under a BSD (SEI)-style license, please see LICENSE.md in the
@@ -89,7 +89,7 @@ API_KEY=$(curl -X POST --silent \
 
 sed -i -r "s/(Core__GameEngineClientSecret:).*/\1 $API_KEY/" gameboard.values.yaml 
 
-helm install --wait -f gameboard.values.yaml gameboard sei/gametracker
+helm install --wait -f gameboard.values.yaml gameboard sei/gameboard
 kubectl apply -f console-ingress.yaml
 
 # Add administrator user to Gameboard
