@@ -5,6 +5,16 @@
 # project root or contact permission@sei.cmu.edu for full terms.
 
 
+# Parse target hypervisors into Packer -only option syntax
+if [[ $1 != -* ]]; then
+    IFS=',' read -ra TARGETS <<< "$1"
+    for i in "${TARGETS[@]}"; do
+        ONLY_VAR+="$i*,"
+    done
+    ONLY_VAR=${ONLY_VAR%?}
+    shift 1
+fi
+
 if git rev-parse --git-dir > /dev/null 2>&1; then
     VERSION_TAG=$(git tag --points-at HEAD 'v*')
     GIT_BRANCH=$(git branch --show-current)
@@ -16,7 +26,11 @@ if [ -n "$VERSION_TAG" ]; then
 elif [ -n "$GIT_HASH" ]; then
     BUILD_VERSION=$GIT_BRANCH-$GIT_HASH
 else
-    BUILD_VERSION="Custom Build [$(date)]"
+    BUILD_VERSION="custom-$(date '+%Y%m%d')"
 fi
 
-packer build -var "appliance_version=$BUILD_VERSION" $@ foundry-appliance.json
+if [ -n "$ONLY_VAR" ]; then
+    packer build -only=$ONLY_VAR -var "appliance_version=$BUILD_VERSION" $@ .
+else
+    packer build -var "appliance_version=$BUILD_VERSION" $@ .
+fi

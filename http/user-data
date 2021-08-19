@@ -11,7 +11,7 @@ autoinstall:
     network:
       version: 2
       ethernets:
-        ens160:
+        eth0:
           dhcp4: true
           dhcp-identifier: mac
   ssh:

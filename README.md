@@ -24,31 +24,47 @@ The following SEI apps are loaded on the appliance:
 
 To build the appliance, you will need:
 
-- [Packer](https://www.packer.io/)
-- VMware hypervisor ([Fusion](https://www.vmware.com/products/fusion.html), [Workstation](https://www.vmware.com/products/workstation-pro.html), or [ESXi](https://www.vmware.com/products/vsphere-hypervisor.html))
-
-Run the following command:
-
-```
-./build-appliance
-```
+- [Packer](https://www.packer.io/) 1.7+
+- A compatible hypervisor:
+    - [VirtualBox](https://www.virtualbox.org/) (`virtualbox`)
+    - [Fusion](https://www.vmware.com/products/fusion.html)/[Workstation](https://www.vmware.com/products/workstation-pro.html) (`vmware`)
+    - [ESXi](https://www.vmware.com/products/vsphere-hypervisor.html) (`vsphere`)
 
 ### ESXi Build (optional)
 
-To build the appliance using an ESXi server, create a file named `vsphere-vars.json` in this directory and add these settings:
+To build the appliance using an ESXi server, create a file named `vsphere.auto.pkrvars.hcl` in this directory and add these settings:
 
 ```
-{
-  "vcenter_server": "<vCenter or ESXi FQDN>",
-  "vcenter_username": "administrator@vsphere.local",
-  "vcenter_password": "<password>",
-  "cluster": "<cluster name (for vCenter only)>",
-  "datastore": "<target datastore>"
-}
+vcenter_server    = "<vCenter or ESXi FQDN>"
+vsphere_username  = "administrator@vsphere.local"
+vsphere_password  = "<password>"
+vsphere_cluster   = "<cluster>"    # vCenter only
+vsphere_datastore = "<datastore>"
+vsphere_network   = "<portgroup>"  # internet access required
 ```
 
-To add these settings to the build, use this command:
+### Build Command
+
+Run the following command, where `<hypervisor>` is a comma-delimited list of target hypervisors:
 
 ```
-./build-appliance -var-file vsphere-vars.json
+./build-appliance <hypervisor>
+```
+
+For example, to build the appliance with Fusion or Workstation, run this command:
+
+```
+./build-appliance vmware
+```
+
+To add VirtualBox to the previous build, run this command:
+
+```
+./build-appliance vmware,virtualbox
+```
+
+[Packer `build` options](https://www.packer.io/docs/commands/build) can be appended to the end of the command. For example, this will save partial builds and automatically overwrite the previous build (useful for debugging):
+
+```
+./build-appliance <hypervisor> -on-error=abort -force
 ```
