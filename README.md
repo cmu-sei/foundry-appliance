@@ -10,7 +10,12 @@ This project builds the virtual appliance using Ubuntu and [Microk8s](https://mi
 
 ## Getting Started
 
-After deploying the appliance, visit https://foundry.local to begin using the apps.
+After deploying the appliance, visit https://foundry.local to begin using the apps. Or login using the VM console:
+
+```
+username: foundry  
+password: foundry
+```
 
 ## Apps
 
