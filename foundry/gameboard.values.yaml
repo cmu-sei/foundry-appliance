@@ -1,4 +1,4 @@
-gametracker-api:
+gameboard-api:
   # Default values for gametracker-api.
   # This is a YAML-formatted file.
   # Declare variables to be passed into your templates.
@@ -124,7 +124,7 @@ gametracker-api:
     # Headers__Security__XFrame: SAMEORIGIN
 
 
-gametracker-ui:
+gameboard-ui:
   # Default values for gametracker-ui.
   # This is a YAML-formatted file.
   # Declare variables to be passed into your templates.
