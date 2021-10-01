@@ -1,0 +1,81 @@
+image:
+  pullPolicy: IfNotPresent
+
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  tls:
+    - secretName: crucible-dev-wildcard-cert
+      hosts:
+        - crucible-dev.cmusei.dev
+
+st2web:
+  service:
+    hostname: stackstorm.crucible-dev.cmusei.dev
+
+enterprise:
+  enabled: false
+
+mongodb-ha:
+  enabled: true
+  image:
+  serviceAccount: stackstorm-mongodb-ha
+  auth:
+    enabled: true
+    adminUser: 'mongo'
+    adminPassword: 'mR4c6Z@7W#F2@@CAt@Ek'
+    key: '8ctjeZnTy99V52N5MyvpfNCKPxbHVu'
+  persistentVolume:
+    enabled: false
+
+rabbitmq-ha:
+  enabled: true
+  rabbitmqUsername: admin
+  rabbitmqPassword: '5kmmUSK3XS3AWqQzE22DDpZd'
+  persistentVolume:
+    enabled: false
+
+st2:
+  packs:
+    configs:
+      # TODO -- Fill this out to make the Azure Pack work
+      # https://github.com/StackStorm-Exchange/stackstorm-azure
+      azure.yaml: |
+        ---
+        compute:
+          subscription_id: ""
+          cert_file: ""
+        storage:
+          name: ""
+          access_key: ""
+        resource_manager:
+          client_id: 'ABCDEFGH-1234-ABCD-1234-ABCDEFGHIJKL'
+          secret: 'XXXXXXXXXXXXXXXXXXXXXXXX'
+          tenant: 'ABCDEFGH-1234-ABCD-1234-ABCDEFGHIJKL'
+          default_resource_group: 'stage'
+        user:
+          username: 'user@domain.tld'
+          password: 'userPassword'
+
+    # StackStorm HA mounts non-core packs via a sidecar installation
+    # This image is custom-built to contain the vSphere and Azure Pack
+    # NOTE:  The tag version represents the Azure Pack version number
+    image:
+      repository: cmusei
+      name: st2packs
+      tag: azure-0.4.3-python3
+      pullPolicy: Always
+
+    # Provide a default name for the sensor
+    sensors:
+      - name: stackstorm-sensor
+        serviceAccount:
+          attach: false
+
+secrets:
+  st2:
+    # Username, used to login to StackStorm system
+    username: st2admin
+    # Password, used to login to StackStorm system
+    password: 'eYr#AxMS9@n6BsWWxPgj'
