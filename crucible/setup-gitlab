@@ -1,0 +1,160 @@
+#!/bin/bash
+# Must be run as sudo
+#[ `whoami` = root ] || { sudo "$0" "$@"; exit $?; }
+DIRECTORY=$(dirname "$BASH_SOURCE[0]")
+cd $DIRECTORY
+source ../scripts/utils
+EXPORTS_PATH="./seed/gitlab"
+TIMEOUT=0
+MAX_TIMEOUT=1200
+DOMAIN="${DOMAIN:-foundry.local}"
+# set gitlab variables.
+GITLAB_TOKEN=$(awk '/Terraform__GitlabToken/ {print $2}' caster.values.yaml | tr -d '"')
+MODULES_GROUP="caster-modules"
+ADMIN_UID=$(awk '/Account__AdminGuid/ {print $2}' ../common/identity.values.yaml | tr -d '"')
+GITLAB_GROUP_ID=$(awk '/Terraform__GitlabGroupId/ {print $2}' caster.values.yaml | tr -d '"')
+echo "GitlabToken: $GITLAB_TOKEN"
+echo "GitlabGroupId: $GITLAB_GROUP_ID"
+echo "AdminUid: $ADMIN_UID" 
+gitlab_host="https://gitlab.${DOMAIN}"
+gitlab_user="administrator@${DOMAIN}"
+gitlab_password="foundry"
+api_url="$gitlab_host/api/v4"
+
+# add gitlab to hosts file
+echo "foundry" | sudo -S bash -c "source ../scripts/utils; add_host_entry $(ip route get 1 | awk '{print $(NF-2);exit}') gitlab.$DOMAIN"
+
+# add repo and update
+helm repo add gitlab https://charts.gitlab.io
+helm repo update
+echo "Waiting for Postgres to be ready."
+while [ "$(kubectl get pods postgresql-0 -o jsonpath="{.status.phase}")" != "Running" ]; do
+  printf '.'
+  sleep 5
+  timeout=$((timeout+5))
+  if [ ${TIMEOUT} -gt ${MAX_TIMEOUT} ]; then
+    cat << EOF
+    Postgres timed out
+
+    please rerun setup-gitlab
+EOF
+    exit;
+  fi
+done
+kubectl exec postgresql-0 -- psql 'postgresql://postgres:foundry@localhost' -c "CREATE DATABASE gitlab_db;" || true
+kubectl apply -f gitlab.secrets.yaml 
+helm upgrade --install --version 5.7.1 -f gitlab-min.values.yaml gitlab gitlab/gitlab
+
+# Wait for gitllab to come up 
+cat << EOF 
+
+  Waiting for gitlab to become available, this may take a while...
+  
+  Timeout set to ${MAX_TIMEOUT} seconds
+EOF
+
+until $(curl --output /dev/null --silent --head --insecure --fail ${gitlab_host}/users/sign_in); do
+  printf '.'
+  sleep 5
+  TIMEOUT=$((TIMEOUT+5))
+  if [ $TIMEOUT -gt $MAX_TIMEOUT ]; then
+    cat << EOF
+    Gitlab connection timed out
+
+    please rerun setup-gitlab 
+EOF
+    exit;
+  fi
+done
+
+kex_q gitlab-toolbox gitlab-rails runner -q"u = User.create_or_find_by(username: 'root', email: 'administrator@foundry.local', name: 'Administrator' , password: 'foundry123', password_confirmation: 'foundry123', admin: true); u.skip_confirmation=true; u.save"
+kex_q gitlab-toolbox gitlab-rails runner -q"token = User.find_by_username('root').personal_access_tokens.create(scopes: [:api], name: 'root seed token'); token.set_token('$GITLAB_TOKEN'); token.save!"
+
+echo "Personal Access Token is: ${GITLAB_TOKEN}"
+H_AUTH="Private-Token: ${GITLAB_TOKEN}"
+H_JSON="Content-Type: application/json"
+
+# Set root to admin@${DOMAIN}
+REQ=$(curl -ks --location --request GET "$api_url/users?username=root")
+USER_ID=$(echo $REQ | jq -j '.[0] | .id')
+DATA_JSON=$(echo $REQ | jq --arg ADMIN_UID "$ADMIN_UID" '.[0] | .provider = "identity" | .extern_uid = $ADMIN_UID')
+REQ=$(curl -k --location --request PUT "$api_url/users/${USER_ID}" \
+--header "${H_JSON}" \
+--header "${H_AUTH}" \
+--data-raw "${DATA_JSON}")
+echo "UserId: $USER_ID"
+echo $REQ | jq .
+
+
+# Check if the group exists by name
+  REQ=$(curl -ks --location --request GET "$api_url/groups?search=${MODULES_GROUP}" \
+  --header "${H_JSON}" \
+  --header "${H_AUTH}")
+  echo $REQ | jq .
+  
+  GROUP=$(echo $REQ | jq --arg name "$MODULES_GROUP" '.[] | select(.name=$name)')
+  GITLAB_GROUP_ID=$(echo $GROUP | jq -j '.id')
+
+  if [[ -z ${GROUP} ]]; then
+
+    # Create caster modules group
+    DATA_JSON=$(cat <<EOF
+      {
+        "name": "${MODULES_GROUP}",
+        "path": "${MODULES_GROUP}",
+        "visibility": "public"
+      }
+EOF
+    )
+
+    REQ=$(curl -ks --location --request POST "$api_url/groups" \
+    --header "${H_JSON}" \
+    --header "${H_AUTH}" \
+    --data-raw "${DATA_JSON}")
+    echo $REQ | jq .
+    GITLAB_GROUP_ID=$(echo $REQ | jq -j '.id')
+   
+  fi
+
+# Import all projects into group, file name without the extension will be the repo name.
+FILES=$(find ${EXPORTS_PATH} -type f -iname "*.tar.gz" | sed "s/.*\///; s/\.tar.gz//")
+cd $EXPORTS_PATH
+for file in $FILES; do
+  # Gitlab has terrible support for repos exported with different versions of gitlab
+  # We need to extract the repo 
+  mkdir -p "$file" && tar -xzf $file.tar.gz -C $_
+  
+  git clone --mirror "$file/project.bundle" "$file/.git"
+  git -C $file init
+  git -C $file checkout 
+  git -C $file status
+  git -C $file remote remove origin
+  #Create project
+  DATA_JSON=$(cat <<EOF
+      {
+        "name": "${file}",
+        "namespace_id": ${GITLAB_GROUP_ID},
+        "visibility": "public"
+      }
+EOF
+    )
+
+  REQ=$(curl -k --location --request POST "$api_url/projects" \
+    --header "${H_JSON}" \
+    --header "${H_AUTH}" \
+    --data-raw "${DATA_JSON}")
+  PROJECT_ID=$(echo $REQ | jq '.id')
+  if [[ -n "$PROJECT_ID" ]]; then 
+    git -C $file remote add origin "$gitlab_host/$MODULES_GROUP/$file.git"
+    git -C $file push -u https://root:foundry123@gitlab.foundry.local/$MODULES_GROUP/$file.git --all
+    git -C $file push -u https://root:foundry123@gitlab.foundry.local/$MODULES_GROUP/$file.git --tags
+  fi
+  # cleanup
+  rm -rf $file
+  sleep 3
+done
+cd ../../
+helm delete caster || true
+sleep 20
+helm upgrade --install -f caster.values.yaml caster ../charts/caster
+

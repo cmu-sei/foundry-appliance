@@ -1,23 +1,26 @@
 player-api:
 
   # Docker image release version
-  image:
-    tag: "3.0.1"
-  
+  image: 
+    repository: cmusei/player-api
+    pullPolicy: IfNotPresent
+    tag: "3.0.2"
+    
   # Ingress configuration example for NGINX
   # TLS and Host URLs need configured
   ingress:
     enabled: true
     annotations:
-      kubernetes.io/ingress.class: nginx
+      kubernetes.io/ingress.class: public
       nginx.ingress.kubernetes.io/proxy-read-timeout: '86400'
       nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
       nginx.ingress.kubernetes.io/use-regex: "true"
     hosts:
       - host: foundry.local
-        paths:
-        - path: /player/(hubs|swagger|api)
-          pathType: ImplementationSpecific
+        paths: 
+          - path: /player/(hubs|swagger|api)
+            pathType: Prefix
+
     tls:
       - secretName: appliance-cert
         hosts:
@@ -26,10 +29,8 @@ player-api:
   # If this deployment needs to trust non-public certificates,
   # create a configMap with the needed certifcates and specify
   # the configMap name here
-  certificateMap: ""
-
+  certificateMap: "appliance-root-ca"
   
-
   # storage - either an existing pvc, the size for a new pvc, or emptyDir
   # this is used to store uploaded files
   storage:
@@ -37,7 +38,94 @@ player-api:
     size: ""
     mode: ReadWriteOnce
     class: ""
-
+  # identity - seed data for the identity server
+  identity:
+    register: true
+    identityMap: identity-identity-api
+    client: |-
+      [
+        {
+          "name": "player-api",
+          "displayName": "Player API",
+          "description": null,
+          "grants": "authorization_code client_credentials",
+          "scopes": "openid profile player-api",
+          "enabled": true,
+          "requirePkce": true,
+          "allowAccessTokensViaBrowser": false,
+          "requireConsent": false,
+          "consentLifetime": "30d",
+          "alwaysIncludeUserClaimsInIdToken": false,
+          "identityTokenLifetime": "5m",
+          "accessTokenLifetime": "1h",
+          "authorizationCodeLifetime": "5m",
+          "allowOfflineAccess": false,
+          "updateAccessTokenClaimsOnRefresh": false,
+          "useOneTimeRefreshTokens": false,
+          "slidingRefreshTokenLifetime": "15d",
+          "absoluteRefreshTokenLifetime": "30d",
+          "published": false,
+          "url": "https://foundry.local/player",
+          "logoUrl": null,
+          "frontChannelLogoutUrl": null,
+          "backChannelLogoutUrl": null,
+          "redirectUrls": [
+            { "value": "https://foundry.local/player/api/oauth2-redirect.html" }
+          ],
+          "postLogoutUrls": [{ "value": "https://foundry.local/player/api" }],
+          "corsUrls": [{ "value": "https://foundry.local" }],
+          "alwaysSendClientClaims": false,
+          "clientClaimsPrefix": "client_",
+          "claims": [],
+          "secrets": [],
+          "managers": []
+        },
+        {
+          "name": "player-admin",
+          "displayName": "Player Admin",
+          "description": null,
+          "grants": "password client_credentials",
+          "scopes": "player-api vm-api",
+          "enabled": true,
+          "requirePkce": true,
+          "allowAccessTokensViaBrowser": false,
+          "requireConsent": false,
+          "consentLifetime": "30d",
+          "alwaysIncludeUserClaimsInIdToken": false,
+          "identityTokenLifetime": "5m",
+          "accessTokenLifetime": "1h",
+          "authorizationCodeLifetime": "5m",
+          "allowOfflineAccess": false,
+          "updateAccessTokenClaimsOnRefresh": false,
+          "useOneTimeRefreshTokens": false,
+          "slidingRefreshTokenLifetime": "15d",
+          "absoluteRefreshTokenLifetime": "30d",
+          "published": false,
+          "url": "https://foundry.local/player",
+          "logoUrl": null,
+          "frontChannelLogoutUrl": null,
+          "backChannelLogoutUrl": null,
+          "corsUrls": [{ "value": "https://foundry.local" }],
+          "alwaysSendClientClaims": false,
+          "clientClaimsPrefix": "client_",
+          "claims": [],
+          "secrets": [],
+          "managers": []
+        }
+      ]
+      
+    resource: |-
+      {
+        "type": "api",
+        "name": "player-api",
+        "displayName": "Player Api",
+        "enabled": true,
+        "default": true,
+        "required": false,
+        "emphasize": false,
+        "showInDiscoveryDocument": true
+      }
+    
   # Config app settings with environment vars.
   # Those most likely needing values are listed. For others,
   # see https://github.com/cmu-sei/crucible/blob/master/player.api/S3.Player.Api/appsettings.json
@@ -51,42 +139,49 @@ player-api:
     # no_proxy: .local
 
     ## If hosting in virtual directory, specify path base
-    PathBase: "player"
-
+    PathBase: "/player"
+    Logging__LogLevel__Default: "debug"
+    Logging__Console__LogLevel__Default: "debug"
     # CORS policy settings.
     # The first entry should be the URL to player
     # The second entry should be the URL to VM App
     # Subsequent entries can be other integrated apps, such as OSTicket
     CorsPolicy__Origins__0: "https://foundry.local"
-    
+    CorsPolicy__Origins__1: "http://localhost:4303"
+    # CorsPolicy__AllowAnyOrigin: true
+    CorsPolicy__AllowAnyMethod: true
+    CorsPolicy__AllowAnyHeader: true
+    # CorsPolicy__SupportsCredentials: false
     # Connection String to database
     # database requires the 'uuid-ossp' extension installed
-    ConnectionStrings__PostgreSQL: "Server=postgresql;Port=5432;Database=player_api;Username=postgres;Password=foundry;"
+    ConnectionStrings__PostgreSQL: "Server=postgresql;Port=5432;Database=player_db;Username=postgres;Password=foundry;"
 
     # OAuth2 Identity Client for Application
     Authorization__Authority: https://foundry.local/identity
     Authorization__AuthorizationUrl: https://foundry.local/identity/connect/authorize
     Authorization__TokenUrl: https://foundry.local/identity/connect/token
     Authorization__AuthorizationScope: "player-api"
-    Authorization__ClientId: player-api-dev
+    Authorization__ClientId: player-api
     Authorization__ClientName: "Player API"
 
     # Basic seed data to jumpstart deployement
     # TODO - Document Seed Data
-    SeedData__SystemAdminIds__0: 
-
+    SeedData__SystemAdminIds__0: dee684c5-2eaf-401a-915b-d3d4320fe5d5
+    SeedData__SystemAdminIds__1: 32c11441-7eec-47eb-a915-607c4f2529f4
+    
 player-ui:
-
   # Docker image release version
   image:
-    tag: "3.0.3"
+    repository: cmusei/player-ui
+    tag: "3.0.4"
+    pullPolicy: IfNotPresent
 
   # Ingress configuration example for NGINX
   # TLS and Host URLs need configured
   ingress:
     enabled: true    
     annotations:
-      kubernetes.io/ingress.class: nginx
+      kubernetes.io/ingress.class: public
       nginx.ingress.kubernetes.io/proxy-read-timeout: '86400'
       nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
       nginx.ingress.kubernetes.io/use-regex: "true"
@@ -100,56 +195,105 @@ player-ui:
         hosts:
          - foundry.local
 
+  identity:
+    register: true
+    identityMap: identity-identity-api
+    initCommand: ''
+    client: |-
+      {
+        "name": "player-ui",
+        "displayName": "Player UI",
+        "description": null,
+        "grants": "authorization_code client_credentials",
+        "scopes": "openid profile player-api",
+        "enabled": true,
+        "requirePkce": true,
+        "allowAccessTokensViaBrowser": true,
+        "requireConsent": false,
+        "consentLifetime": "30d",
+        "alwaysIncludeUserClaimsInIdToken": false,
+        "identityTokenLifetime": "5m",
+        "accessTokenLifetime": "1h",
+        "authorizationCodeLifetime": "5m",
+        "allowOfflineAccess": false,
+        "updateAccessTokenClaimsOnRefresh": false,
+        "useOneTimeRefreshTokens": false,
+        "slidingRefreshTokenLifetime": "15d",
+        "absoluteRefreshTokenLifetime": "30d",
+        "published": true,
+        "url": "https://foundry.local/player",
+        "logoUrl": null,
+        "frontChannelLogoutUrl": null,
+        "backChannelLogoutUrl": null,
+        "redirectUrls": [
+          { "value": "https://foundry.local/player/auth-callback" },
+          { "value": "https://foundry.local/player/auth-callback-silent" }
+        ],
+        "postLogoutUrls": [{ "value": "https://foundry.local/player" }],
+        "corsUrls": [{ "value": "https://foundry.local" }],
+        "alwaysSendClientClaims": false,
+        "clientClaimsPrefix": "client_",
+        "claims": [],
+        "secrets": [],
+        "managers": []
+      }
+
   env: 
     ## basehref is path to the app
     APP_BASEHREF: "/player"
+  
 
   # Config app settings with a JSON file.
   # These values correspond to an OpenID connect client and
   # some basic configuration
-  settings: '{
-    "ApiUrl": "https://foundry.local/player/api",
-    "OIDCSettings": {
-      "authority": "https://foundry.local/identity",
-      "client_id": "player-ui-dev",
-      "redirect_uri": "https://foundry.local/player/auth-callback/",
-      "post_logout_redirect_uri": "https://foundry.local/player",
-      "response_type": "code",
-      "scope": "openid profile player-api",
-      "automaticSilentRenew": true,
-      "silent_redirect_uri": "https://foundry.local/player/auth-callback-silent/"
-    },
-    "NotificationsSettings": {
-      "url": "https://foundry.local/player/hubs",
-      "number_to_display": 4
-    },
-    "AppTitle": "Crucible",
-    "AppTopBarText": "Crucible",
-    "AppTopBarHexColor": "#b00",
-    "AppTopBarHexTextColor": "#FFFFFF",
-    "UseLocalAuthStorage": true
-  }'
+  settings: |-
+    {
+      "ApiUrl": "https://foundry.local/player",
+      "OIDCSettings": {
+        "authority": "https://foundry.local/identity",
+        "client_id": "player-ui",
+        "redirect_uri": "https://foundry.local/player/auth-callback",
+        "post_logout_redirect_uri": "https://foundry.local/player",
+        "response_type": "code",
+        "scope": "openid profile player-api",
+        "automaticSilentRenew": true,
+        "silent_redirect_uri": "https://foundry.local/player/auth-callback-silent"
+      },
+      "NotificationsSettings": {
+        "url": "https://foundry.local/player/hubs",
+        "number_to_display": 4
+      },
+      "AppTitle": "Crucible",
+      "AppTopBarText": "Crucible",
+      "AppTopBarHexColor": "#b00",
+      "AppTopBarHexTextColor": "#FFFFFF",
+      "UseLocalAuthStorage": true
+    }
 
 vm-api:
 
   # Docker image release version
   image:
-    tag: "3.0.0"
-  
+    repository: cmusei/vm-api
+    pullPolicy: IfNotPresent
+    tag: "3.0.1"
+    
+    
   # Ingress configuration example for NGINX
   # TLS and Host URLs need configured
   ingress:
     enabled: true  
     annotations:
-      kubernetes.io/ingress.class: nginx
+      kubernetes.io/ingress.class: public
       nginx.ingress.kubernetes.io/proxy-read-timeout: '86400'
       nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
       nginx.ingress.kubernetes.io/use-regex: "true"
+      
     hosts:
       - host: foundry.local
         paths:
           - path: /vm/(notifications|hubs|api|swagger)
-            pathType: ImplementationSpecific
+            pathType: Prefix
     tls:
       - secretName: appliance-cert
         hosts:
@@ -168,9 +312,10 @@ vm-api:
     className: ""
     name: player-connect
     annotations: 
-      kubernetes.io/ingress.class: nginx
+      kubernetes.io/ingress.class: public
       nginx.ingress.kubernetes.io/proxy-read-timeout: "86400"
       nginx.ingress.kubernetes.io/proxy-send-timeout: "86400"
+      nginx.ingress.kubernetes.io/use-regex: "true"
       nginx.ingress.kubernetes.io/server-snippet: |
         location /ticket {
             proxy_pass https://$arg_vmhost$uri;
@@ -183,7 +328,7 @@ vm-api:
     hosts:
       - host: foundry.local
         paths: 
-          - path: /connect
+          - path: "/vm/connect(/|$)(.*)"
             pathType: Prefix
 
     tls:
@@ -194,8 +339,63 @@ vm-api:
   # If this deployment needs to trust non-public certificates,
   # create a configMap with the needed certifcates and specify
   # the configMap name here
-  certificateMap: ""
 
+  certificateMap: "appliance-root-ca"
+
+  identity:
+    register: true
+    identityMap: identity-identity-api
+    initCommand: ''
+    client: |-
+      {
+        "name": "vm-api",
+        "displayName": "VM API",
+        "description": null,
+        "grants": "authorization_code client_credentials",
+        "scopes": "openid profile vm-api player-api",
+        "enabled": true,
+        "requirePkce": true,
+        "allowAccessTokensViaBrowser": false,
+        "requireConsent": false,
+        "consentLifetime": "30d",
+        "alwaysIncludeUserClaimsInIdToken": false,
+        "identityTokenLifetime": "5m",
+        "accessTokenLifetime": "1h",
+        "authorizationCodeLifetime": "5m",
+        "allowOfflineAccess": false,
+        "updateAccessTokenClaimsOnRefresh": false,
+        "useOneTimeRefreshTokens": false,
+        "slidingRefreshTokenLifetime": "15d",
+        "absoluteRefreshTokenLifetime": "30d",
+        "published": false,
+        "url": "https://foundry.local/vm",
+        "logoUrl": null,
+        "frontChannelLogoutUrl": null,
+        "backChannelLogoutUrl": null,
+        "redirectUrls": [
+          { "value": "https://foundry.local/vm/api/oauth2-redirect.html" }
+        ],
+        "postLogoutUrls": [{ "value": "https://foundry.local/vm/api" }],
+        "corsUrls": [{ "value": "https://foundry.local" }],
+        "alwaysSendClientClaims": false,
+        "clientClaimsPrefix": "client_",
+        "claims": [],
+        "secrets": [],
+        "managers": []
+      }
+      
+    resource: |-
+      {
+        "type": "api",
+        "name": "vm-api",
+        "displayName": "VM Api",
+        "enabled": true,
+        "default": true,
+        "required": false,
+        "emphasize": false,
+        "showInDiscoveryDocument": true
+      }
+    
   # Config app settings with environment vars.
   # Those most likely needing values are listed. For others,
   # see https://github.com/cmu-sei/crucible/blob/master/vm.api/S3.VM.Api/appsettings.json
@@ -209,36 +409,41 @@ vm-api:
     # no_proxy: .local
 
     ## If hosting in virtual directory, specify path base
-    PathBase: "vm"
+    PathBase: "/vm"
 
     # Connection String to database
     # database requires the 'uuid-ossp' extension installed
-    ConnectionStrings__PostgreSQL: "Server=postgresql;Port=5432;Database=vm_api;Username=postgres;Password=foundry;"
+    ConnectionStrings__PostgreSQL: "Server=postgresql;Port=5432;Database=vm_db;Username=postgres;Password=foundry;"
 
-    # CORS policy settings.
+   # CORS policy settings.
     # The first entry should be the URL to VM App
     # The second entry should be the URL to Console App
     CorsPolicy__Origins__0: "https://foundry.local"
-    
+    CorsPolicy__Origins__1: "http://localhost:4303"
+    # CorsPolicy__AllowAnyOrigin: true
+    CorsPolicy__AllowAnyMethod: true
+    CorsPolicy__AllowAnyHeader: true
+    # CorsPolicy__SupportsCredentials: false
 
     # OAuth2 Identity Client for Application
     Authorization__Authority: https://foundry.local/identity
     Authorization__AuthorizationUrl: https://foundry.local/identity/connect/authorize
     Authorization__TokenUrl: https://foundry.local/identity/connect/token
     Authorization__AuthorizationScope: "vm-api player-api"
-    Authorization__ClientId: vm-api-dev
+    Authorization__ClientId: vm-api
     Authorization__ClientName: "VM API"
 
     # OAuth2 Identity Client /w Password
     IdentityClient__TokenUrl: https://foundry.local/identity/connect/token
-    IdentityClient__ClientId: "player-vm-admin"
+    IdentityClient__ClientId: "player-admin"
     IdentityClient__Scope: "player-api vm-api"
-    IdentityClient__Username: 
-    IdentityClient__Password: 
+    IdentityClient__Username: "crucible-admin@foundry.local"
+    IdentityClient__Password: "foundry"
 
     # Crucible Player URL
-    ClientSettings__urls__playerApi: "https://foundry.local/player"
+    ClientSettings__urls__playerApi: "https://foundry.local/player/api"
 
+    
     # VCenter settings
     #
     # A privileged vCenter used is required to read and write files
@@ -248,23 +453,25 @@ vm-api:
     #
     # - DsName denotes the DataStore name
     # - BaseFolder is the folder inside the DataStore to use
-    Vsphere__Host: "vcenter.example.com"
-    Vsphere__Username: "player-account@vsphere.local"
-    Vsphere__Password: 
-    Vsphere__DsName: 
+    Vsphere__Host: "$VSPHERE_SERVER"
+    Vsphere__Username: "$VSPHERE_USER"
+    Vsphere__Password: "$VSPHERE_PASS"
+    Vsphere__DsName: "$VSPHERE_DATASTORE"
     Vsphere__BaseFolder: "player"
-
+    
     # Rewrite Host settings
     # See "consoleIngress" section above for usage
     RewriteHost__RewriteHost: false
-    RewriteHost__RewriteHostUrl: "foundry.local/connect"
+    RewriteHost__RewriteHostUrl: "foundry.local/vm/connect"
     RewriteHost__RewriteHostQueryParam: "vmhost"
 
 vm-ui:
 
   # Docker image release version
   image:
-    tag: "3.0.3"
+    repository: cmusei/vm-ui
+    pullPolicy: IfNotPresent
+    tag: "3.0.5"
 
   # Ingress configuration example for NGINX
   # TLS and Host URLs need configured
@@ -272,48 +479,96 @@ vm-ui:
     enabled: true  
     className: ""
     annotations:
-      kubernetes.io/ingress.class: nginx
+      kubernetes.io/ingress.class: public
+      nginx.ingress.kubernetes.io/proxy-read-timeout: '86400'
+      nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
+      nginx.ingress.kubernetes.io/use-regex: "true"
     hosts:
       - host: foundry.local
         paths:
-          - path: /vm
+          - path: "/vm(/|$)(.*)"
             pathType: Prefix
     tls:
       - secretName: appliance-cert
         hosts:
          - foundry.local
 
+  identity:
+    register: true
+    identityMap: identity-identity-api
+    initCommand: ''
+    client: |-
+      {
+        "name": "vm-ui",
+        "displayName": "VM UI",
+        "description": null,
+        "grants": "authorization_code client_credentials",
+        "scopes": "openid profile vm-api player-api",
+        "enabled": true,
+        "requirePkce": true,
+        "allowAccessTokensViaBrowser": true,
+        "requireConsent": false,
+        "consentLifetime": "30d",
+        "alwaysIncludeUserClaimsInIdToken": false,
+        "identityTokenLifetime": "5m",
+        "accessTokenLifetime": "1h",
+        "authorizationCodeLifetime": "5m",
+        "allowOfflineAccess": false,
+        "updateAccessTokenClaimsOnRefresh": false,
+        "useOneTimeRefreshTokens": false,
+        "slidingRefreshTokenLifetime": "15d",
+        "absoluteRefreshTokenLifetime": "30d",
+        "published": false,
+        "url": "https://foundry.local/vm",
+        "logoUrl": null,
+        "frontChannelLogoutUrl": null,
+        "backChannelLogoutUrl": null,
+        "redirectUrls": [
+          { "value": "https://foundry.local/vm/auth-callback" },
+          { "value": "https://foundry.local/vm/auth-callback-silent" }
+        ],
+        "postLogoutUrls": [{ "value": "https://foundry.local/vm" }],
+        "corsUrls": [{ "value": "https://foundry.local" }],
+        "alwaysSendClientClaims": false,
+        "clientClaimsPrefix": "client_",
+        "claims": [],
+        "secrets": [],
+        "managers": []
+      }
+
   env: 
     ## basehref is path to the app
-    APP_BASEHREF: "vm"
+    APP_BASEHREF: "/vm"
 
   # Config app settings with a JSON file.
   # These values correspond to an OpenID connect client
-  settings: '{
+  settings: |-
+   {
       "ApiUrl": "https://foundry.local/vm/api",
       "DeployApiUrl": "",
       "ApiPlayerUrl": "https://foundry.local/player/api",
       "WelderUrl": "",
-      "UserFollowUrl": "https://foundry.local/console/user/{userId}/view/{viewId}/console",
+      "UserFollowUrl": "https://foundry.local/vm/console/user/{userId}/view/{viewId}/console",
       "OIDCSettings": {
           "authority": "https://foundry.local/identity",
-          "client_id": "vm-ui-dev",
-          "redirect_uri": "https://foundry.local/vm/auth-callback/",
+          "client_id": "vm-ui",
+          "redirect_uri": "https://foundry.local/vm/auth-callback",
           "post_logout_redirect_uri": "https://foundry.local/vm",
           "response_type": "code",
           "scope": "openid profile player-api vm-api",
           "automaticSilentRenew": true,
-          "silent_redirect_uri": "https://foundry.local/vm/auth-callback-silent/"
+          "silent_redirect_uri": "https://foundry.local/vm/auth-callback-silent"
       },
       "UseLocalAuthStorage": true
-  }'
-
+    }
 
 console-ui:
 
   # Docker image release version
   image:
-    tag: "3.0.4"
+    repository: cmusei/vm-console-ui
+    pullPolicy: IfNotPresent
+    tag: "3.0.5"
 
   # Ingress configuration example for NGINX
   # TLS and Host URLs need configured
@@ -321,49 +576,101 @@ console-ui:
     enabled: true  
     className: ""
     annotations:
-      kubernetes.io/ingress.class: nginx
+      kubernetes.io/ingress.class: public
+      nginx.ingress.kubernetes.io/proxy-read-timeout: '86400'
+      nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
+      nginx.ingress.kubernetes.io/use-regex: "true"
     hosts:
       - host: foundry.local
         paths:
-          - path: /console
+          - path: "/console(/|$)(.*)"
             pathType: Prefix
     tls:
       - secretName: appliance-cert
         hosts:
          - foundry.local
-
+  
+  identity:
+    register: true
+    identityMap: identity-identity-api
+    client: |-
+      {
+        "name": "vm-console-ui",
+        "displayName": "VM Console UI",
+        "description": null,
+        "grants": "authorization_code client_credentials",
+        "scopes": "openid profile vm-api player-api",
+        "enabled": true,
+        "requirePkce": true,
+        "allowAccessTokensViaBrowser": true,
+        "requireConsent": false,
+        "consentLifetime": "30d",
+        "alwaysIncludeUserClaimsInIdToken": false,
+        "identityTokenLifetime": "5m",
+        "accessTokenLifetime": "1h",
+        "authorizationCodeLifetime": "5m",
+        "allowOfflineAccess": false,
+        "updateAccessTokenClaimsOnRefresh": false,
+        "useOneTimeRefreshTokens": false,
+        "slidingRefreshTokenLifetime": "15d",
+        "absoluteRefreshTokenLifetime": "30d",
+        "published": false,
+        "url": "https://foundry.local/vm",
+        "logoUrl": null,
+        "frontChannelLogoutUrl": null,
+        "backChannelLogoutUrl": null,
+        "redirectUrls": [
+          { "value": "https://foundry.local/console/auth-callback" },
+          { "value": "https://foundry.local/console/auth-callback-silent" }
+        ],
+        "postLogoutUrls": [{ "value": "https://foundry.local/console" }],
+        "corsUrls": [{ "value": "https://foundry.local" }],
+        "alwaysSendClientClaims": false,
+        "clientClaimsPrefix": "client_",
+        "claims": [],
+        "secrets": [],
+        "managers": []
+      }
   env: 
     ## basehref is path to the app
-    APP_BASEHREF: "/connect"
+    APP_BASEHREF: "/console"
 
   # Config app settings with a JSON file.
   # These values correspond to an OpenID connect client and some basic settings
-  settings: '{
-    "ConsoleApiUrl": "https://foundry.local/vm/api/",
-    "OIDCSettings": {
-      "authority": "https://foundry.local/identity",
-      "client_id": "vm-console-ui-dev",
-      "redirect_uri": "https://foundry.local/console/auth-callback/",
-      "post_logout_redirect_uri": "https://foundry.local/console",
-      "response_type": "code",
-      "scope": "openid profile player-api vm-api vm-console-api",
-      "automaticSilentRenew": true,
-      "silent_redirect_uri": "https://foundry.local/console/auth-callback-silent/"
-    },
-    "UseLocalAuthStorage": true,
-    "VmResolutionOptions": [
-      { "width": 2560, "height": 1600 },
-      { "width": 1920, "height": 1440 },
-      { "width": 1920, "height": 1200 },
-      { "width": 1600, "height": 1200 },
-      { "width": 1400, "height": 1050 },
-      { "width": 1280, "height": 1024 },
-      { "width": 1440, "height": 900 },
-      { "width": 1280, "height": 960 },
-      { "width": 1366, "height": 768 },
-      { "width": 1280, "height": 800 },
-      { "width": 1280, "height": 720 },
-      { "width": 1024, "height": 768 },
-      { "width": 800, "height": 600 }
-    ]
-  }'
+  settings: |- 
+    {
+      "ConsoleApiUrl": "https://foundry.local/vm/api",
+      "OIDCSettings": {
+        "authority": "https://foundry.local/identity",
+        "client_id": "vm-console-ui",
+        "redirect_uri": "https://foundry.local/console/auth-callback",
+        "post_logout_redirect_uri": "https://foundry.local/console",
+        "response_type": "code",
+        "scope": "openid profile player-api vm-api",
+        "automaticSilentRenew": true,
+        "silent_redirect_uri": "https://foundry.local/console/auth-callback-silent"
+      },
+      "UseLocalAuthStorage": true,
+      "VmResolutionOptions": [
+        { "width": 2560, "height": 1600 },
+        { "width": 1920, "height": 1440 },
+        { "width": 1920, "height": 1200 },
+        { "width": 1600, "height": 1200 },
+        { "width": 1400, "height": 1050 },
+        { "width": 1280, "height": 1024 },
+        { "width": 1440, "height": 900 },
+        { "width": 1280, "height": 960 },
+        { "width": 1366, "height": 768 },
+        { "width": 1280, "height": 800 },
+        { "width": 1280, "height": 720 },
+        { "width": 1024, "height": 768 },
+        { "width": 800, "height": 600 }
+      ],
+      "PasteSpeeds": [
+        { "name": "Fastest", "value": 10 },
+        { "name": "Fast", "value": 30 },
+        { "name": "Normal", "value": 60 },
+        { "name": "Slow", "value": 100 },
+        { "name": "Slowest", "value": 500 }
+      ]
+    }

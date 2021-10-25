@@ -1,100 +1,249 @@
 steamfitter-api:
   image:
-    tag: "2.2.0"
-  
+    repository: cmusei/steamfitter-api
+    tag: '3.6.1'
+    pullPolicy: IfNotPresent
   ingress:
     enabled: true
     annotations:
-      kubernetes.io/ingress.class: nginx
+      kubernetes.io/ingress.class: public
       nginx.ingress.kubernetes.io/proxy-read-timeout: '86400'
       nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
       nginx.ingress.kubernetes.io/use-regex: "true"
     hosts:
-      - host: steamfitter.crucible-dev.cmusei.dev
+      - host: foundry.local
         paths:
-        - /(api|swagger|hubs)
+          - path: /steamfitter/(api|swagger|hubs)
+            pathType: Prefix
     tls:
-      - secretName: crucible-dev-wildcard-cert
+      - secretName: appliance-cert
         hosts:
-         - crucible-dev.cmusei.dev
+         - foundry.local
+  certificateMap: "appliance-root-ca"
 
+  identity:
+    register: true
+    identityMap: 'identity-identity-api'
+    initCommand: ''
+    client: |-
+      [
+        {
+          "name": "steamfitter-api",
+          "displayName": "Steamfitter API",
+          "description": null,
+          "grants": "authorization_code client_credentials",
+          "scopes": "steamfitter-api vm-api player-api",
+          "enabled": true,
+          "requirePkce": true,
+          "allowAccessTokensViaBrowser": false,
+          "requireConsent": false,
+          "consentLifetime": "30d",
+          "alwaysIncludeUserClaimsInIdToken": false,
+          "identityTokenLifetime": "5m",
+          "accessTokenLifetime": "1h",
+          "authorizationCodeLifetime": "5m",
+          "allowOfflineAccess": false,
+          "updateAccessTokenClaimsOnRefresh": false,
+          "useOneTimeRefreshTokens": false,
+          "slidingRefreshTokenLifetime": "15d",
+          "absoluteRefreshTokenLifetime": "30d",
+          "published": false,
+          "url": "https://foundry.local/steamfitter",
+          "logoUrl": null,
+          "frontChannelLogoutUrl": null,
+          "backChannelLogoutUrl": null,
+          "redirectUrls": [
+            { "value": "https://foundry.local/steamfitter/api/oauth2-redirect.html" }
+          ],
+          "postLogoutUrls": [{ "value": "https://foundry.local/steamfitter/api" }],
+          "corsUrls": [{ "value": "https://foundry.local" }],
+          "alwaysSendClientClaims": false,
+          "clientClaimsPrefix": "client_",
+          "claims": [],
+          "secrets": [],
+          "managers": []
+        },
+        {
+            "name": "steamfitter-admin",
+            "displayName": "Steamfitter Admin",
+            "description": null,
+            "grants": "password client_credentials",
+            "scopes": "player-api steamfitter-api vm-api",
+            "enabled": true,
+            "requirePkce": true,
+            "allowAccessTokensViaBrowser": false,
+            "requireConsent": false,
+            "consentLifetime": "30d",
+            "alwaysIncludeUserClaimsInIdToken": false,
+            "identityTokenLifetime": "5m",
+            "accessTokenLifetime": "1h",
+            "authorizationCodeLifetime": "5m",
+            "allowOfflineAccess": false,
+            "updateAccessTokenClaimsOnRefresh": false,
+            "useOneTimeRefreshTokens": false,
+            "slidingRefreshTokenLifetime": "15d",
+            "absoluteRefreshTokenLifetime": "30d",
+            "published": false,
+            "url": "https://foundry.local/alloy",
+            "logoUrl": null,
+            "frontChannelLogoutUrl": null,
+            "backChannelLogoutUrl": null,
+            "corsUrls": [{ "value": "https://foundry.local" }],
+            "alwaysSendClientClaims": false,
+            "clientClaimsPrefix": "client_",
+            "claims": [],
+            "secrets": [],
+            "managers": []
+          }
+        ]
+      
+    resource: |-
+      {
+        "type": "api",
+        "name": "steamfitter-api",
+        "displayName": "Steamfitter Api",
+        "enabled": true,
+        "default": true,
+        "required": false,
+        "emphasize": false,
+        "showInDiscoveryDocument": true
+      }
+    
   env:
-
+    PathBase: "/steamfitter"
     # Connection String to database
-    ConnectionStrings__PostgreSQL: "Server=postgres;Port=5432;Database=crucible_dev_steamfitter_db;Username=crucible_dev_steamfitter_dbo@1ncu5k8s;Password='qzzlJgmKx6ZF4qlO1QfYJ92B31w0sxkq';SSL Mode=Prefer;Trust Server Certificate=true;"
+    ConnectionStrings__PostgreSQL: "Server=postgresql;Port=5432;Database=steamfitter_db;Username=postgres;Password=foundry;SSL Mode=Prefer;Trust Server Certificate=true;"
 
-    CorsPolicy__Origins__0: https://steamfitter.crucible-dev.cmusei.dev
+    CorsPolicy__Origins__0: https://foundry.local
+    CorsPolicy__Origins__1: "http://localhost:4303"
+    # CorsPolicy__AllowAnyOrigin: true
+    CorsPolicy__AllowAnyMethod: true
+    CorsPolicy__AllowAnyHeader: true
 
     # OAuth2 Identity Client for Application
-    Authorization__Authority: https://id.crucible-dev.cmusei.dev
-    Authorization__AuthorizationUrl: https://id.crucible-dev.cmusei.dev/connect/authorize
-    Authorization__AuthorizationScope: "player-api steamfitter-api vm-api"
+    Authorization__Authority: https://foundry.local/identity
+    Authorization__AuthorizationUrl: https://foundry.local/identity/connect/authorize
+    Authorization__TokenUrl: https://foundry.local/identity/connect/token
+    Authorization__AuthorizationScope: "steamfitter-api vm-api"
     Authorization__ClientId: steamfitter-api
     Authorization__ClientName: "Steamfitter API"
 
     # OAuth2 Identity Client /w Password
-    ResourceOwnerAuthorization__Authority: https://id.crucible-dev.cmusei.dev
-    ResourceOwnerAuthorization__ClientId: steamfitter-api
-    ResourceOwnerAuthorization__UserName: "" #TODO
-    ResourceOwnerAuthorization__Password: "" #TODO
+    ResourceOwnerAuthorization__Authority: https://foundry.local/identity
+    ResourceOwnerAuthorization__ClientId: steamfitter-admin
+    ResourceOwnerAuthorization__UserName: crucible-admin@foundry.local #TODO
+    ResourceOwnerAuthorization__Password: foundry #TODO
     ResourceOwnerAuthorization__Scope: "vm-api"
 
-    ClientSettings__urls__playerApi: https://player.crucible-dev.cmusei.dev/
-    ClientSettings__urls__vmApi: https://vm.crucible-dev.cmusei.dev/
+    ClientSettings__urls__steamfitterApi: https://foundry.local/steamfitter
+    ClientSettings__urls__vmApi: https://foundry.local/vm
 
     # Stackstorm Configuration
     # TODO - Document Stackstorm dependencies
     VmTaskProcessing__ApiType: st2
-    VmTaskProcessing__ApiUsername: "st2admin"
-    VmTaskProcessing__ApiPassword: "eYr#AxMS9@n6BsWWxPgj"
-    VmTaskProcessing__ApiBaseUrl: "https://stackstorm.crucible-dev.cmusei.dev"
+    VmTaskProcessing__ApiUsername: "administrator"
+    VmTaskProcessing__ApiPassword: "foundry"
+    VmTaskProcessing__ApiBaseUrl: "https://foundry.local/stackstorm/"
     VmTaskProcessing__ApiParameters__clusters: ""
 
     # Basic seed data to jumpstart deployement
     # TODO - Document Seed data
-    # SeedData__Users__0__id: ""
-    # SeedData__Users__0__name: ""
+    SeedData__Users__0__id: "dee684c5-2eaf-401a-915b-d3d4320fe5d5"
+    SeedData__Users__0__name:  "administrator@foundry.local"
 
-    # SeedData__Users__1__id: ""
-    # SeedData__Users__1__name: ""
+    # SeedData__Users__1__id:  "3b680d97-6d0b-44c9-8cc7-fd10ea79c2a6"
+    # SeedData__Users__1__name:  "caster-admin@foundry.local"
 
-    # SeedData__UserPermissions__0__UserId: ""
-    # SeedData__UserPermissions__0__PermissionId: ""
+    SeedData__UserPermissions__0__UserId: "dee684c5-2eaf-401a-915b-d3d4320fe5d5"
+    SeedData__UserPermissions__0__PermissionId: "00000000-0000-0000-0000-000000000001"
     # SeedData__UserPermissions__1__UserId: ""
     # SeedData__UserPermissions__1__PermissionId: ""
 
 steamfitter-ui:
   image:
-    tag: "2.2.0"
+    repository: cmusei/steamfitter-ui
+    pullPolicy: IfNotPresent
+    tag: "3.6.1"
 
   ingress:
     enabled: true
     annotations:
-      kubernetes.io/ingress.class: nginx
+      kubernetes.io/ingress.class: public
+      nginx.ingress.kubernetes.io/proxy-read-timeout: '86400'
+      nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
+      nginx.ingress.kubernetes.io/use-regex: "true"
     hosts:
-      - host: steamfitter.crucible-dev.cmusei.dev
-        paths:
-        - /
+        - host: foundry.local
+          paths:
+            - path: "/steamfitter(/|$)(.*)"
+              pathType: Prefix
     tls:
-      - secretName: crucible-dev-wildcard-cert
+      - secretName: appliance-cert
         hosts:
-         - crucible-dev.cmusei.dev
+        - foundry.local
+  identity:
+    register: true
+    identityMap: 'identity-identity-api'
+    initCommand: ''
+    client: |-
+      {
+        "name": "steamfitter-ui",
+        "displayName": "Steamfitter UI",
+        "description": null,
+        "grants": "authorization_code client_credentials",
+        "scopes": "openid profile steamfitter-api vm-api player-api",
+        "enabled": true,
+        "requirePkce": true,
+        "allowAccessTokensViaBrowser": true,
+        "requireConsent": false,
+        "consentLifetime": "30d",
+        "alwaysIncludeUserClaimsInIdToken": false,
+        "identityTokenLifetime": "5m",
+        "accessTokenLifetime": "1h",
+        "authorizationCodeLifetime": "5m",
+        "allowOfflineAccess": false,
+        "updateAccessTokenClaimsOnRefresh": false,
+        "useOneTimeRefreshTokens": false,
+        "slidingRefreshTokenLifetime": "15d",
+        "absoluteRefreshTokenLifetime": "30d",
+        "published": true,
+        "url": "https://foundry.local/steamfitter",
+        "logoUrl": null,
+        "frontChannelLogoutUrl": null,
+        "backChannelLogoutUrl": null,
+        "redirectUrls": [
+          { "value": "https://foundry.local/steamfitter/auth-callback" },
+          { "value": "https://foundry.local/steamfitter/auth-callback-silent" }
+        ],
+        "postLogoutUrls": [{ "value": "https://foundry.local/steamfitter" }],
+        "corsUrls": [{ "value": "https://foundry.local" }],
+        "alwaysSendClientClaims": false,
+        "clientClaimsPrefix": "client_",
+        "claims": [],
+        "secrets": [],
+        "managers": []
+      }
+
+  env: 
+    ## basehref is path to the app
+    APP_BASEHREF: "/steamfitter"
 
   # Config app settings with a JSON file.
   # These values correspond to an OpenID connect client
-  settings: '{
-      "ApiUrl": "https://steamfitter.crucible-dev.cmusei.dev",
-      "VmApiUrl": "https://vm.crucible-dev.cmusei.dev",
-      "ApiPlayerUrl": "https://player.crucible-dev.cmusei.dev",
+  settings: |- 
+    {
+      "ApiUrl": "https://foundry.local/steamfitter",
+      "VmApiUrl": "https://foundry.local/vm",
+      "ApiPlayerUrl": "https://foundry.local/player",
       "OIDCSettings": {
-          "authority": "https://id.crucible-dev.cmusei.dev",
+          "authority": "https://foundry.local/identity",
           "client_id": "steamfitter-ui",
-          "redirect_uri": "https://steamfitter.crucible-dev.cmusei.dev/auth-callback",
-          "post_logout_redirect_uri": "https://steamfitter.crucible-dev.cmusei.dev",
-          "response_type": "id_token token",
-          "scope": "openid profile player-api vm-api steamfitter-api",
+          "redirect_uri": "https://foundry.local/steamfitter/auth-callback",
+          "post_logout_redirect_uri": "https://foundry.local/steamfitter",
+          "response_type": "code",
+          "scope": "openid profile steamfitter-api vm-api player-api",
           "automaticSilentRenew": true,
-          "silent_redirect_uri": "https://steamfitter.crucible-dev.cmusei.dev/auth-callback-silent"
+          "silent_redirect_uri": "https://foundry.local/steamfitter/auth-callback-silent"
       },
       "UseLocalAuthStorage": true
-  }'
+    }

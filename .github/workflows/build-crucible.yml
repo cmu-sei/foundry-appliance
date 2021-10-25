@@ -1,4 +1,4 @@
-name: build
+name: build-crucible
 
 on:
   push:
@@ -21,40 +21,21 @@ jobs:
         path: ~/.cache/packer
         key: ${{ runner.os }}-packer
 
-    - name: Install Dependencies
-      run: |
-        brew install xmlstarlet
-
     - name: Build VirtualBox OVF image
       uses: nick-invision/retry@v2
       env:
         GITHUB_PULL_REQUEST: ${{ github.event.number }}
       with:
-        timeout_minutes: 40
+        timeout_minutes: 30
         max_attempts: 5
-        command: ./build-appliance virtualbox foundry
+        command: ./build-appliance virtualbox crucible -var "cpus=6" -var "memory=8192" -var "disk_size=51200"
 
     - name: Get build_name from OVF file
       run: echo "build_name=$(sh -c "find . -name '*.ovf' | xargs basename -s '.ovf'")" >> $GITHUB_ENV
       working-directory: ./output-virtualbox
 
-    - name: Improve OVF VMware compatibility
-      run: |
-        xml ed --inplace \
-               -N ns='http://schemas.dmtf.org/ovf/envelope/1' \
-               -N vssd="http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_VirtualSystemSettingData" \
-               -u "//ns:System/vssd:VirtualSystemType" \
-               -v "vmx-13" \
-               ${{ env.build_name }}.ovf
-        xml ed --inplace \
-               -N ns='http://schemas.dmtf.org/ovf/envelope/1' \
-               -N rasd='http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_ResourceAllocationSettingData' \
-               -d "//ns:Item[rasd:ResourceSubType[contains(text(), 'PIIX4')]]" \
-               ${{ env.build_name }}.ovf
-        xml ed --inplace \
-               -N ns='http://schemas.dmtf.org/ovf/envelope/1' \
-               -d "//ns:StorageController[@type='PIIX4']" \
-               ${{ env.build_name }}.ovf
+    - name: Change virtual hardware version
+      run: sed -i '' 's/virtualbox-2.2/vmx-13/' ${{ env.build_name }}.ovf
       working-directory: ./output-virtualbox
 
     - name: Create OVA manifest

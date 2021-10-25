@@ -4,3 +4,6 @@ packer_cache/
 output-*/
 vsphere-vars.json
 vsphere.auto.pkrvars.hcl
+*/**/*.env
+*/**/vsphere.pem
+*/**/*.scratch

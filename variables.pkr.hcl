@@ -44,6 +44,23 @@ variable "vsphere_network" {
   default = "VM Network"
 }
 
+variable "apps" {
+  type = string
+  default = "foundry,crucible"
+}
+
+variable "cpus" {
+  default = 6
+}
+
+variable "memory" {
+  default = 4098
+}
+
+variable "disk_size" {
+  default = 30720
+}
+
 locals {
   boot_command     = [
   "e<wait>",
@@ -52,10 +69,10 @@ locals {
   "autoinstall ds=nocloud-net\\;s=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ ---<wait>",
   "<f10><wait>"
   ]
-  cpus             = 2
-  disk_size        = 30000
-  iso_url          = "https://releases.ubuntu.com/22.04/ubuntu-22.04-live-server-amd64.iso"
-  iso_checksum     = "sha256:84aeaf7823c8c61baa0ae862d0a06b03409394800000b3235854a6b38eb4856f"
-  memory           = 4096
+  cpus             = "${var.cpus}"
+  disk_size        = "${var.disk_size}"
+  iso_url          = "http://www.releases.ubuntu.com/20.04/ubuntu-20.04.3-live-server-amd64.iso"
+  iso_checksum     = "sha256:f8e3086f3cea0fb3fefb29937ab5ed9d19e767079633960ccb50e76153effc98"
+  memory           = "${var.memory}"
   shutdown_command = "echo '${var.ssh_password}'|sudo -S shutdown -P now"
 }

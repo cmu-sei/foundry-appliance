@@ -8,7 +8,7 @@ image:
   registry: docker.io
   repository: dpage/pgadmin4
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "6.7"
+  tag: ""
   pullPolicy: IfNotPresent
 
 ## Deployment annotations
@@ -258,11 +258,11 @@ VolumePermissions:
 ##
 extraInitContainers: |
   - name: prepare-pgpass
-    image: "dpage/pgadmin4:6.7"
+    image: "dpage/pgadmin4:latest"
     command:
       - "sh"
       - "-c"
-      - "cp /pgpass.conf /var/lib/pgadmin/pgpass.conf && chown pgadmin:root /var/lib/pgadmin/pgpass.conf && chmod 600 /var/lib/pgadmin/pgpass.conf"
+      - "cp /pgpass.conf /var/lib/pgadmin/pgpass.conf && chown pgadmin:pgadmin /var/lib/pgadmin/pgpass.conf && chmod 600 /var/lib/pgadmin/pgpass.conf"
     volumeMounts:
       - name: pgadmin-data
         mountPath: /var/lib/pgadmin

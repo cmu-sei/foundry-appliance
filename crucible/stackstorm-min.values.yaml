@@ -1,0 +1,321 @@
+
+image:
+  # Image pull policy
+  pullPolicy: IfNotPresent
+  repository: ""
+  tag: "{{ .Chart.AppVersion }}"
+  
+serviceAccount:
+  # Whether the Chart should create the service account or not
+  create: true
+  # Used to define service account annotations
+  serviceAccountAnnotations: {}
+  # Used to override service account name
+  serviceAccountName:
+  # Fallback image pull secret.
+  # If a pod does not have pull secrets, k8s will use the service account's pull secrets.
+  # See: https://kubernetes.io/docs/reference/access-authn-authz/service-accounts-admin/#serviceaccount-admission-controller
+  #pullSecret: "your-pull-secret"
+
+##
+## StackStorm shared variables
+##
+st2:
+  
+  username: administrator
+  password: foundry
+  config: |
+    [api]
+    allow_origin = 'https://foundry.local'
+    [database]
+    host = mongodb
+    port = 27017
+    db_name = st2
+    username = st2
+    password = foundry
+  system_user:
+    user: stanley
+    # templating is allowed for this key
+    ssh_key_file: "/home/{{ .Values.st2.system_user.user }}/.ssh/stanley_rsa"
+
+  packs:
+    configs:
+      azure.yaml: |
+        ---
+        compute:
+          subscription_id: "$AZURE_COMPUTE_SUBSCRIPTION_ID"
+          cert_file: "$AZURE_COMPUTE_CERT_FILE"
+        storage:
+          name: "$AZURE_STORAGE_NAME"
+          access_key: "$AZURE_STORAGE_ACCESS_KEY"
+        resource_manager:
+          client_id: '$AZURE_RESOURCE_CLIENT_ID'
+          secret: '$AZURE_RESOURCE_SECRET'
+          tenant: '$AZURE_RESOURCE_TENANT'
+          default_resource_group: '$AZURE_RESOURCE_DEFAULT_GROUP'
+        user:
+          username: '$AZURE_USER'
+          password: '$AZURE_PASS'
+      vsphere.yaml: | 
+        ---
+        ssl_verify: false
+        vsphere:
+          default:
+            host: "vcsa.covert-cloud.com"
+            port: 443
+            user: "administrator@vsphere.local"
+            passwd: "Tartans@1"
+    images:
+      - repository: cmusei
+        name: st2packs
+        tag: 1.0.0
+        pullPolicy: IfNotPresent
+
+ingress:
+  enabled: false
+  annotations:
+    kubernetes.io/ingress.class: public
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/proxy-read-timeout: '86400'
+    nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
+    nginx.ingress.kubernetes.io/use-regex: 'true'
+  hosts:
+    - host: foundry.local
+      paths:
+        - path: /stackstorm/(.*)
+          pathType: Prefix
+          serviceName: stackstorm-st2web
+          servicePort: 80
+  tls:
+    - secretName: appliance-cert
+      hosts:
+        - foundry.local
+
+st2web:
+  # Minimum 2 replicas are recommended to run st2web in HA mode
+  replicas: 1
+  # Tested resource consumption based on multiple requests to st2web within nginx
+  # Please adjust based on your conscious choice
+  resources:
+    requests:
+      memory: "25Mi"
+      cpu: "50m"
+    limits:
+      memory: "100Mi"
+  annotations: {}
+  # Override default image settings (for now, only tag can be overridden)
+  image: {}
+    ## Note that Helm templating is supported in this block!
+    #tag: "{{ .Values.image.tag }}"
+  # TODO: Add Ingress setting as a way to expose service to public (#6).
+  # ingress:
+  service:
+    # type can be one of "ClusterIP", "NodePort", "LoadBalancer" or "ExternalName"
+    type: "NodePort"
+    # The hostname associated with st2web service (externalName, added to external DNS, etc.)
+    hostname: foundry.local
+    # For more information regarding annotations, see
+    # https://kubernetes.io/docs/concepts/services-networking/service/#ssl-support-on-aws
+    annotations: {}
+  
+  config: |
+    'use strict';
+
+    /* global angular */
+    angular.module('main')
+      .constant('st2Config', {
+
+        hosts: [
+          {
+            name: 'test',
+            url: 'https://foundry.local/stackstorm/api',
+            auth: 'https://foundry.local/stackstorm/auth',
+            stream: 'https://foundry.local/stackstorm/stream',
+          }
+        ]
+      });
+  
+st2auth:
+  replicas: 1
+  resources:
+    requests:
+      memory: "85Mi"
+      cpu: "50m"
+  
+st2api:
+  replicas: 1
+  resources:
+    requests:
+      memory: "150Mi"
+      cpu: "25m"
+  
+st2stream:
+  replicas: 1
+  resources:
+    requests:
+      memory: "100Mi"
+      cpu: "50m"
+  
+st2rulesengine:
+  replicas: 1
+  resources:
+    requests:
+      memory: "75Mi"
+      cpu: "25m"
+  
+st2timersengine:
+  resources:
+    requests:
+      memory: "75Mi"
+      cpu: "10m"
+  
+st2workflowengine:
+  replicas: 1
+  resources:
+    requests:
+      memory: "200Mi"
+      cpu: "100m"
+  
+st2scheduler:
+  replicas: 1
+  resources:
+    requests:
+      memory: "75Mi"
+      cpu: "50m"
+  
+st2notifier:
+  replicas: 1
+  resources:
+    requests:
+      memory: "75Mi"
+      cpu: "50m"
+  
+st2actionrunner:
+  replicas: 2
+  resources:
+    requests:
+      memory: "200Mi"
+      cpu: "75m"
+  
+st2sensorcontainer:
+  resources:
+    requests:
+      memory: "100Mi"
+      cpu: "50m"
+  
+st2client:
+  # st2client config (~/.st2/config) template.
+  # see: https://docs.stackstorm.com/reference/cli.html#configuration-file
+  # You can access env variables here because this is used in a bash heredoc.
+  # For example, you could use a var injected with envFromSecrets.
+  # Note that Helm templating is supported in this block!
+  st2clientConfig: |
+    [credentials]
+    username = ${ST2_AUTH_USERNAME}
+    password = ${ST2_AUTH_PASSWORD}
+
+st2garbagecollector:
+  # Having 1 st2garbagecollector unique replica is enough for periodic task like st2 history garbage collection
+  replicas: 1
+  resources:
+    requests:
+      memory: "80Mi"
+      cpu: "10m"
+
+##
+## Various batch jobs (apply-rbac-definitions, apikey-load, key-load, register-content)
+##
+jobs:
+  # st2client config (~/.st2/config) template for jobs that need it.
+  # see: https://docs.stackstorm.com/reference/cli.html#configuration-file
+  # You can access env variables here because this is used in a bash heredoc.
+  # For example, you could use a var injected with envFromSecrets.
+  # Note that Helm templating is supported in this block!
+  st2clientConfig: |
+    [credentials]
+    username = ${ST2_AUTH_USERNAME}
+    password = ${ST2_AUTH_PASSWORD}
+
+mongodb:
+  # Change to `false` to disable in-cluster mongodb deployment.
+  # Specify your external [database] connection parameters under st2.config
+  enabled: false
+  
+##
+## RabbitMQ configuration (3rd party chart dependency)
+##
+## For values.yaml reference:
+## https://github.com/bitnami/charts/tree/master/bitnami/rabbitmq
+##
+rabbitmq:
+  # Change to `false` to disable in-cluster rabbitmq deployment.
+  # Specify your external [messaging] connection parameters under st2.config
+  enabled: true
+  clustering:
+    # On unclean cluster restarts forceBoot is required to cleanup Mnesia tables (see: https://github.com/helm/charts/issues/13485)
+    # Use it only if you prefer availability over integrity.
+    forceBoot: true
+  # Authentication Details
+  auth:
+    username: administrator
+    # TODO: Use default random 10 character password, but need to fetch this string for use by downstream services
+    password: foundry
+    # Up to 255 character string, should be fixed so that re-deploying the chart does not fail (see: https://github.com/helm/charts/issues/12371)
+    # NB! It's highly recommended to change the default insecure rabbitmqErlangCookie value!
+    erlangCookie: odNapWZrmS8n7P45mVs3WxZB
+  # RabbitMQ Memory high watermark. See: http://www.rabbitmq.com/memory.html
+  # Default values might not be enough for StackStorm deployment to work properly. We recommend to adjust these settings for you needs as well as enable Pod memory limits via "resources".
+  #rabbitmqMemoryHighWatermark: 512MB
+  #rabbitmqMemoryHighWatermarkType: absolute
+  persistence:
+    enabled: true
+  # Enable Queue Mirroring between nodes
+  # See https://www.rabbitmq.com/ha.html
+  # This code block is commented out waiting for
+  # https://github.com/bitnami/charts/issues/4635
+  loadDefinition:
+    enabled: true
+    existingSecret: "{{ .Release.Name }}-rabbitmq-definitions"
+  extraConfiguration: |
+    load_definitions = /app/rabbitmq-definitions.json
+  # We recommend to set the memory limit for RabbitMQ-HA Pods in production deployments.
+  # Make sure to also change the rabbitmqMemoryHighWatermark following the formula:
+  # rabbitmqMemoryHighWatermark = 0.4 * resources.limits.memory
+  resources: {}
+  # number of replicas in the rabbit cluster
+  replicaCount: 1
+  # As RabbitMQ enabled prometheus operator monitoring by default, disable it for non-prometheus users
+  metrics:
+    enabled: false
+
+##
+## Redis HA configuration (3rd party chart dependency)
+##
+## For values.yaml reference:
+## https://github.com/bitnami/charts/tree/master/bitnami/redis
+##
+redis:
+  # Change to `false` to disable in-cluster redis deployment.
+  # Specify your external [coordination] connection parameters under st2.config
+  enabled: true
+  # By default the cluster is enabled for the subchart.
+  # We just need replica count here to ensure it is HA
+  cluster:
+    slaveCount: 1
+  # Sentinel settings. Sentinel is enabled for better resiliency.
+  # This is highly recommended as per tooz library documentation.
+  # Hence, the chart requires the setting.
+  # https://docs.openstack.org/tooz/latest/user/drivers.html#redis
+  # https://github.com/bitnami/charts/tree/master/bitnami/redis#master-slave-with-sentinel
+  # sentinel:
+  #   enabled: true
+  #   masterSet: mymaster
+  #   # Enable or disable static sentinel IDs for each replicas
+  #   # If disabled each sentinel will generate a random id at startup
+  #   # If enabled, each replicas will have a constant ID on each start-up
+  #   staticID: true
+  networkPolicy:
+    enabled: false
+  usePassword: false
+  metrics:
+    enabled: false

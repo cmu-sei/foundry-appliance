@@ -4,15 +4,15 @@ image:
 ingress:
   enabled: true
   annotations:
-    kubernetes.io/ingress.class: nginx
+    kubernetes.io/ingress.class: public
   tls:
-    - secretName: crucible-dev-wildcard-cert
+    - secretName: appliance-cert
       hosts:
-        - crucible-dev.cmusei.dev
+        - foundry.local
 
 st2web:
   service:
-    hostname: stackstorm.crucible-dev.cmusei.dev
+    hostname: foundry.local/stackstorm
 
 enterprise:
   enabled: false
@@ -76,6 +76,6 @@ st2:
 secrets:
   st2:
     # Username, used to login to StackStorm system
-    username: st2admin
+    username: admin
     # Password, used to login to StackStorm system
-    password: 'eYr#AxMS9@n6BsWWxPgj'
+    password: 'foundry'

@@ -1,0 +1,103 @@
+[#!/bin/bash
+# 
+# Copyright 2021 Carnegie Mellon University.
+# Released under a BSD (SEI)-style license, please see LICENSE.md in the
+# project root or contact permission@sei.cmu.edu for full terms.
+#
+# Import crucible example content into the appliance
+#
+# import-content
+exports_path="seed/crucible"
+domain=${domain-foundry.local}
+directory=$(dirname "$BASH_SOURCE[0]")
+root_dir=/home/$USER
+cd $directory
+source ../scripts/utils
+if [ ! -f $root_dir/crucible/vcenter.env ]; then 
+  read -e -p "Enter the DNS name of your vcenter server [vcsa.example.com]: " VSPHERE_SERVER
+  VSPHERE_SERVER=${VSPHERE_SERVER:-vcsa.example.com}
+  read -e -p "Enter DNS servers (space delimited): " DNS_01 DNS_02
+  read -e -p "Enter the username for vCenter [administrator@vsphere.local]: " VSPHERE_USER
+  VSPHERE_USER=${VSPHERE_USER:-"administrator@vsphere.local"}
+  read -e -sp "Enter the password for vCenter:" $'\n' VSPHERE_PASS
+  VSPHERE_PASS=$(encrypt_string $VSPHERE_PASS)
+  read -e -p "Enter the vCenter datacenter: " VSPHERE_DATACENTER
+  read -e -p "Enter the vCenter cluster: " VSPHERE_CLUSTER
+  read -e -p "Enter the vCenter distributed switch [dvSwitch]: " VSPHERE_DV_SWITCH
+  VSPHERE_DV_SWITCH=${VSPHERE_DV_SWITCH:-dvswitch}
+  read -e -p "Enter the vCenter datastore [datastore1]: " VSPHERE_DATASTORE
+  VSPHERE_DATASTORE=${VSPHERE_DATASTORE:-datastore1}
+  read -e -p "Enter the vCenter ISO datastore [iso]: " VSPHERE_ISO_DATASTORE
+  VSPHERE_ISO_DATASTORE=${VSPHERE_ISO_DATASTORE:-iso}
+  read -e -p "Enter the vCenter default portgroup (Optional Caster Configuration): " VSPHERE_DEFAULT_PORTGROUP
+  read -e -p "Enter the vCenter ubuntu template (Optional Caster Configuration): " UBUNTU_TEMPLATE
+  # write environment file
+  cat > vcenter.env <<- EOF
+# This file was dynamically written from the setup-vcenter script
+[general]
+DOMAIN=foundry.local
+
+[vsphere]
+VSPHERE_SERVER=$VSPHERE_SERVER
+VSPHERE_USER=$VSPHERE_USER
+VSPHERE_PASS=$VSPHERE_PASS
+VSPHERE_DATACENTER=$VSPHERE_DATACENTER
+VSPHERE_CLUSTER=$VSPHERE_CLUSTER
+VSPHERE_DV_SWITCH=$VSPHERE_DV_SWITCH
+VSPHERE_DATASTORE=$VSPHERE_DATASTORE
+VSPHERE_ISO_DATASTORE=$VSPHERE_ISO_DATASTORE
+VSPHERE_DEFAULT_PORTGROUP=VSPHERE_DEFAULT_PORTGROUP
+#Must have a snapshot
+UBUNTU_TEMPLATE=$UBUNTU_TEMPLATE
+
+[network]
+DNS_01=$DNS_01
+DNS_02=$DNS_02
+EOF
+else
+  echo "vCenter variable file exists, using $root_dir/crucible/vcenter.env"
+fi
+import_vars $root_dir/crucible/vcenter.env
+# decrypt Password
+VSPHERE_PASS=$(decrypt_string $VSPHERE_PASS)
+replace_vars . '.*\.(json|conf|yaml|yml|sql)'
+replace foundry.local $domain $directory/$exports_path
+replace crucible.io $domain $directory/$exports_path
+
+helm delete alloy || true && sleep 5
+helm delete caster || true && sleep 5
+helm delete player || true && sleep 5
+helm delete steamfitter || true && sleep 5
+
+echo "sleeping for 20 seconds"
+sleep 20
+echo "forwarding port" 
+kubectl port-forward service/postgresql 5432:5432 > /dev/null 2>&1 &
+pid=$!
+
+trap '{
+  echo killing $pid
+  kill $pid
+}' EXIT
+while ! nc -vz localhost 5432 > /dev/null 2>&1 ; do
+  echo "waiting for port to become available "
+  sleep 1
+done
+
+files=$(find $exports_path -type f -iname "*.sql" | sed "s/.*\///; s/\.sql//")
+for file in $files; do
+  #kubectl exec postgresql-0 -- psql 'postgresql://postgres:foundry@localhost' -c "DROP DATABASE IF EXISTS $file;" || true
+  #kubectl exec postgresql-0 -- psql 'postgresql://postgres:foundry@localhost' -c "CREATE DATABASE $file;" || true
+  PGPASSWORD=foundry dropdb -h localhost -U postgres ${file}
+  PGPASSWORD=foundry createdb -h localhost -U postgres -T template0 ${file}
+  # PGPASSWORD=postgres psql -h localhost -U postgres < $exports_path/${file}.sql
+  cat $exports_path/${file}.sql | sed 's/LOCALE/LC_COLLATE/' | PGPASSWORD=foundry psql -h localhost -p 5432 -U postgres ${file}
+done
+
+helm upgrade --install -f player.values.yaml player ../charts/player
+sleep 5
+helm upgrade --install -f caster.values.yaml caster ../charts/caster
+sleep 5
+helm upgrade --install -f steamfitter.values.yaml steamfitter ../charts/steamfitter 
+sleep 5
+helm upgrade --install -f alloy.values.yaml alloy ../charts/alloy

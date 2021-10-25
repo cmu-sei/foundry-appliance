@@ -1,127 +1,320 @@
 caster-api:
   image:
-    tag: "2.1.1"
-  
+    repository: cmusei/caster-api
+    tag: '3.0.3'
+    pullPolicy: IfNotPresent
   ingress:
     enabled: true
     annotations:
-      kubernetes.io/ingress.class: nginx
+      kubernetes.io/ingress.class: public
       nginx.ingress.kubernetes.io/proxy-read-timeout: '86400'
       nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
       nginx.ingress.kubernetes.io/use-regex: "true"
     hosts:
-      - host: caster.crucible-dev.cmusei.dev
+      - host: foundry.local
         paths:
-        - /(api|swagger|hubs)
+          - path: /caster/(api|swagger|hubs)
+            pathType: Prefix
     tls:
-      - secretName: crucible-dev-wildcard-cert
+      - secretName: appliance-cert
         hosts:
-         - crucible-dev.cmusei.dev
+         - foundry.local
 
   # Gets placed in /etc/gitconfig to allow immediate Gitlab access via access token
   # Replace TOKEN with an access token created in Gitlab, and update the Gitlab URL
-  gitconfig: '[url "https://git-access-token:jgrR8jUdtWx2isMjyrHg@gitlab.crucible-dev.cmusei.dev/"]
-        insteadOf = https://gitlab.crucible-dev.cmusei.dev/'
+  gitconfig: '[url "https://git-access-token:wMa2RPQP_ZR3fxc5zQtv@gitlab-webservice:8080/"]
+        insteadOf = https://gitlab.foundry.local/'
+  
+  certificateMap: "appliance-root-ca"
 
   # storage - either an existing pvc, the size for a new pvc, or emptyDir
   storage:
-    existing: "appdata"
-    size: ""
+    existing: ""
+    size: "1G"
     mode: ReadWriteOnce
-    class: default
-
+    class: nfs
+  
+  identity:
+    register: true
+    identityMap: 'identity-identity-api'
+    initCommand: []
+    client: |-
+      [
+        {
+          "name": "caster-api",
+          "displayName": "Caster API",
+          "description": null,
+          "grants": "authorization_code client_credentials",
+          "scopes": "caster-api",
+          "enabled": true,
+          "requirePkce": true,
+          "allowAccessTokensViaBrowser": false,
+          "requireConsent": false,
+          "consentLifetime": "30d",
+          "alwaysIncludeUserClaimsInIdToken": false,
+          "identityTokenLifetime": "5m",
+          "accessTokenLifetime": "1h",
+          "authorizationCodeLifetime": "5m",
+          "allowOfflineAccess": false,
+          "updateAccessTokenClaimsOnRefresh": false,
+          "useOneTimeRefreshTokens": false,
+          "slidingRefreshTokenLifetime": "15d",
+          "absoluteRefreshTokenLifetime": "30d",
+          "published": false,
+          "url": "https://foundry.local/caster",
+          "logoUrl": null,
+          "frontChannelLogoutUrl": null,
+          "backChannelLogoutUrl": null,
+          "redirectUrls": [
+            { "value": "https://foundry.local/caster/api/oauth2-redirect.html" }
+          ],
+          "postLogoutUrls": [{ "value": "https://foundry.local/caster/api" }],
+          "corsUrls": [{ "value": "https://foundry.local" }],
+          "alwaysSendClientClaims": false,
+          "clientClaimsPrefix": "client_",
+          "claims": [],
+          "secrets": [],
+          "managers": []
+        },
+        {
+          "name": "caster-admin",
+          "displayName": "Caster Admin",
+          "description": null,
+          "grants": "password client_credentials",
+          "scopes": "player-api vm-api",
+          "enabled": true,
+          "requirePkce": true,
+          "allowAccessTokensViaBrowser": false,
+          "requireConsent": false,
+          "consentLifetime": "30d",
+          "alwaysIncludeUserClaimsInIdToken": false,
+          "identityTokenLifetime": "5m",
+          "accessTokenLifetime": "1h",
+          "authorizationCodeLifetime": "5m",
+          "allowOfflineAccess": false,
+          "updateAccessTokenClaimsOnRefresh": false,
+          "useOneTimeRefreshTokens": false,
+          "slidingRefreshTokenLifetime": "15d",
+          "absoluteRefreshTokenLifetime": "30d",
+          "published": false,
+          "url": "https://foundry.local/caster",
+          "logoUrl": null,
+          "frontChannelLogoutUrl": null,
+          "backChannelLogoutUrl": null,
+          "corsUrls": [{ "value": "https://foundry.local" }],
+          "alwaysSendClientClaims": false,
+          "clientClaimsPrefix": "client_",
+          "claims": [],
+          "secrets": [],
+          "managers": []
+        },
+        {
+          "name": "gitlab",
+          "displayName": "Gitlab",
+          "description": null,
+          "grants": "authorization_code client_credentials",
+          "scopes": "openid profile email",
+          "enabled": true,
+          "requirePkce": false,
+          "allowAccessTokensViaBrowser": true,
+          "requireConsent": false,
+          "consentLifetime": "30d",
+          "alwaysIncludeUserClaimsInIdToken": false,
+          "identityTokenLifetime": "5m",
+          "accessTokenLifetime": "1h",
+          "authorizationCodeLifetime": "5m",
+          "allowOfflineAccess": false,
+          "updateAccessTokenClaimsOnRefresh": false,
+          "useOneTimeRefreshTokens": false,
+          "slidingRefreshTokenLifetime": "15d",
+          "absoluteRefreshTokenLifetime": "30d",
+          "published": true,
+          "url": "https://gitlab.foundry.local",
+          "logoUrl": null,
+          "frontChannelLogoutUrl": null,
+          "backChannelLogoutUrl": null,
+          "redirectUrls": [
+            { "value": "https://gitlab.foundry.local/users/auth/identity/callback" }
+          ],
+          "postLogoutUrls": [{ "value": "https://gitlab.foundry.local" }],
+          "corsUrls": [{ "value": "https://gitlab.foundry.local" }],
+          "alwaysSendClientClaims": false,
+          "clientClaimsPrefix": "client_",
+          "claims": [],
+          "secrets": [
+            {
+              "value": "337bdcb1a23143a9b5a6aaa33c0e87d7"
+            }
+          ],
+          "managers": []
+        }
+      ]
+      
+    resource: |-
+      {
+        "type": "api",
+        "name": "caster-api",
+        "displayName": "Caster Api",
+        "enabled": true,
+        "default": true,
+        "required": false,
+        "emphasize": false,
+        "showInDiscoveryDocument": true
+      }
+    
   env:
+    PathBase: "/caster"
     # This deployment comes built in with a script to install Terraform and the necessary
     # plugins to run Caster properly.  Internet access is required for this script to run properly.
     # It's recommended that this should remain false.  Please see the file "terraform-installation.tpl"
     # for more information on the installation process.
+    
     SKIP_TERRAFORM_INSTALLATION: false
 
-    VSPHERE_SERVER: ""
-    VSPHERE_USER: ""
-    VSPHERE_PASSWORD: ""
+    VSPHERE_SERVER: "$VSPHERE_SERVER"
+    VSPHERE_USER: "$VSPHERE_USER"
+    VSPHERE_PASSWORD: "$VSPHERE_PASS"
     VSPHERE_ALLOW_UNVERIFIED_SSL: true
 
     # See here for more information regarding AllowedHosts
     # https://docs.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.hostfiltering.hostfilteringoptions.allowedhosts?view=aspnetcore-3.1
     AllowedHosts: "*"
+    Logging__LogLevel__Default: "debug"
+    CorsPolicy__Origins__0: "https://foundry.local"
+    CorsPolicy__Origins__1: "http://localhost:4303"
+    # CorsPolicy__AllowAnyOrigin: true
+    CorsPolicy__AllowAnyMethod: true
+    CorsPolicy__AllowAnyHeader: true
 
-    CorsPolicy__Origins__0: "https://caster.crucible-dev.cmusei.dev"
-
-    ConnectionStrings__PostgreSQL: "Server=postgres;Port=5432;Database=crucible_dev_caster_db;Username=crucible_dev_caster_dbo@1ncu5k8s;Password='qzzlJgmKx6ZF4qlO1QfYJ92B31w0sxkq';SSL Mode=Prefer;Trust Server Certificate=true;"
+    ConnectionStrings__PostgreSQL: "Server=postgresql;Port=5432;Database=caster_db;Username=postgres;Password='foundry';SSL Mode=Prefer;Trust Server Certificate=true;"
 
     # OAuth2 Identity Client for Application
-    Authorization__Authority: https://id.crucible-dev.cmusei.dev
-    Authorization__AuthorizationUrl: https://id.crucible-dev.cmusei.dev/connect/authorize
+    Authorization__Authority: https://foundry.local/identity
+    Authorization__AuthorizationUrl: https://foundry.local/identity/connect/authorize
+    Authorization__TokenUrl: https://foundry.local/identity/connect/token
     Authorization__AuthorizationScope: "caster-api"
     Authorization__ClientId: caster-api
 
     # OAuth2 Identity Client /w Password
-    Client__TokenUrl: https://id.crucible-dev.cmusei.dev/connect/token
+    Client__TokenUrl: https://foundry.local/identity/connect/token
     Client__ClientId: caster-admin
-    Client__UserName: "caster.admin.user@crucible-dev.cmusei.dev"
-    Client__Password: "321ChangeMe!"
+    Client__UserName: "crucible-admin@foundry.local"
+    Client__Password: "foundry"
     Client__Scope: "player-api vm-api"
 
     # Crucible Player URLs
-    Player__VmApiUrl: "https://vm.crucible-dev.cmusei.dev"
-    Player__VmConsoleUrl: "https://console.crucible-dev.cmusei.dev/vm/{id}/console"
+    Player__VmApiUrl: "https://foundry.local/vm"
+    Player__VmConsoleUrl: "https://foundry.local/console/vm/{id}/console"
 
     # Terraform Information
     # - DefaultVersion - The default version to be used.
     # - GitlabApiUrl - URL to the deployed Gitlab instance
+    Terraform__BinaryPath: /terraform/binaries
+    Terraform__RootWorkingDirectory: /terraform/root
     Terraform__DefaultVersion: "0.14.0"
-    Terraform__GitlabApiUrl: "https://gitlab.crucible-dev.cmusei.dev/api/v4/"
+    Terraform__GitlabApiUrl: "http://gitlab-webservice:8080/api/v4/"
+    # Gitlab token and group ID are dynamically updated with setup-gitlab script.
     Terraform__GitlabToken: "wMa2RPQP_ZR3fxc5zQtv"
-    Terraform__GitlabGroupId: 6
+    Terraform__GitlabGroupId: "2"
 
     # Configurable save lengths for Caster untagged versions
     FileVersions__DaysToSaveAllUntaggedVersions: 7
     FileVersions__DaysToSaveDailyUntaggedVersions: 31
 
     # Basic seed data to jumpstart deployement
-    SeedData__Users__0__id: "9fd3c38e-58b0-4af1-80d1-1895af91f1f9"
-    SeedData__Users__0__name:  "admin@crucible-dev.cmusei.dev"
+    SeedData__Users__0__id: "dee684c5-2eaf-401a-915b-d3d4320fe5d5"
+    SeedData__Users__0__name:  "administrator@foundry.local"
 
-    SeedData__Users__1__id:  "c4c631ca-3dbd-4d99-9c19-a8c3f7e5e493"
-    SeedData__Users__1__name:  "caster.admin.user@crucible-dev.cmusei.dev"
-
-    SeedData__UserPermissions__0__UserId:  "c4c631ca-3dbd-4d99-9c19-a8c3f7e5e493"
+    SeedData__Users__1__id:  "3b680d97-6d0b-44c9-8cc7-fd10ea79c2a6"
+    SeedData__Users__1__name:  "crucible-admin@foundry.local"
+    SeedData__UserPermissions__0__UserId:  "dee684c5-2eaf-401a-915b-d3d4320fe5d5"
     SeedData__UserPermissions__0__PermissionId:  "00000000-0000-0000-0000-000000000001"
-    SeedData__UserPermissions__1__UserId:  "9fd3c38e-58b0-4af1-80d1-1895af91f1f9"
+    SeedData__UserPermissions__1__UserId:  "3b680d97-6d0b-44c9-8cc7-fd10ea79c2a6"
     SeedData__UserPermissions__1__PermissionId:  "00000000-0000-0000-0000-000000000001"
-
 
 caster-ui:
   image:
-    tag: "2.2.1"
-
+    repository: cmusei/caster-ui
+    tag: '3.0.5'
+    pullPolicy: IfNotPresent
+    
   ingress:
     enabled: true
     annotations:
-      kubernetes.io/ingress.class: nginx
+      kubernetes.io/ingress.class: public
+      nginx.ingress.kubernetes.io/proxy-read-timeout: '86400'
+      nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
+      nginx.ingress.kubernetes.io/use-regex: "true"
     hosts:
-      - host: caster.crucible-dev.cmusei.dev
+      - host: foundry.local
         paths:
-        - /
+          - path: "/caster(/|$)(.*)"
+            pathType: Prefix
     tls:
-      - secretName: crucible-dev-wildcard-cert
+      - secretName: appliance-cert
         hosts:
-         - crucible-dev.cmusei.dev
+         - foundry.local
+  identity:
+    register: true
+    identityMap: 'identity-identity-api'
+    initCommand: []
+    client: |-
+      {
+        "name": "caster-ui",
+        "displayName": "Caster UI",
+        "description": null,
+        "grants": "authorization_code client_credentials",
+        "scopes": "openid profile email caster-api",
+        "enabled": true,
+        "requirePkce": true,
+        "allowAccessTokensViaBrowser": true,
+        "requireConsent": false,
+        "consentLifetime": "30d",
+        "alwaysIncludeUserClaimsInIdToken": false,
+        "identityTokenLifetime": "5m",
+        "accessTokenLifetime": "1h",
+        "authorizationCodeLifetime": "5m",
+        "allowOfflineAccess": false,
+        "updateAccessTokenClaimsOnRefresh": false,
+        "useOneTimeRefreshTokens": false,
+        "slidingRefreshTokenLifetime": "15d",
+        "absoluteRefreshTokenLifetime": "30d",
+        "published": true,
+        "url": "https://foundry.local/caster",
+        "logoUrl": null,
+        "frontChannelLogoutUrl": null,
+        "backChannelLogoutUrl": null,
+        "redirectUrls": [
+          { "value": "https://foundry.local/caster/auth-callback" },
+          { "value": "https://foundry.local/caster/auth-callback-silent" }
+        ],
+        "postLogoutUrls": [{ "value": "https://foundry.local/caster/api" }],
+        "corsUrls": [{ "value": "https://foundry.local" }],
+        "alwaysSendClientClaims": false,
+        "clientClaimsPrefix": "client_",
+        "claims": [],
+        "secrets": [],
+        "managers": []
+      }
+
+  env: 
+    ## basehref is path to the app
+    APP_BASEHREF: "/caster"
 
   # Config app settings with a JSON file.
   # These values correspond to an OpenID connect client
-  settings: '{
-    "ApiUrl": "https://caster.crucible-dev.cmusei.dev",
-    "OIDCSettings": {
-      "authority": "https://id.crucible-dev.cmusei.dev/",
-      "client_id": "caster-ui",
-      "redirect_uri": "https://caster.crucible-dev.cmusei.dev/auth-callback",
-      "post_logout_redirect_uri": "https://caster.crucible-dev.cmusei.dev",
-      "response_type": "id_token token",
-      "scope": "openid profile email caster-api",
-      "automaticSilentRenew": true,
-      "silent_redirect_uri": "https://caster.crucible-dev.cmusei.dev/auth-callback-silent"
-    },
-    "UseLocalAuthStorage": true
-  }'
+  settings: |-
+    {
+      "ApiUrl": "https://foundry.local/caster",
+      "OIDCSettings": {
+        "authority": "https://foundry.local/identity/",
+        "client_id": "caster-ui",
+        "redirect_uri": "https://foundry.local/caster/auth-callback",
+        "post_logout_redirect_uri": "https://foundry.local/caster",
+        "response_type": "code",
+        "scope": "openid profile email caster-api",
+        "automaticSilentRenew": true,
+        "silent_redirect_uri": "https://foundry.local/caster/auth-callback-silent"
+      },
+      "UseLocalAuthStorage": true
+    }

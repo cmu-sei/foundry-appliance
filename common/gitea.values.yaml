@@ -1,0 +1,188 @@
+# Default values for gitea.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+clusterDomain: cluster.local
+
+image:
+  repository: gitea/gitea
+  tag: 1.15.10
+  pullPolicy: Always
+
+imagePullSecrets: []
+
+service:
+  http:
+    type: ClusterIP
+    port: 3000
+  ssh:
+    type: ClusterIP
+    port: 22
+    #loadBalancerIP:
+    #nodePort:
+    #externalTrafficPolicy:
+    #externalIPs:
+    annotations:
+
+ingress:
+  enabled: true
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: foundry.local
+      paths:
+        - path: "/gitea(/|$)(.*)"
+          pathType: Prefix
+  tls:
+    - secretName: appliance-cert
+      hosts:
+        - foundry.local
+
+resources:
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 200m
+  #   memory: 256Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+statefulset:
+  env: []
+    # - name: VARIABLE
+    #   value: my-value
+  terminationGracePeriodSeconds: 60
+
+persistence:
+  enabled: true
+  # existingClaim:
+  size: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  storageClass: local-path
+
+gitea:
+  admin:
+    username: administrator
+    password: foundry
+    email: "administrator@foundry.local"
+
+  ldap: []
+    # - name: "LDAP 1"
+    #  existingSecret:
+    #  securityProtocol:
+    #  host:
+    #  port:
+    #  userSearchBase:
+    #  userFilter:
+    #  adminFilter:
+    #  emailAttribute:
+    #  bindDn:
+    #  bindPassword:
+    #  usernameAttribute:
+    #  publicSSHKeyAttribute:
+
+  config:
+    APP_NAME: Foundry Gitea
+    server:
+      DOMAIN: https://foundry.local/gitea/
+      ROOT_URL: https://foundry.local/gitea/
+    database:
+      DB_TYPE: postgres
+      HOST: postgresql:5432
+      NAME: gitea
+      USER: postgres
+      PASSWD: foundry
+      SCHEMA: public
+    security:
+      PASSWORD_COMPLEXITY: "off"
+    repository:
+      DEFAULT_BRANCH: main
+
+  podAnnotations: {}
+
+  # Modify the liveness probe for your needs or completely disable it by commenting out.
+  livenessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 200
+    timeoutSeconds: 1
+    periodSeconds: 10
+    successThreshold: 1
+    failureThreshold: 10
+
+  # Modify the readiness probe for your needs or completely disable it by commenting out.
+  readinessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 5
+    timeoutSeconds: 1
+    periodSeconds: 10
+    successThreshold: 1
+    failureThreshold: 3
+
+  # # Uncomment the startup probe to enable and modify it for your needs.
+  # startupProbe:
+  #   tcpSocket:
+  #     port: http
+  #   initialDelaySeconds: 60
+  #   timeoutSeconds: 1
+  #   periodSeconds: 10
+  #   successThreshold: 1
+  #   failureThreshold: 10
+
+memcached:
+  enabled: true
+  service:
+    port: 11211
+
+postgresql:
+  enabled: false
+  global:
+    postgresql:
+      postgresqlDatabase: gitea
+      postgresqlUsername: gitea
+      postgresqlPassword: gitea
+      servicePort: 5432
+  persistence:
+    size: 1Gi
+
+mysql:
+  enabled: false
+  root:
+    password: gitea
+  db:
+    user: gitea
+    password: gitea
+    name: gitea
+  service:
+    port: 3306
+  persistence:
+    size: 10Gi
+
+mariadb:
+  enabled: false
+  auth:
+    database: gitea
+    username: gitea
+    password: gitea
+    rootPassword: gitea
+  primary:
+    service:
+      port: 3306
+    persistence:
+      size: 10Gi
+
+checkDeprecation: true

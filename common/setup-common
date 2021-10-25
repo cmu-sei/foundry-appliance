@@ -12,7 +12,13 @@
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
 # Forward coredns to host dnsmasq
+appliance_ip=$(ip route get 1 | awk '{print $(NF-2);exit}')
+export appliance_ip=$(ip route get 1 | awk '{print $(NF-2);exit}')
+export dns_server=$(nslookup example.tld | awk '/Server:/{print $(NF)}')
+#export dns_server=10.0.1.1
+envsubst < coredns-configmap.yaml | kubectl apply -n kube-system -f -
 kubectl get configmap/coredns -n kube-system -o yaml | sed "s/8.8.8.8 8.8.4.4/10.0.1.1/" | kubectl replace -f -
+
 kubectl rollout restart deployment/coredns -n kube-system
 
 # Disable HSTS
@@ -21,83 +27,49 @@ kubectl patch configmap nginx-load-balancer-microk8s-conf \
                         --namespace ingress
 
 # Add host certificate
-kubectl create secret tls appliance-cert --key certs/host-key.pem --cert <( cat certs/host.pem certs/int-ca.pem )
+kubectl create secret tls appliance-cert --key certs/host-key.pem --cert <( cat certs/host.pem certs/int-ca.pem ) --dry-run=client -o yaml | kubectl apply -f -
 
-# Install PostgreSQL and pgAdmin4
+# Add root ca
+kubectl create secret generic appliance-root-ca --from-file=appliance-root-ca=certs/root-ca.pem --dry-run=client -o yaml | kubectl apply -f -
+kubectl create configmap appliance-root-ca --from-file=root-ca.crt=certs/root-ca.pem --dry-run=client -o yaml | kubectl apply -f -
+
+# Add helm repos and update
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo add runix https://helm.runix.net/
-helm install -f postgresql.values.yaml postgresql bitnami/postgresql
+helm repo add nicholaswilde https://nicholaswilde.github.io/helm-charts/
+helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
+helm repo add gitea https://dl.gitea.io/charts/
+helm repo add kvaps https://kvaps.github.io/charts
+helm repo add sei https://helm.cyberforce.site/charts
+helm repo update
+
+# Install PostgreSQL and pgAdmin4
+helm upgrade --install --version 11.0.2 -f postgresql.values.yaml postgresql bitnami/postgresql
 #helm install -f pgadmin4.values.yaml pgadmin4 runix/pgadmin4
 
 # Install code-server (browser-based VS Code)
-helm repo add nicholaswilde https://nicholaswilde.github.io/helm-charts/
-helm install -f code-server.values.yaml code-server nicholaswilde/code-server
+helm upgrade --install --version 1.1.1 -f code-server.values.yaml code-server nicholaswilde/code-server
 
 # Kubernetes Dashboard
-helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
-helm install -f kubernetes-dashboard.values.yaml kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard
+helm upgrade --install --version 5.1.3 -f kubernetes-dashboard.values.yaml kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard
 
 # Add root CA to chart values
-ed -s staticweb.values.yaml <<< $'/cacert:/s/\"\"/|-/\n/cacert:/r !sed "s/^/  /" certs/root-ca.pem\nw'
-ed -s gameboard.values.yaml <<< $'/cacert:/s/\"\"/|-/\n/cacert:/r !sed "s/^/    /" certs/root-ca.pem\nw'
-ed -s topomojo.values.yaml <<< $'/cacert.crt:/s/\"\"/|-/\n/cacert.crt:/r !sed "s/^/        /" certs/root-ca.pem\nw'
+ed -s staticweb.values.yaml <<< $'/cacert:/s/\"\"/|-/\n/cacert:/r !sed "s/^/  /" certs/root-ca.pem\nw' || true
 cp certs/root-ca.pem web/root-ca.crt
 
 # Install Gitea
-helm repo add gitea https://dl.gitea.io/charts/
-helm install -f gitea.values.yaml gitea gitea/gitea
+helm upgrade --install --version 5.0.1 -f gitea.values.yaml gitea gitea/gitea
 timeout 5m bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' https://foundry.local/gitea)" != "200" ]]; do sleep 5; done' || false
 ./setup-gitea
 
 # Install NFS server
-helm repo add kvaps https://kvaps.github.io/charts
-helm install -f nfs-server-provisioner.values.yaml nfs-server-provisioner kvaps/nfs-server-provisioner
+helm upgrade --install --version 1.4.0 -f nfs-server-provisioner.values.yaml nfs-server-provisioner kvaps/nfs-server-provisioner
 kubectl patch daemonset nginx-ingress-microk8s-controller -n ingress --type 'json' --patch \
-  '[{"op": "add", "path": "/spec/template/spec/containers/0/ports/-", "value": {"name":"nfs-tcp","hostPort":2049,"containerPort":2049,"protocol":"TCP"}}]'
+  '[{"op": "add", "path": "/spec/template/spec/containers/0/ports/-", "value": {"name":"nfs-tcp","hostPort":2049,"containerPort":2049,"protocol":"TCP"}}]' || true
 kubectl patch daemonset nginx-ingress-microk8s-controller -n ingress --type 'json' --patch \
-  '[{"op": "add", "path": "/spec/template/spec/containers/0/ports/-", "value": {"name":"nfs-udp","hostPort":2049,"containerPort":2049,"protocol":"UDP"}}]'
-kubectl apply -f nfs-ingress.yaml
-kubectl apply -f topomojo-pvc.yaml
+  '[{"op": "add", "path": "/spec/template/spec/containers/0/ports/-", "value": {"name":"nfs-udp","hostPort":2049,"containerPort":2049,"protocol":"UDP"}}]' || true
+kubectl apply -f nfs-ingress.yaml --dry-run=client -o yaml | kubectl apply -f -
 
-# Foundry Stack install
-helm repo add sei https://helm.cyberforce.site/charts
-helm install -f identity.values.yaml identity sei/identity
-helm install -f staticweb.values.yaml staticweb sei/staticweb
-helm install --wait -f topomojo.values.yaml topomojo sei/topomojo
-sleep 60
-
-# Add bot user to TopoMojo
-TOPOMOJO_ACCESS_TOKEN=$(curl --silent --request POST \
-  --url 'https://foundry.local/identity/connect/token' \
-  --data grant_type=password \
-  --data client_id=bootstrap-client \
-  --data client_secret=foundry \
-  --data username=administrator@foundry.local \
-  --data password=foundry | jq -r '.access_token')
-
-USER_ID=$(curl -X POST --silent \
-  --url "https://foundry.local/topomojo/api/user" \
-  -H "Authorization: Bearer $TOPOMOJO_ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{ "name": "bot-gameboard", "role": "user", "scope": "gameboard" }' | jq -r '.id')
-
-API_KEY=$(curl -X POST --silent \
-  --url "https://foundry.local/topomojo/api/apikey/$USER_ID" \
-  -H "Authorization: Bearer $TOPOMOJO_ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{}" | jq -r '.value')
-
-sed -i -r "s/(Core__GameEngineClientSecret:).*/\1 $API_KEY/" gameboard.values.yaml 
-
-helm install --wait -f gameboard.values.yaml gameboard sei/gametracker
-kubectl apply -f console-ingress.yaml
-
-# Add administrator user to Gameboard
-timeout 5m bash -c 'until kubectl exec postgresql-postgresql-0 -- env PGPASSWORD=foundry psql -lqt -U postgres | cut -d \| -f 1 | grep -qw gameboard; do sleep 5; done' || false
-sleep 5
-kubectl exec postgresql-postgresql-0 -- psql 'postgresql://postgres:foundry@localhost/gameboard' -c "INSERT INTO \"Users\" (\"Id\",\"Name\",\"ApprovedName\",\"Role\") VALUES ('dee684c5-2eaf-401a-915b-d3d4320fe5d5', 'Administrator', 'Administrator', 63);"
-
-# Create git repo to track changes
-git init
-git add *
-git commit -m "Initial commit"
+# Install Common foundry apps
+helm upgrade --install --wait -f identity.values.yaml identity ../charts/identity
+helm upgrade --install --version 0.2.0 -f staticweb.values.yaml staticweb sei/staticweb

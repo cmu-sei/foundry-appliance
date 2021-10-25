@@ -1,0 +1,34 @@
+image:
+  registry: docker.io
+  repository: bitnami/mongodb
+  tag: 4.4.10-debian-10-r44
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+  debug: false
+
+auth:
+  enabled: true
+  rootUser: mongo
+  rootPassword: "foundry"
+  usernames:
+    - st2
+  passwords:
+    - foundry
+  databases:
+    - st2
+  
+service:
+  nameOverride: "mongodb"
+  type: ClusterIP
+  port: 27017
+  portName: mongodb
+
+persistence:
+  enabled: true
+  storageClass: "microk8s-hostpath"
+  accessModes:
+    - ReadWriteOnce
+  size: 8Gi
+  annotations: {}
+  mountPath: /bitnami/mongodb
+  
