@@ -1,0 +1,10 @@
+#!/bin/bash
+# Must be run as sudo
+#[ `whoami` = root ] || { sudo "$0" "$@"; exit $?; }
+DIRECTORY=$(dirname "$BASH_SOURCE[0]")
+cd $DIRECTORY
+source ../scripts/utils 
+helm delete gitlab || true
+echo "sleeping for 60 seconds"
+sleep 60
+kubectl exec postgresql-0 -- psql 'postgresql://postgres:foundry@localhost' -c "DROP DATABASE IF EXISTS gitlab_db;" || true

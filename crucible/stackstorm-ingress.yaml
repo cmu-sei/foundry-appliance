@@ -1,0 +1,33 @@
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: stackstorm-st2web-ingress
+  labels:
+    app: ingress
+    tier: frontend
+    vendor: stackstorm
+  annotations:
+    ingress.kubernetes.io/secure-backends: "true"
+    kubernetes.io/ingress.class: public
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/proxy-read-timeout: '86400'
+    nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
+    nginx.ingress.kubernetes.io/use-regex: 'true'
+spec:
+  rules:
+  - host: foundry.local
+    http:
+      paths:
+        - path: "/stackstorm/(.*)"
+          pathType: Prefix
+          backend:
+            service:
+              name: stackstorm-st2web
+              port:
+                number: 80
+  tls:
+    - secretName: appliance-cert
+      hosts:
+        - foundry.local

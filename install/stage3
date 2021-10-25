@@ -8,7 +8,7 @@
 #
 
 # Add newly generated CA certificate to trusted roots
-cp ~/foundry/certs/root-ca.pem /usr/local/share/ca-certificates/foundry-appliance-root-ca.crt
+cp ~/common/certs/root-ca.pem /usr/local/share/ca-certificates/foundry-appliance-root-ca.crt
 update-ca-certificates
 
 # Restart mDNS daemon to avoid conflict with other hosts

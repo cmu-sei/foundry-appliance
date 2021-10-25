@@ -65,7 +65,7 @@
             </p>
           </li>
         </ol>
-
+        <!-- FOUNDRY -->
         <h4>Foundry Apps</h4>
         <p>The following Foundry applications are loaded on this appliance:</p>
         <table class="table table-dark">
@@ -95,6 +95,41 @@
             </tr>
           </tbody>
         </table>
+        <!-- CRUCIBLE -->
+        <h4>Crucible Apps</h4>
+        <p>The following Crucible applications are loaded on this appliance:</p>
+        <table class="table table-dark">
+          <thead>
+            <tr>
+              <th scope="col">location</th>
+              <th scope="col">api</th>
+              <th scope="col">description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><a href="/alloy">/alloy</a></td>
+              <td><a href="/alloy/api">api</a></td>
+              <td><em>Alloy</em> Alloy joins the other independent Crucible apps together to provide a complete Crucible experience (i.e. labs, on-demand exercises, exercises, etc.).</td>
+            </tr>
+            <tr>
+              <td><a href="/caster">/caster</a></td>
+              <td><a href="/caster/api/">api</a></td>
+              <td><em>Caster</em> Caster is the primary deployment component of the Crucible framework. Caster is built upon Terraform, an open source "Infrastructure as Code" tool.</td>
+            </tr>
+            <tr>
+              <td><a href="/player">/player</a></td>
+              <td><a href="/player/api/">api</a></td>
+              <td><em>Player</em> Player is the centralized interface where users, teams, and administrators go to participate in the cyber exercise.</td>
+            </tr>
+            <tr>
+              <td><a href="/steamfitter">/caster</a></td>
+              <td><a href="/steamfitter/api/">api</a></td>
+              <td><em>Steamfitter</em> Steamfitter gives exercise developers the ability to create scenarios consisting of a series of scheduled tasks, manual tasks, and injects which run against virtual machines in an exercise.</td>
+            </tr>
+          </tbody>
+        </table>
+
 
         <h4>Third-Party Apps</h4>
         <p>The following third-party applications are loaded on this appliance:</p>
@@ -117,14 +152,26 @@
                 web content on the appliance (including this page).</td>
             </tr>
             <tr>
+              <td><a href="https://gitlab.foundry.local">gitlab</a></td>
+              <td><em>Gitlab</em> git repository for Caster modules.</td>
+            </tr>
+            <tr>
               <td><a href="/vscode">/vscode</a></td>
               <td><em>code-server</em> runs a browser version of
                 <a href="https://code.visualstudio.com/">Visual Studio Code</a>
                 to configure the appliance.
               </td>
             </tr>
+            <tr>
+              <td><a href="/stackstorm">/stackstorm</a></td>
+              <td><em>stackstorm</em> Steamfitter task execution
+              </td>
+            </tr>
           </tbody>
         </table>
+        <h4>VMWWare vCenter</h4>
+        Run <code>~/crucible/setup-vcnter</code> You will be asked a series of questions about your infrastructure.
+        
 
         <h4>ESXi Hypervisor</h4>
         <p>TopoMojo requires a VMware ESXi hypervisor to deploy lab virtual machines. For testing, the easiest way

@@ -41,5 +41,5 @@ EOF
 
 git -C web init
 git -C web add -A
-git -C web commit -m "Initial commit"
+git -C web commit -m "Initial commit" || true
 git -C web push -u https://administrator:foundry@foundry.local/gitea/foundry/web.git --all

@@ -110,7 +110,7 @@ gameboard-api:
     OpenApi__Client__ClientId: gameboard-swagger
     Core__GameEngineUrl: https://foundry.local/topomojo/
     Core__GameEngineClientName: bot-gameboard
-    Core__GameEngineClientSecret: ""
+    Core__GameEngineClientSecret: ''
     # Logging__Console__DisableColors: false
     # Logging__LogLevel__Default: Information
     # Headers__LogHeaders: false

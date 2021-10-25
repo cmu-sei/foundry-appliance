@@ -1,0 +1,110 @@
+#!/bin/bash -e
+# 
+# Copyright 2021 Carnegie Mellon University.
+# Released under a BSD (SEI)-style license, please see LICENSE.md in the
+# project root or contact permission@sei.cmu.edu for full terms.
+
+# check for a variables file
+# Change to the current directory
+directory="${BASH_SOURCE%/*}"
+root_dir=/home/$USER
+echo "Current Directory $PWD"
+echo "Script running from $directory"
+cd $directory
+source ../scripts/utils
+echo "Checking if variables file exists $root_dir/crucible/vcenter.env"
+if [ ! -f $root_dir/crucible/vcenter.env ]; then 
+  read -e -p "Enter the DNS name of your vcenter server [vcsa.example.com]: " VSPHERE_SERVER
+  VSPHERE_SERVER=${VSPHERE_SERVER:-vcsa.example.com}
+  read -e -p "Enter DNS servers (space delimited): " DNS_01 DNS_02
+  read -e -p "Enter the username for vCenter [administrator@vsphere.local]: " VSPHERE_USER
+  VSPHERE_USER=${VSPHERE_USER:-"administrator@vsphere.local"}
+  read -e -sp "Enter the password for vCenter: " VSPHERE_PASS
+  VSPHERE_PASS=$(encrypt_string $VSPHERE_PASS)
+  read -e -p "Enter the vCenter datacenter: " VSPHERE_DATACENTER
+  read -e -p "Enter the vCenter cluster: " VSPHERE_CLUSTER
+  read -e -p "Enter the vCenter distributed switch [dvSwitch]: " VSPHERE_DV_SWITCH
+  VSPHERE_DV_SWITCH=${VSPHERE_DV_SWITCH:-dvSwitch}
+  read -e -p "Enter the vCenter datastore [datastore1]: " VSPHERE_DATASTORE
+  VSPHERE_DATASTORE=${VSPHERE_DATASTORE:-datastore1}
+  read -e -p "Enter the vCenter ISO datastore [iso]: " VSPHERE_ISO_DATASTORE
+  VSPHERE_ISO_DATASTORE=${VSPHERE_ISO_DATASTORE:-iso}
+  read -e -p "Enter the vCenter default portgroup (Optional Caster Configuration): " VSPHERE_DEFAULT_PORTGROUP
+  read -e -p "Enter the vCenter ubuntu template (Optional Caster Configuration): " UBUNTU_TEMPLATE
+  # write environment file
+  cat > vcenter.env <<- EOF
+# This file was dynamically written from the setup-vcenter script
+[general]
+DOMAIN=foundry.local
+
+[vsphere]
+VSPHERE_SERVER=$VSPHERE_SERVER
+VSPHERE_USER=$VSPHERE_USER
+VSPHERE_PASS=$VSPHERE_PASS
+VSPHERE_DATACENTER=$VSPHERE_DATACENTER
+VSPHERE_CLUSTER=$VSPHERE_CLUSTER
+VSPHERE_DV_SWITCH=$VSPHERE_DV_SWITCH
+VSPHERE_DATASTORE=$VSPHERE_DATASTORE
+VSPHERE_ISO_DATASTORE=$VSPHERE_ISO_DATASTORE
+VSPHERE_DEFAULT_PORTGROUP=$VSPHERE_DEFAULT_PORTGROUP
+#Must have a snapshot
+UBUNTU_TEMPLATE=$UBUNTU_TEMPLATE
+
+[network]
+DNS_01=$DNS_01
+DNS_02=$DNS_02
+EOF
+else
+  echo "vCenter variable file exists, using $root_dir/vcenter.env"
+fi
+import_vars $root_dir/crucible/vcenter.env
+# decrypt Password
+VSPHERE_PASS=$(decrypt_string $VSPHERE_PASS)
+export appliance_ip=$(ip route get 1 | awk '{print $(NF-2);exit}')
+export dns_server=${DNS_01:-8.8.8.8}
+
+replace_vars . '.*\.(json|conf|yaml|yml|sql)'
+chmod +x $root_dir/crucible/setup-gitlab
+chmod +x $root_dir/crucible/import-content
+
+# Update DNS
+echo "foundry" | sudo -S rm -rf /etc/resolv.conf
+echo "foundry" | sudo -S touch /etc/resolv.conf
+echo "foundry" | sudo -S chmod a+w /etc/resolv.conf
+echo "foundry" | sudo -S echo "nameserver $DNS_01 $DNS_02" > /etc/resolv.conf
+echo "foundry" | sudo -S systemctl restart dnsmasq
+envsubst < ~/common/coredns-configmap.yaml | kubectl apply -n kube-system -f -
+kubectl rollout restart deployment/coredns -n kube-system
+
+# Download vCenter root CA
+echo "Downloading vCenter root certificate from $VSPHERE_SERVER"
+download_vsphere_cert $VSPHERE_SERVER 443 /home/$USER/common/certs/vsphere.pem
+echo "foundry" | sudo -S cp $root_dir/common/certs/vsphere.pem /usr/local/share/ca-certificates/vsphere.crt
+echo "foundry" | sudo -S update-ca-certificates
+
+# Update certificates configmap
+cd $root_dir/common/
+kubectl create configmap appliance-root-ca --from-file=root-ca.crt=certs/root-ca.pem --from-file=vsphere-ca.crt=certs/vsphere.pem --dry-run=client -o yaml | kubectl apply -f -
+cd $root_dir/crucible
+
+# get MOID for steamfitter
+echo "Attempting to get vsphere cluster"
+MOID=$(pwsh -c 'Connect-VIServer -server $env:VSPHERE_SERVER -user $env:VSPHERE_USER -password $env:VSPHERE_PASS | Out-Null; Get-Cluster -Name $env:VSPHERE_CLUSTER | select id | %{$arr = $_.id.split("-"); write-host ($arr[1..($arr.length)] -join "-")}')
+echo "${MOID}"
+if [[ -n ${MOID} ]]; then
+  sed -i "s/ VmTaskProcessing__ApiParameters__clusters:.*/ VmTaskProcessing__ApiParameters__clusters: ${MOID}/" "steamfitter.values.yaml"
+  echo "vsphere cluster set"
+fi
+
+# Redeploy crucible 
+helm delete alloy || true && sleep 5
+helm delete caster || true && sleep 5
+helm delete player || true && sleep 5
+helm delete steamfitter || true && sleep 5
+helm upgrade --install -f player.values.yaml player ../charts/player
+sleep 5
+helm upgrade --install -f caster.values.yaml caster ../charts/caster
+sleep 5
+helm upgrade --install -f steamfitter.values.yaml steamfitter ../charts/steamfitter 
+sleep 5
+helm upgrade --install -f alloy.values.yaml alloy ../charts/alloy

@@ -17,4 +17,4 @@ microk8s config -l > ~/.kube/config
 chmod 600 ~/.kube/config
 
 # Generate CA and host certificates
-~/foundry/certs/generate-certs.sh
+~/common/certs/generate-certs.sh

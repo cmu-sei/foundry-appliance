@@ -11,58 +11,14 @@
 # Change to the current directory
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-# Forward coredns to host dnsmasq
-kubectl get configmap/coredns -n kube-system -o yaml | sed "s/8.8.8.8 8.8.4.4/10.0.1.1/" | kubectl replace -f -
-kubectl rollout restart deployment/coredns -n kube-system
 
-# Disable HSTS
-kubectl patch configmap nginx-load-balancer-microk8s-conf \
-                        --patch "$(cat ingress-hsts-disable.yaml)" \
-                        --namespace ingress
-
-# Add host certificate
-kubectl create secret tls appliance-cert --key certs/host-key.pem --cert <( cat certs/host.pem certs/int-ca.pem )
-
-# Install PostgreSQL and pgAdmin4
-helm repo add bitnami https://charts.bitnami.com/bitnami
-helm repo add runix https://helm.runix.net/
-helm install -f postgresql.values.yaml postgresql bitnami/postgresql
-#helm install -f pgadmin4.values.yaml pgadmin4 runix/pgadmin4
-
-# Install code-server (browser-based VS Code)
-helm repo add nicholaswilde https://nicholaswilde.github.io/helm-charts/
-helm install -f code-server.values.yaml code-server nicholaswilde/code-server
-
-# Kubernetes Dashboard
-helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
-helm install -f kubernetes-dashboard.values.yaml kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard
 
 # Add root CA to chart values
-ed -s staticweb.values.yaml <<< $'/cacert:/s/\"\"/|-/\n/cacert:/r !sed "s/^/  /" certs/root-ca.pem\nw'
-ed -s gameboard.values.yaml <<< $'/cacert:/s/\"\"/|-/\n/cacert:/r !sed "s/^/    /" certs/root-ca.pem\nw'
-ed -s topomojo.values.yaml <<< $'/cacert.crt:/s/\"\"/|-/\n/cacert.crt:/r !sed "s/^/        /" certs/root-ca.pem\nw'
-cp certs/root-ca.pem web/root-ca.crt
-
-# Install Gitea
-helm repo add gitea https://dl.gitea.io/charts/
-helm install -f gitea.values.yaml gitea gitea/gitea
-timeout 5m bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' https://foundry.local/gitea)" != "200" ]]; do sleep 5; done' || false
-./setup-gitea
-
-# Install NFS server
-helm repo add kvaps https://kvaps.github.io/charts
-helm install -f nfs-server-provisioner.values.yaml nfs-server-provisioner kvaps/nfs-server-provisioner
-kubectl patch daemonset nginx-ingress-microk8s-controller -n ingress --type 'json' --patch \
-  '[{"op": "add", "path": "/spec/template/spec/containers/0/ports/-", "value": {"name":"nfs-tcp","hostPort":2049,"containerPort":2049,"protocol":"TCP"}}]'
-kubectl patch daemonset nginx-ingress-microk8s-controller -n ingress --type 'json' --patch \
-  '[{"op": "add", "path": "/spec/template/spec/containers/0/ports/-", "value": {"name":"nfs-udp","hostPort":2049,"containerPort":2049,"protocol":"UDP"}}]'
-kubectl apply -f nfs-ingress.yaml
-kubectl apply -f topomojo-pvc.yaml
+ed -s gameboard.values.yaml <<< $'/cacert:/s/\"\"/|-/\n/cacert:/r !sed "s/^/    /" ../common/certs/root-ca.pem\nw'
+ed -s topomojo.values.yaml <<< $'/cacert.crt:/s/\"\"/|-/\n/cacert.crt:/r !sed "s/^/        /" ../common/certs/root-ca.pem\nw'
 
 # Foundry Stack install
-helm repo add sei https://helm.cyberforce.site/charts
-helm install -f identity.values.yaml identity sei/identity
-helm install -f staticweb.values.yaml staticweb sei/staticweb
+kubectl apply -f topomojo-pvc.yaml --dry-run=client -o yaml | kubectl apply -f -
 helm install --wait -f topomojo.values.yaml topomojo sei/topomojo
 sleep 60
 

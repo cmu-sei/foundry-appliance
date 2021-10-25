@@ -1,0 +1,268 @@
+#!/bin/bash
+
+# kex_q is a modified version of k-alias's 'kex' command, that allows you to add a quoted argument.
+# Many applications need quoted arguments to work. This function was inspired by gitlab-rails runner
+# single line commands but could be useful for 'jq' and others. It's designed to allow positional and 
+# flag arguments to be used in any order however the quoted argument will always be last. 
+#
+# TODO:
+# Allow multiple -q flags
+# When mixed arguments are present retain -q position. 
+function kex_q() {
+  usage() { echo "kex_q: pod [shell <sh|bash>] commands [-q <string>]" 1>&2; exit; }
+  command=""
+  declare -a ARGS=()
+  
+  if [ -z "$1" ]; then
+    kubectl get pod
+    exit
+  fi  
+  
+  while [ $OPTIND -le "$#" ]; do
+
+    if getopts ':q:' opt; then
+      case "$opt" in
+        q) command="$OPTARG" ;;
+        *) usage ;;
+      esac
+    else
+      ARGS+=("${!OPTIND}")
+      ((OPTIND++))
+    fi
+  done
+
+  echo "command: $command"
+  echo "ARGS: ${ARGS[@]}"
+
+  target=${ARGS[0]%:*}
+  container=${ARGS[0]##*:}
+  if [ "$target" == "$container" ]; then container=""; fi
+  ARGS=("${ARGS[@]:1}")
+  echo "${ARGS[@]}"
+
+  pod=`kubectl get pod | grep $target | head -n1 | awk '{print $1}'`
+
+  if [ -z "$pod" ]; then
+    echo no pod found.
+    exit
+  fi
+  
+  if [[ $ARGS[0] =~ "bash|sh" ]]; then
+    sh=${ARGS[0]:-"bash"}
+    ARGS=("${ARGS[@]:1}")
+  else
+    sh="bash"
+  fi
+  
+  echo "${ARGS[@]}"
+  if [ -n "$container" ]; then
+    kubectl exec --stdin --tty $pod  -c $container -- $sh ${ARGS[@]} "${command[@]}"
+  else
+    kubectl exec --stdin --tty $pod -- $sh ${ARGS[@]} "${command[@]}"
+  fi
+  #Reset so the function can be reused
+  OPTIND=1
+}
+
+# Checks if the JSON data is an array or object. Objects will be returned as a single element array
+function json_to_array() {
+  DATA=$1
+  RET=$(jq -rc '. | if type!="array" then [.] else . end' "$DATA")
+  echo $RET
+}
+
+# replace is a way to replace a string in files. We use this mostly to change domain names. 
+# you can specify a directory or file and it is suggested that you do. for a global recursive 
+# replace don't specify any files or directories the script will run from the directory in which
+# it was called. 
+#
+# TODO:
+# Allow to filter on file extentions
+function replace() {
+  if [ -z $1 ] || [ -z $2 ]; then
+  echo usage: replace original new [file]
+  exit
+  fi
+  
+  # Escape dots (.)
+  OLD=$(echo "$1" | sed 's/\./\\\./g')
+  NEW=$(echo "$2" | sed 's/\./\\\./g')
+  FILE=$3
+
+  DIRECTORY=$PWD
+
+  if [[ -z $FILE ]]; then
+    echo "Replacing $1 with $2 in all files at $DIRECTORY"
+    find $DIRECTORY -not -path '*/\.*' -type f -exec sed -i "s/$OLD/$NEW/g" {} \; -print
+    # sed -i "s/$OLD/$NEW/g" ${DEPLOY}/env;
+  elif [[ -d $FILE ]]; then
+    echo "Replacing $1 with $2 in $FILE"
+    find ${FILE} -not -path '*/\.*' -type f -exec sed -i "s/$OLD/$NEW/g" {} \; -print
+  else
+    echo "Replacing $1 with $2 in $FILE"
+    sed -i "s/$OLD/$NEW/g" ${FILE}; 
+  fi
+}
+
+# import_vars is a way to import envionrment variables from a specified file.
+# optionally you can use the -u flag to unset variables.  Format of file is 
+# ini style with variables being all UPPERCASE and each on a new line
+# e.g. VSPHERE_SERVER=vcsa.example.com
+function import_vars() {
+  remove=false
+  while getopts "u" OPTION; do
+    case $OPTION in
+      u)
+         remove=true ;;
+    esac
+  done
+  shift $((OPTIND -1))
+  echo "$1"
+  VARS_PATH=$1
+  if [[ $remove = true ]]; then 
+    echo "UNSETTING VARS at $VARS_PATH"
+    unset $(cat $VARS_PATH | grep '^[A-Z]' | sed -e 's/ /\n/' -e 's/=.*//g' | tr "\n" " ")
+  else
+    echo "IMPORTING VARS"
+    export $(cat $VARS_PATH | grep '^[A-Z]')
+  fi
+}
+
+function replace_vars() {
+  FILE=$1
+  REGEX=$2
+  if [[ -n $REGEX ]]; then 
+    find $FILE -type f -regextype posix-extended -regex $REGEX -exec /bin/bash -c $'envsubst "$(env | cut -d= -f1 | sed -e \'s/^/$/\')"  < $1 > $1.tmp && mv -f $1.tmp $1' -- {} \;
+  else
+    find $FILE -type f -exec /bin/bash -c $'envsubst "$(env | cut -d= -f1 | sed -e \'s/^/$/\')" < $1 > $1.tmp && mv -f $1.tmp $1' -- {} \;
+  fi
+} 
+
+function get_latest_github_release() {
+  curl --silent "https://api.github.com/repos/$1/releases/latest" | # Get latest release from GitHub api
+    grep '"tag_name":' |                                            # Get tag line
+    sed -E 's/.*"([^"]+)".*/\1/'                                    # Pluck JSON value
+}
+
+fetch_vsphere_cert() {
+  cert_path=$1
+  echo "Downloading certs from $VSPHERE_SERVER"
+
+  wget --no-check-certificate https://$VSPHERE_SERVER/certs/download.zip -O /tmp/vcenter-certs.zip
+  unzip -o /tmp/vcenter-certs -d /tmp
+
+  if [[ -f ${NFS_BASE_PATH}certificates/vcenter ]]; then
+    cp -r /tmp/certs/. ${NFS_BASE_PATH}certificates/vcenter
+    cp -r /tmp/certs/lin/. ${NFS_BASE_PATH}certificates/sei-ca/
+    rename 's/.0/.crt/' ${NFS_BASE_PATH}certificates/sei-ca/*.0
+    rename 's/.r0/.r0.crt/' ${NFS_BASE_PATH}certificates/sei-ca/*.r0
+    cp -r ${NFS_BASE_PATH}certificates/sei-ca/. /usr/local/share/ca-certificates
+    update-ca-certificates
+  elif [[ -d /app/certs/vcenter ]]; then 
+    cp -R /tmp/certs/. /app/certs/vcenter
+  else
+    echo "Can't place vSphere Certificates"
+  fi
+}
+
+function download_vsphere_cert() {
+  url=$1
+  port=${2-443}
+  out=${3-./common/certs/vsphere.pem}
+  echo | openssl s_client -servername $url -connect $url:$port 2>/dev/null | openssl x509 -text | \
+  sed -n -e 's/CA Issuers - URI://p' | \
+  xargs curl -k --output ca.cer
+  openssl x509 -inform DER -in ca.cer -text -outform PEM -out $out
+  rm -rf ca.cer
+}
+
+function import_root_ca() {
+  cert_path=$1
+  file=$(basename $cert_path)
+  base=$(echo "${file%.*}")
+  if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    # Linux
+    echo $LOCAL_SUDO_PASS | sudo -S cp $cert_path /usr/local/share/ca-certificates/$base.crt
+    echo $LOCAL_SUDO_PASS | sudo -S update-ca-certificates
+  elif [[ "$OSTYPE" == "darwin"* ]]; then
+    # Mac OSX
+    echo "$LOCAL_SUDO_PASS" | sudo -S security unlock-keychain -u -p "$LOCAL_SUDO_PASS" /Library/Keychains/System.keychain
+    echo "$LOCAL_SUDO_PASS" | sudo -S security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain $cert_path
+  else
+    echo "OS NOT SUPPORTED"
+  fi
+}
+
+# Installed the latest release of terraform
+function install_terraform() {
+  curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+  sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+  sudo apt-get update && sudo apt-get install terraform
+}
+
+# Installs the latest version of ansible
+function install_ansible {
+  sudo apt update
+  sudo apt install software-properties-common
+  sudo add-apt-repository --yes --update ppa:ansible/ansible
+  sudo apt install ansible -y
+}
+
+function install_kubectl() {
+  curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+  chmod +x kubectl
+  sudo mv kubectl /usr/local/bin/kubectl
+}
+
+function install_helm {
+  curl https://baltocdn.com/helm/signing.asc | sudo apt-key add -
+  sudo apt-get install apt-transport-https --yes
+  echo "deb https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+  sudo apt-get update
+  sudo apt-get install helm
+}
+
+function wait_external_ip() {
+  service=$1
+  namespace=$2
+  ip=""
+  while [ -z $ip ]; do
+    # echo "Waiting for external IP"
+    ip=$(kubectl get svc $service --namespace $namespace --template="{{range .status.loadBalancer.ingress}}{{.ip}}{{end}}")
+    [ -z "$ip" ] && sleep 10
+  done
+  # echo 'Found external IP: '$ip
+  echo $ip
+}
+
+function add_host_entry() {
+  ip=$1
+  hostname=$2
+  etc_hosts=${3-/etc/hosts}
+  echo "adding host";
+  hosts_line="$ip\t$hostname"
+  if [ -n "$(grep $hostname $etc_hosts)" ]
+    then
+      echo "$hostname already exists : $(grep $hostname $etc_hosts)"
+    else
+      echo "Adding $hostname to your $etc_hosts";
+      sudo -- sh -c -e "echo '$hosts_line' >> $etc_hosts";
+
+      if [ -n "$(grep $hostname $etc_hosts)" ]
+        then
+            echo "$hostname was added succesfully \n $(grep $hostname $etc_hosts)";
+        else
+            echo "Failed to Add $hostname, Try again!";
+      fi
+  fi
+}
+
+function encrypt_string() {
+  string=$1
+  echo "$string" | openssl enc -aes-256-cbc -md sha512 -a -pbkdf2 -iter 100000 -salt -pass pass:'gP47LkDeJmnmgx2rbsUPegJB33bHhp3DQheBSJv4YfheNtXFAzUnYy4azQceFMrB'
+}
+
+function decrypt_string() {
+  string=$1
+  echo "$string" | openssl enc -aes-256-cbc -md sha512 -a -d -pbkdf2 -iter 100000 -salt -pass pass:'gP47LkDeJmnmgx2rbsUPegJB33bHhp3DQheBSJv4YfheNtXFAzUnYy4azQceFMrB'
+}

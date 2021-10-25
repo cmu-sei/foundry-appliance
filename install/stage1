@@ -16,6 +16,10 @@ echo "$APPLIANCE_VERSION" > /etc/appliance_version
 swapoff -a
 sed -i -r 's/(\/swap\.img.*)/#\1/' /etc/fstab
 
+# Extend LVM to fill disk
+lvextend -l +100%FREE /dev/mapper/ubuntu--vg-ubuntu--lv
+resize2fs /dev/mapper/ubuntu--vg-ubuntu--lv
+
 # Upgrade existing Ubuntu packages
 apt-get update
 apt-get full-upgrade -y
@@ -36,16 +40,22 @@ EOF
 systemctl restart multipathd
 
 # Add dnsmasq resolver other needed packages
+apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass postgresql-client
+
+# cat <<EOF > /etc/dnsmasq.d/foundry.conf
+# server=8.8.8.8
+# no-resolv
+# bind-interfaces
+# listen-address=127.0.0.1
+# listen-address=10.0.1.1
+# interface-name=foundry.local,eth0
+# EOF
+systemctl disable --now systemd-resolved
+rm -f /etc/resolv.conf
+echo 'nameserver 8.8.8.8' > /etc/resolv.conf
 apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass
-
-cat <<EOF > /etc/dnsmasq.d/foundry.conf
-server=8.8.8.8
-no-resolv
-bind-interfaces
-listen-address=10.0.1.1
-interface-name=foundry.local,eth0
-EOF
-
+mv ~/common/dnsmasq.conf /etc/dnsmasq.d/foundry.conf
+chown root:root /etc/dnsmasq.d/foundry.conf
 systemctl restart dnsmasq
 
 # Install MicroK8s
@@ -55,6 +65,10 @@ microk8s enable dns storage ingress metrics-server
 usermod -a -G microk8s $SSH_USERNAME
 chown -f -R $SSH_USERNAME:$SSH_USERNAME ~/.kube
 sed -i '/^DNS\.5.*/a DNS.6 = foundry.local' /var/snap/microk8s/current/certs/csr.conf.template
+# dns issues 
+#echo "--resolv-conf=/run/systemd/resolve/resolv.conf" >> /var/snap/microk8s/current/args/kubelet
+#systemctl restart snap.microk8s.daemon-kubelet
+#microk8s kubectl rollout restart -n kube-system deployment/coredns
 
 cat <<EOF > /etc/netplan/01-host-access.yaml
 # Add loopback address for pods to talk to host
@@ -75,6 +89,15 @@ netplan apply
 snap install kubectl --classic
 snap install helm --classic
 
+# Add kubectl and helm bash completion
+echo "source <(kubectl completion bash)" >> ~/.bashrc
+helm completion bash > /etc/bash_completion.d/helm
+
+# Install Powershell and PowerCLI (vcenter, steamfitter)
+snap install powershell --classic
+pwsh -c 'Set-PSRepository -Name PSGallery -InstallationPolicy Trusted; Install-Module -Name VMWare.PowerCLI -Confirm:$false'
+pwsh -c 'Set-PowerCLIConfiguration -Scope User -ParticipateInCEIP $false -Confirm:$false | Out-Null'
+
 # Install CFSSL for certificate generation
 curl -sLo /usr/local/bin/cfssl https://github.com/cloudflare/cfssl/releases/download/v1.5.0/cfssl_1.5.0_linux_amd64
 curl -sLo /usr/local/bin/cfssljson https://github.com/cloudflare/cfssl/releases/download/v1.5.0/cfssljson_1.5.0_linux_amd64
@@ -84,12 +107,15 @@ chmod +x /usr/local/bin/cfssl*
 sudo -u $SSH_USERNAME git clone https://github.com/jaggedmountain/k-alias.git
 (cd /usr/local/bin && ln -s ~/k-alias/[h,k]* .)
 
+# Update permissions for .config and .local directory (PowerCLI install)
+chown -f -R $SSH_USERNAME:$SSH_USERNAME ~/.config ~/.local
+
 # Customize MOTD and other text for the appliance
 chmod -x /etc/update-motd.d/00-header
 chmod -x /etc/update-motd.d/10-help-text
 sed -i -r 's/(ENABLED=)1/\10/' /etc/default/motd-news
 ln -s /home/foundry/foundry/foundry-banner /etc/update-motd.d/05-foundry-banner
-sed -i "s/{version}/$APPLIANCE_VERSION/" ~/foundry/web/index.html
+sed -i "s/{version}/$APPLIANCE_VERSION/" ~/common/web/index.html
 echo -e "Foundry Appliance $APPLIANCE_VERSION \\\n \l \n" > /etc/issue
 
 # Enable quiet boot and reboot for changes to take effect

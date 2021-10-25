@@ -1,41 +1,143 @@
 alloy-api:
-  image:
-    tag: '2.1.0'
+  image: 
+    repository: cmusei/alloy-api
+    tag: '3.2.3'
+    pullPolicy: Always
+  command: ["bash", "-c", "update-ca-certificates && dotnet Alloy.Api.dll"]
 
   ingress:
     enabled: true
     annotations:
-      kubernetes.io/ingress.class: nginx
+      kubernetes.io/ingress.class: public
       nginx.ingress.kubernetes.io/proxy-read-timeout: '86400'
       nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
       nginx.ingress.kubernetes.io/use-regex: 'true'
     hosts:
       - host: foundry.local
         paths:
-          - /alloy/(api|swagger)
+          - path:  /alloy/(hubs|api|swagger)
+            pathType: Prefix
     tls:
       - secretName: appliance-cert
         hosts:
           - foundry.local
+  
+  # If this deployment needs to trust non-public certificates,
+  # create a configMap with the needed certifcates and specify
+  # the configMap name here
+  certificateMap: "appliance-root-ca"
+  
+  identity:
+    register: true
+    identityMap: "identity-identity-api"
+    #initCommand: ['sh', '-c', 'sleep 10000']
+    client: |-
+      [
+        {
+          "name": "alloy-api",
+          "displayName": "Alloy API",
+          "description": null,
+          "grants": "authorization_code client_credentials",
+          "scopes": "alloy-api player-api vm-api caster-api steamfitter-api",
+          "enabled": true,
+          "requirePkce": true,
+          "allowAccessTokensViaBrowser": false,
+          "requireConsent": false,
+          "consentLifetime": "30d",
+          "alwaysIncludeUserClaimsInIdToken": false,
+          "identityTokenLifetime": "5m",
+          "accessTokenLifetime": "1h",
+          "authorizationCodeLifetime": "5m",
+          "allowOfflineAccess": false,
+          "updateAccessTokenClaimsOnRefresh": false,
+          "useOneTimeRefreshTokens": false,
+          "slidingRefreshTokenLifetime": "15d",
+          "absoluteRefreshTokenLifetime": "30d",
+          "published": false,
+          "url": "https://foundry.local/alloy",
+          "logoUrl": null,
+          "frontChannelLogoutUrl": null,
+          "backChannelLogoutUrl": null,
+          "redirectUrls": [
+            { "value": "https://foundry.local/alloy/api/oauth2-redirect.html" }
+          ],
+          "postLogoutUrls": [{ "value": "https://foundry.local/alloy/api" }],
+          "corsUrls": [{ "value": "https://foundry.local" }],
+          "alwaysSendClientClaims": false,
+          "clientClaimsPrefix": "client_",
+          "claims": [],
+          "secrets": [],
+          "managers": []
+        },
+        {
+          "name": "alloy-admin",
+          "displayName": "Alloy Admin",
+          "description": null,
+          "grants": "password client_credentials",
+          "scopes": "alloy-api player-api caster-api steamfitter-api vm-api",
+          "enabled": true,
+          "requirePkce": true,
+          "allowAccessTokensViaBrowser": false,
+          "requireConsent": false,
+          "consentLifetime": "30d",
+          "alwaysIncludeUserClaimsInIdToken": false,
+          "identityTokenLifetime": "5m",
+          "accessTokenLifetime": "1h",
+          "authorizationCodeLifetime": "5m",
+          "allowOfflineAccess": false,
+          "updateAccessTokenClaimsOnRefresh": false,
+          "useOneTimeRefreshTokens": false,
+          "slidingRefreshTokenLifetime": "15d",
+          "absoluteRefreshTokenLifetime": "30d",
+          "published": false,
+          "url": "https://foundry.local/alloy",
+          "logoUrl": null,
+          "frontChannelLogoutUrl": null,
+          "backChannelLogoutUrl": null,
+          "corsUrls": [{ "value": "https://foundry.local" }],
+          "alwaysSendClientClaims": false,
+          "clientClaimsPrefix": "client_",
+          "claims": [],
+          "secrets": [],
+          "managers": []
+        }
+      ]
+    resource: |-
+      {
+        "type": "api",
+        "name": "alloy-api",
+        "displayName": "Alloy Api",
+        "enabled": true,
+        "default": true,
+        "required": false,
+        "emphasize": false,
+        "showInDiscoveryDocument": true
+      }
 
   env:
-    CorsPolicy__Origins__0: https://foundry.local/alloy
-
+    PathBase: "/alloy"
+    CorsPolicy__Origins__0: https://foundry.local
+    CorsPolicy__Origins__1: "http://localhost:4303"
+    # CorsPolicy__AllowAnyOrigin: true
+    CorsPolicy__AllowAnyMethod: true
+    CorsPolicy__AllowAnyHeader: true
+    Logging__LogLevel__Default: "debug"
     # Connection String to database
     ConnectionStrings__PostgreSQL: "Server=postgresql;Port=5432;Database=alloy_db;Username=postgres;Password='foundry';SSL Mode=Prefer;Trust Server Certificate=true;"
 
     # OAuth2 Identity Client for Application
     Authorization__Authority: https://foundry.local/identity
     Authorization__AuthorizationUrl: https://foundry.local/identity/connect/authorize
-    Authorization__AuthorizationScope: 'alloy-api player-api caster-api steamfitter-api vm-api'
+    Authorization__TokenUrl: https://foundry.local/identity/connect/token
+    Authorization__AuthorizationScope: 'alloy-api caster-api steamfitter-api vm-api'
     Authorization__ClientId: alloy-api
     Authorization__ClientName: 'Alloy API'
 
     # OAuth2 Identity Client /w Password
     ResourceOwnerAuthorization__Authority: https://foundry.local/identity
-    ResourceOwnerAuthorization__ClientId: alloy-api
-    ResourceOwnerAuthorization__UserName: '' # TODO
-    ResourceOwnerAuthorization__Password: '' # TODO
+    ResourceOwnerAuthorization__ClientId: alloy-admin
+    ResourceOwnerAuthorization__UserName: crucible-admin@foundry.local # TODO
+    ResourceOwnerAuthorization__Password: foundry # TODO
     ResourceOwnerAuthorization__Scope: 'alloy-api player-api caster-api steamfitter-api vm-api'
 
     # Crucible Application URLs
@@ -45,40 +147,93 @@ alloy-api:
 
 alloy-ui:
   image:
-    tag: '2.2.0'
+    repository: cmusei/alloy-ui
+    pullPolicy: IfNotPresent
+    tag: '3.2.3'
 
   ingress:
     enabled: true
     annotations:
-      kubernetes.io/ingress.class: nginx
+      kubernetes.io/ingress.class: public
+      nginx.ingress.kubernetes.io/proxy-read-timeout: '86400'
+      nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
+      nginx.ingress.kubernetes.io/use-regex: "true"
     hosts:
       - host: foundry.local
         paths:
-          - /alloy
+          - path: "/alloy(/|$)(.*)"
+            pathType: Prefix
     tls:
       - secretName: appliance-cert
         hosts:
           - foundry.local
 
+
+  identity:
+    register: true
+    identityMap: "identity-identity-api"
+    client: |-
+      {
+        "name": "alloy-ui",
+        "displayName": "Alloy UI",
+        "description": null,
+        "grants": "authorization_code client_credentials",
+        "scopes": "openid profile alloy-api player-api caster-api steamfitter-api vm-api",
+        "enabled": true,
+        "requirePkce": true,
+        "allowAccessTokensViaBrowser": true,
+        "requireConsent": false,
+        "consentLifetime": "30d",
+        "alwaysIncludeUserClaimsInIdToken": false,
+        "identityTokenLifetime": "5m",
+        "accessTokenLifetime": "1h",
+        "authorizationCodeLifetime": "5m",
+        "allowOfflineAccess": false,
+        "updateAccessTokenClaimsOnRefresh": false,
+        "useOneTimeRefreshTokens": false,
+        "slidingRefreshTokenLifetime": "15d",
+        "absoluteRefreshTokenLifetime": "30d",
+        "published": true,
+        "url": "https://foundry.local/alloy/",
+        "logoUrl": null,
+        "frontChannelLogoutUrl": null,
+        "backChannelLogoutUrl": null,
+        "redirectUrls": [
+          { "value": "https://foundry.local/alloy/auth-callback" },
+          { "value": "https://foundry.local/alloy/auth-callback-silent" }
+        ],
+        "postLogoutUrls": [{ "value": "https://foundry.local/alloy" }],
+        "corsUrls": [{ "value": "https://foundry.local" }],
+        "alwaysSendClientClaims": false,
+        "clientClaimsPrefix": "client_",
+        "claims": [],
+        "secrets": [],
+        "managers": []
+      }
+  env: 
+    ## basehref is path to the app
+    APP_BASEHREF: "/alloy"
+
   # Config app settings with a JSON file.
   # These values correspond to an OpenID connect client and
   # some basic configuration
   # NOTE:  PlayerUIAddress is the URL to the Crucible - Player application
-  settings: '{
-    "ApiUrl": "https://foundry.local/alloy/api",
-    "OIDCSettings": {
-    "authority": "https://foundry.local/identity/",
-    "client_id": "alloy-ui",
-    "redirect_uri": "https://foundry.local/alloy/auth-callback",
-    "post_logout_redirect_uri": "https://foundry.local/alloy",
-    "response_type": "id_token token",
-    "scope": "openid profile alloy-api player-api caster-api steamfitter-api vm-api",
-    "automaticSilentRenew": true,
-    "silent_redirect_uri": "https://foundry.local/alloy/auth-callback-silent"
-    },
-    "AppTitle": "Alloy",
-    "AppTopBarText": "Alloy",
-    "AppTopBarHexColor": "#b00",
-    "PlayerUIAddress": "https://foundry.local/player/api",
-    "UseLocalAuthStorage": true
-    }'
+  settings: |-
+    {
+      "ApiUrl": "https://foundry.local/alloy",
+      "OIDCSettings": {
+        "authority": "https://foundry.local/identity/",
+        "client_id": "alloy-ui",
+        "redirect_uri": "https://foundry.local/alloy/auth-callback",
+        "post_logout_redirect_uri": "https://foundry.local/alloy",
+        "response_type": "code",
+        "scope": "openid profile alloy-api player-api caster-api steamfitter-api vm-api",
+        "automaticSilentRenew": true,
+        "silent_redirect_uri": "https://foundry.local/alloy/auth-callback-silent"
+      },
+      "AppTitle": "Alloy",
+      "AppTopBarText": "Alloy",
+      "AppTopBarHexColor": "#b00",
+      "PlayerUIAddress": "https://foundry.local/player",
+      "UseLocalAuthStorage": true
+    }

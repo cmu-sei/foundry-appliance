@@ -15,6 +15,15 @@ if [[ $1 != -* ]]; then
     shift 1
 fi
 
+if [[ $1 != -* ]]; then
+    IFS=',' read -ra STACKS <<< "$1"
+    for i in "${STACKS[@]}"; do
+        APPS+="$i*,"
+    done
+    APPS=${APPS%?}
+    shift 1
+fi
+
 if git rev-parse --git-dir > /dev/null 2>&1; then
     VERSION_TAG=$(git tag --points-at HEAD)
     GIT_BRANCH=$(git branch --show-current)
@@ -32,7 +41,7 @@ else
 fi
 
 if [ -n "$ONLY_VAR" ]; then
-    packer build -only=$ONLY_VAR -var "appliance_version=$BUILD_VERSION" $@ .
+    packer build -only=$ONLY_VAR -var "appliance_version=$BUILD_VERSION" -var "apps=$APPS" $@ .
 else
-    packer build -var "appliance_version=$BUILD_VERSION" $@ .
+    packer build -var "appliance_version=$BUILD_VERSION" -var "apps=$APPS" $@ .
 fi

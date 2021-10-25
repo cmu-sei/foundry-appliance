@@ -78,8 +78,16 @@ build {
   ]
 
   provisioner "file" {
-    destination = "/home/${var.ssh_username}"
-    source      = "./foundry"
+    destination = "/home/${var.ssh_username}/"
+    sources      = [
+      "./common",
+      "./foundry",
+      "./crucible",
+      "./charts",
+      "./scripts",
+      "setup",
+      "reset"
+    ]
   }
 
   provisioner "shell" {
@@ -103,6 +111,8 @@ build {
   }
 
   provisioner "shell" {
-    inline = ["~/foundry/setup-foundry"]
+    inline = [
+      "~/setup ${var.apps}",
+    ]
   }
 }

@@ -1,4 +1,4 @@
-name: build
+name: build-all
 
 on:
   push:
@@ -26,9 +26,9 @@ jobs:
       env:
         GITHUB_PULL_REQUEST: ${{ github.event.number }}
       with:
-        timeout_minutes: 40
+        timeout_minutes: 45
         max_attempts: 5
-        command: ./build-appliance virtualbox foundry
+        command: ./build-appliance virtualbox foundry,crucible -var "cpus=6" -var "memory=10240" -var "disk_size=51200"
 
     - name: Get build_name from OVF file
       run: echo "build_name=$(sh -c "find . -name '*.ovf' | xargs basename -s '.ovf'")" >> $GITHUB_ENV
