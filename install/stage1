@@ -82,7 +82,7 @@ chmod -x /etc/update-motd.d/00-header
 chmod -x /etc/update-motd.d/10-help-text
 sed -i -r 's/(ENABLED=)1/\10/' /etc/default/motd-news
 ln -s /home/foundry/foundry/foundry-banner /etc/update-motd.d/05-foundry-banner
-sed -i "s/{version}/$APPLIANCE_VERSION/" ~/foundry/web/index.html
+sed -i "s/{version}/$APPLIANCE_VERSION/" ~/mkdocs/docs/index.md
 echo -e "Foundry Appliance $APPLIANCE_VERSION \\\n \l \n" > /etc/issue
 
 # Enable quiet boot and reboot for changes to take effect

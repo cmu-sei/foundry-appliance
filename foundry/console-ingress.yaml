@@ -19,7 +19,7 @@ spec:
   - host: foundry.local
     http:
       paths:
-      - path: /
+      - path: /console
         pathType: Prefix
         backend:
           service:
