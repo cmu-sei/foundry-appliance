@@ -4,7 +4,7 @@ identity-api:
 
   image:
     repository: cmusei/identity
-    tag: "1.3.7"
+    tag: "1.4.6"
 
   ingress:
     enabled: true
@@ -132,7 +132,7 @@ identity-ui:
 
   image:
     repository: cmusei/identity-ui
-    tag: "1.3.7"
+    tag: "1.4.2"
 
   ingress:
     enabled: true
