@@ -9,7 +9,7 @@ topomojo-api:
     repository: cmusei/topomojo-api
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "2.0.3"
+    tag: "2.0.7"
 
   imagePullSecrets: []
   nameOverride: ""
@@ -149,7 +149,7 @@ topomojo-api:
     # Headers__Security__ContentSecurity: default-src 'self' 'unsafe-inline'; img-src data: 'self'
     # Headers__Security__XContentType: nosniff
     # Headers__Security__XFrame: SAMEORIGIN
-  
+
 
 topomojo-ui:
   # Default values for topomojo-ui.
@@ -162,7 +162,7 @@ topomojo-ui:
     repository: cmusei/topomojo-ui
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "2.0.2"
+    tag: "2.0.7"
 
   imagePullSecrets: []
   nameOverride: ""
@@ -271,3 +271,4 @@ topomojo-ui:
         "useLocalStorage": false
       }
     }
+
