@@ -8,7 +8,7 @@ clusterDomain: cluster.local
 
 image:
   repository: gitea/gitea
-  version: 1.14.3
+  tag: 1.15.10
   pullPolicy: Always
 
 imagePullSecrets: []
@@ -79,19 +79,20 @@ gitea:
     password: foundry
     email: "administrator@foundry.local"
 
-  ldap:
-    enabled: false
-    name: ""
-    securityProtocol: ""
-    host: ""
-    port: ""
-    userSearchBase: ""
-    userFilter: ""
-    adminFilter: ""
-    emailAttribute: ""
-    bindDn: ""
-    bindPassword: ""
-    usernameAttribute: ""
+  ldap: []
+    # - name: "LDAP 1"
+    #  existingSecret:
+    #  securityProtocol:
+    #  host:
+    #  port:
+    #  userSearchBase:
+    #  userFilter:
+    #  adminFilter:
+    #  emailAttribute:
+    #  bindDn:
+    #  bindPassword:
+    #  usernameAttribute:
+    #  publicSSHKeyAttribute:
 
   config:
     APP_NAME: Foundry Gitea
@@ -103,24 +104,43 @@ gitea:
 
   podAnnotations: {}
 
-  database:
-    builtIn:
-      postgresql:
-        enabled: true
-      mysql:
-        enabled: false
-      mariadb:
-        enabled: false
+  # Modify the liveness probe for your needs or completely disable it by commenting out.
+  livenessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 200
+    timeoutSeconds: 1
+    periodSeconds: 10
+    successThreshold: 1
+    failureThreshold: 10
 
-  cache:
-    builtIn:
-      enabled: true
+  # Modify the readiness probe for your needs or completely disable it by commenting out.
+  readinessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 5
+    timeoutSeconds: 1
+    periodSeconds: 10
+    successThreshold: 1
+    failureThreshold: 3
+
+  # # Uncomment the startup probe to enable and modify it for your needs.
+  # startupProbe:
+  #   tcpSocket:
+  #     port: http
+  #   initialDelaySeconds: 60
+  #   timeoutSeconds: 1
+  #   periodSeconds: 10
+  #   successThreshold: 1
+  #   failureThreshold: 10
 
 memcached:
+  enabled: true
   service:
     port: 11211
 
 postgresql:
+  enabled: true
   global:
     postgresql:
       postgresqlDatabase: gitea
@@ -131,6 +151,7 @@ postgresql:
     size: 1Gi
 
 mysql:
+  enabled: false
   root:
     password: gitea
   db:
@@ -143,6 +164,7 @@ mysql:
     size: 10Gi
 
 mariadb:
+  enabled: false
   auth:
     database: gitea
     username: gitea
@@ -153,3 +175,5 @@ mariadb:
       port: 3306
     persistence:
       size: 10Gi
+
+checkDeprecation: true
