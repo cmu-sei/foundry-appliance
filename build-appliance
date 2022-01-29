@@ -23,6 +23,8 @@ fi
 
 if [ -n "$VERSION_TAG" ]; then
     BUILD_VERSION=$VERSION_TAG
+elif [ -n "$GITHUB_PULL_REQUEST" ]; then
+    BUILD_VERSION=PR$GITHUB_PULL_REQUEST-$GIT_HASH
 elif [ -n "$GIT_HASH" ]; then
     BUILD_VERSION=$GIT_BRANCH-$GIT_HASH
 else
