@@ -23,6 +23,8 @@ jobs:
 
     - name: Build VirtualBox OVF image
       uses: nick-invision/retry@v2
+      env:
+        GITHUB_PULL_REQUEST: ${{ github.event.number }}
       with:
         timeout_minutes: 30
         max_attempts: 5
