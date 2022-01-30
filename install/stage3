@@ -1,0 +1,15 @@
+#!/bin/bash -e
+#
+# Copyright 2022 Carnegie Mellon University.
+# Released under a BSD (SEI)-style license, please see LICENSE.md in the
+# project root or contact permission@sei.cmu.edu for full terms.
+#
+# Foundry Appliance Install - Stage 3
+#
+
+# Add newly generated CA certificate to trusted roots
+cp ~/foundry/certs/root-ca.pem /usr/local/share/ca-certificates/foundry-appliance-root-ca.crt
+update-ca-certificates
+
+# Restart mDNS daemon to avoid conflict with other hosts
+systemctl restart avahi-daemon
