@@ -1,0 +1,61 @@
+#!/bin/bash -e
+#
+# Copyright 2022 Carnegie Mellon University.
+# Released under a BSD (SEI)-style license, please see LICENSE.md in the
+# project root or contact permission@sei.cmu.edu for full terms.
+#
+# Foundry Appliance Install - Stage 1
+#
+
+echo "$APPLIANCE_VERSION" > /etc/appliance_version
+
+# Disable swap for Kubernetes
+swapoff -a
+sed -i -r 's/(\/swap\.img.*)/#\1/' /etc/fstab
+
+# Upgrade existing Ubuntu packages
+apt-get update
+apt-get full-upgrade -y
+
+# Change resolver to dnsmasq and install other needed packages
+systemctl disable --now systemd-resolved
+rm -f /etc/resolv.conf
+echo 'nameserver 8.8.8.8' > /etc/resolv.conf
+apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass
+mv ~/foundry/dnsmasq.conf /etc/dnsmasq.d/foundry.conf
+chown root:root /etc/dnsmasq.d/foundry.conf
+systemctl restart dnsmasq
+
+# Install MicroK8s
+snap install microk8s --classic --channel=1.20/stable
+microk8s status --wait-ready
+microk8s enable dns storage ingress host-access metrics-server
+usermod -a -G microk8s $SSH_USERNAME
+chown -f -R $SSH_USERNAME:$SSH_USERNAME ~/.kube
+sed -i '/^DNS\.5.*/a DNS.6 = foundry.local' /var/snap/microk8s/current/certs/csr.conf.template
+
+# Install kubectl and Helm clients
+snap install kubectl --classic
+snap install helm --classic
+
+# Install CFSSL for certificate generation
+curl -sLo /usr/local/bin/cfssl https://github.com/cloudflare/cfssl/releases/download/v1.5.0/cfssl_1.5.0_linux_amd64
+curl -sLo /usr/local/bin/cfssljson https://github.com/cloudflare/cfssl/releases/download/v1.5.0/cfssljson_1.5.0_linux_amd64
+chmod +x /usr/local/bin/cfssl*
+
+# Install k-alias Kubernetes helper scripts
+sudo -u $SSH_USERNAME git clone https://github.com/jaggedmountain/k-alias.git
+(cd /usr/local/bin && ln -s ~/k-alias/[h,k]* .)
+
+# Customize MOTD and other text for the appliance
+chmod -x /etc/update-motd.d/00-header
+chmod -x /etc/update-motd.d/10-help-text
+sed -i -r 's/(ENABLED=)1/\10/' /etc/default/motd-news
+ln -s /home/foundry/foundry/foundry-banner /etc/update-motd.d/05-foundry-banner
+sed -i "s/{version}/$APPLIANCE_VERSION/" ~/foundry/web/index.html
+echo -e "Foundry Appliance $APPLIANCE_VERSION \\\n \l \n" > /etc/issue
+
+# Disable IPv6 and reboot for changes to take effect
+sed -i -r 's/(GRUB_CMDLINE_LINUX_DEFAULT=).*/\1"quiet net.ifnames=0 biosdevname=0 ipv6.disable=1"/' /etc/default/grub
+update-grub
+reboot

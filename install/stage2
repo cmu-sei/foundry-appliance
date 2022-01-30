@@ -1,0 +1,20 @@
+#!/bin/bash -e
+#
+# Copyright 2022 Carnegie Mellon University.
+# Released under a BSD (SEI)-style license, please see LICENSE.md in the
+# project root or contact permission@sei.cmu.edu for full terms.
+#
+# Foundry Appliance Install - Stage 2
+#
+
+# Generate SSH key
+ssh-keygen -t rsa -f ~/.ssh/id_rsa -q -N ''
+
+# Pause for 10 seconds to avoid MicroK8s permissions error
+sleep 10
+microk8s status --wait-ready
+microk8s config -l > ~/.kube/config
+chmod 600 ~/.kube/config
+
+# Generate CA and host certificates
+~/foundry/certs/generate-certs.sh
