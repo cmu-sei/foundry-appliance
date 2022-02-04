@@ -47,7 +47,7 @@ variable "vsphere_network" {
 locals {
   boot_command     = [
     "<enter><enter><f6><esc><wait> ",
-    "net.ifnames=0 biosdevname=0 ipv6.disable=1 autoinstall ds=nocloud-net;s=http://{{ .HTTPIP }}:{{ .HTTPPort }}/",
+    "net.ifnames=0 biosdevname=0 autoinstall ds=nocloud-net;s=http://{{ .HTTPIP }}:{{ .HTTPPort }}/",
     "<enter>",
     "<wait10><wait10><wait10><wait10><wait10><wait10>"
   ]

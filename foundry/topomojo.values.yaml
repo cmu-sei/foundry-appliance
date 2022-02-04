@@ -48,9 +48,12 @@ topomojo-api:
     hosts:
       - host: foundry.local
         paths:
-          - "/topomojo/api"
-          - "/topomojo/hub"
-          - "/topomojo/docs"
+          - path: /topomojo/api
+            pathType: ImplementationSpecific
+          - path: /topomojo/hub
+            pathType: ImplementationSpecific
+          - path: /topomojo/docs
+            pathType: ImplementationSpecific
     tls:
       - secretName: appliance-cert
         hosts:
@@ -201,7 +204,9 @@ topomojo-ui:
       # kubernetes.io/tls-acme: "true"
     hosts:
       - host: foundry.local
-        paths: ["/topomojo"]
+        paths:
+          - path: /topomojo
+            pathType: ImplementationSpecific
     tls:
       - secretName: appliance-cert
         hosts:
@@ -271,4 +276,3 @@ topomojo-ui:
         "useLocalStorage": false
       }
     }
-

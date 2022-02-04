@@ -56,7 +56,9 @@ ingress:
   annotations: {}
   hosts:
     - host: foundry.local
-      paths: [ "/" ]
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
   tls:
     - secretName: appliance-cert
       hosts:

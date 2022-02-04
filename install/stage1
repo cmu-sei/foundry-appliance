@@ -25,14 +25,28 @@ apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass
 mv ~/foundry/dnsmasq.conf /etc/dnsmasq.d/foundry.conf
 chown root:root /etc/dnsmasq.d/foundry.conf
 systemctl restart dnsmasq
+sed -i -r 's/(use-ipv6=).*/\1no/' /etc/avahi/avahi-daemon.conf
 
 # Install MicroK8s
-snap install microk8s --classic --channel=1.20/stable
+snap install microk8s --classic --channel=1.23/stable
 microk8s status --wait-ready
-microk8s enable dns storage ingress host-access metrics-server
+microk8s enable dns storage ingress metrics-server
 usermod -a -G microk8s $SSH_USERNAME
 chown -f -R $SSH_USERNAME:$SSH_USERNAME ~/.kube
 sed -i '/^DNS\.5.*/a DNS.6 = foundry.local' /var/snap/microk8s/current/certs/csr.conf.template
+cat <<EOF > /etc/netplan/01-host-access.yaml
+# Add loopback address for pods to talk to host
+network:
+  version: 2
+  ethernets:
+    lo:
+      match:
+        name: lo
+      addresses:
+        - 10.0.1.1/32:
+            label: lo:host-access
+EOF
+netplan apply
 
 # Install kubectl and Helm clients
 snap install kubectl --classic
@@ -55,7 +69,7 @@ ln -s /home/foundry/foundry/foundry-banner /etc/update-motd.d/05-foundry-banner
 sed -i "s/{version}/$APPLIANCE_VERSION/" ~/foundry/web/index.html
 echo -e "Foundry Appliance $APPLIANCE_VERSION \\\n \l \n" > /etc/issue
 
-# Disable IPv6 and reboot for changes to take effect
-sed -i -r 's/(GRUB_CMDLINE_LINUX_DEFAULT=).*/\1"quiet net.ifnames=0 biosdevname=0 ipv6.disable=1"/' /etc/default/grub
+# Enable quiet boot and reboot for changes to take effect
+sed -i -r 's/(GRUB_CMDLINE_LINUX_DEFAULT=).*/\1"quiet net.ifnames=0 biosdevname=0"/' /etc/default/grub
 update-grub
 reboot
