@@ -11,7 +11,9 @@ identity-api:
     annotations: {}
     hosts:
       - host: foundry.local
-        paths: [ "/identity" ]
+        paths:
+          - path: /identity
+            pathType: ImplementationSpecific
     tls:
       - secretName: appliance-cert
         hosts:
@@ -139,7 +141,9 @@ identity-ui:
     annotations: {}
     hosts:
       - host: foundry.local
-        paths: [ "/identity/ui" ]
+        paths:
+          - path: /identity/ui
+            pathType: ImplementationSpecific
     tls:
       - secretName: appliance-cert
         hosts:

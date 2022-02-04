@@ -43,14 +43,20 @@ gameboard-api:
 
   ingress:
     enabled: true
-    annotations: {}
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: 10m
+
     hosts:
       - host: foundry.local
         paths:
-          - /gameboard/api
-          - /gameboard/hub
-          - /gameboard/img
-          - /gameboard/doc
+          - path: /gameboard/api
+            pathType: ImplementationSpecific
+          - path: /gameboard/hub
+            pathType: ImplementationSpecific
+          - path: /gameboard/img
+            pathType: ImplementationSpecific
+          - path: /gameboard/doc
+            pathType: ImplementationSpecific
     tls:
       - secretName: appliance-cert
         hosts:
@@ -172,7 +178,9 @@ gameboard-ui:
     annotations: {}
     hosts:
       - host: foundry.local
-        paths: ["/gameboard"]
+        paths:
+          - path: /gameboard
+            pathType: ImplementationSpecific
     tls:
       - secretName: appliance-cert
         hosts:
