@@ -23,41 +23,14 @@ apt-get full-upgrade -y
 # Stop multipathd errors in syslog
 cat <<EOF >> /etc/multipath.conf
 blacklist {
-  device {
-    vendor "VBOX"
-    product "HARDDISK"
-  }
-  device {
-    vendor "VMware"
-    product "Virtual disk"
-  }
+    devnode "sda$"
 }
 EOF
 systemctl restart multipathd
 
-# Add dnsmasq resolver other needed packages
-apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass
-
-cat <<EOF > /etc/dnsmasq.d/foundry.conf
-server=8.8.8.8
-no-resolv
-bind-interfaces
-listen-address=10.0.1.1
-interface-name=foundry.local,eth0
-EOF
-
-systemctl restart dnsmasq
-
-# Install MicroK8s
-snap install microk8s --classic --channel=1.23/stable
-microk8s status --wait-ready
-microk8s enable dns storage ingress metrics-server
-usermod -a -G microk8s $SSH_USERNAME
-chown -f -R $SSH_USERNAME:$SSH_USERNAME ~/.kube
-sed -i '/^DNS\.5.*/a DNS.6 = foundry.local' /var/snap/microk8s/current/certs/csr.conf.template
-
+# Add dnsmasq resolver and other required packages
 cat <<EOF > /etc/netplan/01-host-access.yaml
-# Add loopback address for pods to talk to host
+# Add loopback address for pods to use dnsmasq as upstream resolver
 network:
   version: 2
   ethernets:
@@ -68,8 +41,27 @@ network:
         - 10.0.1.1/32:
             label: lo:host-access
 EOF
-
 netplan apply
+
+mkdir /etc/dnsmasq.d
+cat <<EOF > /etc/dnsmasq.d/foundry.conf
+server=8.8.8.8
+no-resolv
+bind-interfaces
+listen-address=10.0.1.1
+interface-name=foundry.local,eth0
+EOF
+
+apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass
+
+
+# Install MicroK8s
+snap install microk8s --classic --channel=1.23/stable
+microk8s status --wait-ready
+microk8s enable dns storage ingress metrics-server
+usermod -a -G microk8s $SSH_USERNAME
+chown -f -R $SSH_USERNAME:$SSH_USERNAME ~/.kube
+sed -i '/^DNS\.5.*/a DNS.6 = foundry.local' /var/snap/microk8s/current/certs/csr.conf.template
 
 # Install kubectl and Helm clients
 snap install kubectl --classic
