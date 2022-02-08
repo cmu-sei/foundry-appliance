@@ -9,6 +9,9 @@
 
 echo "$APPLIANCE_VERSION" > /etc/appliance_version
 
+# Expand LVM volume to use full drive capacity
+~/foundry/expand-volume
+
 # Disable swap for Kubernetes
 swapoff -a
 sed -i -r 's/(\/swap\.img.*)/#\1/' /etc/fstab
