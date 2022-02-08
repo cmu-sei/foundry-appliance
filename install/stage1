@@ -17,6 +17,21 @@ sed -i -r 's/(\/swap\.img.*)/#\1/' /etc/fstab
 apt-get update
 apt-get full-upgrade -y
 
+# Stop multipathd errors in syslog
+cat <<EOF | sudo tee -a /etc/multipath.conf
+blacklist {
+  device {
+    vendor "VBOX"
+    product "HARDDISK"
+  }
+  device {
+    vendor "VMware"
+    product "Virtual disk"
+  }
+}
+EOF
+systemctl restart multipathd
+
 # Change resolver to dnsmasq and install other needed packages
 systemctl disable --now systemd-resolved
 rm -f /etc/resolv.conf
