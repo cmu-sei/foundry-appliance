@@ -26,7 +26,7 @@ TOPOMOJO_ACCESS_TOKEN=$(curl --silent --request POST \
                              --data client_secret=foundry \
                              --data username=administrator@foundry.local \
                              --data password=foundry | jq -r '.access_token')
-                            
+
 
 if [[ ! $1 =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   echo -e "\nUsage: $0 <esxi ip address>\n"
@@ -61,7 +61,7 @@ ssh $ESXI_USER@$ESXI_HOSTNAME << EOF
     cp $ESXI_CERTDIR/rui.crt $ESXI_CERTDIR/rui.crt.orig
   fi
   echo "$RUI_CRT" > $ESXI_CERTDIR/rui.crt
-  
+
   if [ ! -f "$ESXI_CERTDIR/rui.key.orig" ]; then
     cp $ESXI_CERTDIR/rui.key $ESXI_CERTDIR/rui.key.orig
   fi
