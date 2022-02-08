@@ -18,7 +18,7 @@ apt-get update
 apt-get full-upgrade -y
 
 # Stop multipathd errors in syslog
-cat <<EOF | sudo tee -a /etc/multipath.conf
+cat <<EOF >> /etc/multipath.conf
 blacklist {
   device {
     vendor "VBOX"
@@ -32,15 +32,18 @@ blacklist {
 EOF
 systemctl restart multipathd
 
-# Change resolver to dnsmasq and install other needed packages
-systemctl disable --now systemd-resolved
-rm -f /etc/resolv.conf
-echo 'nameserver 8.8.8.8' > /etc/resolv.conf
+# Add dnsmasq resolver other needed packages
 apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass
-mv ~/foundry/dnsmasq.conf /etc/dnsmasq.d/foundry.conf
-chown root:root /etc/dnsmasq.d/foundry.conf
+
+cat <<EOF > /etc/dnsmasq.d/foundry.conf
+server=8.8.8.8
+no-resolv
+bind-interfaces
+listen-address=10.0.1.1
+interface-name=foundry.local,eth0
+EOF
+
 systemctl restart dnsmasq
-sed -i -r 's/(use-ipv6=).*/\1no/' /etc/avahi/avahi-daemon.conf
 
 # Install MicroK8s
 snap install microk8s --classic --channel=1.23/stable
@@ -49,6 +52,7 @@ microk8s enable dns storage ingress metrics-server
 usermod -a -G microk8s $SSH_USERNAME
 chown -f -R $SSH_USERNAME:$SSH_USERNAME ~/.kube
 sed -i '/^DNS\.5.*/a DNS.6 = foundry.local' /var/snap/microk8s/current/certs/csr.conf.template
+
 cat <<EOF > /etc/netplan/01-host-access.yaml
 # Add loopback address for pods to talk to host
 network:
@@ -61,6 +65,7 @@ network:
         - 10.0.1.1/32:
             label: lo:host-access
 EOF
+
 netplan apply
 
 # Install kubectl and Helm clients
