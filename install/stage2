@@ -10,11 +10,11 @@
 # Generate SSH key
 ssh-keygen -t rsa -f ~/.ssh/id_rsa -q -N ''
 
-# Pause for 10 seconds to avoid MicroK8s permissions error
-sleep 10
+# Sleep to avoid MicroK8s permissions error
+sleep 20
 microk8s status --wait-ready
 microk8s config -l > ~/.kube/config
 chmod 600 ~/.kube/config
 
 # Generate CA and host certificates
-~/foundry/certs/generate-certs.sh
+~/foundry/certs/generate-certs.sh -loglevel 3
