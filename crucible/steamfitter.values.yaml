@@ -124,7 +124,7 @@ steamfitter-api:
     Authorization__Authority: https://foundry.local/identity
     Authorization__AuthorizationUrl: https://foundry.local/identity/connect/authorize
     Authorization__TokenUrl: https://foundry.local/identity/connect/token
-    Authorization__AuthorizationScope: "steamfitter-api vm-api"
+    Authorization__AuthorizationScope: "steamfitter-api vm-api player-api"
     Authorization__ClientId: steamfitter-api
     Authorization__ClientName: "Steamfitter API"
 
@@ -133,10 +133,11 @@ steamfitter-api:
     ResourceOwnerAuthorization__ClientId: steamfitter-admin
     ResourceOwnerAuthorization__UserName: crucible-admin@foundry.local #TODO
     ResourceOwnerAuthorization__Password: foundry #TODO
-    ResourceOwnerAuthorization__Scope: "vm-api"
+    ResourceOwnerAuthorization__Scope: "vm-api player-api"
 
     ClientSettings__urls__steamfitterApi: https://foundry.local/steamfitter
     ClientSettings__urls__vmApi: https://foundry.local/vm
+    ClientSettings__urls__playerApi: https://foundry.local/player
 
     # Stackstorm Configuration
     # TODO - Document Stackstorm dependencies
