@@ -8,6 +8,8 @@ Foundry Appliance is a virtual machine that integrates cyber workforce developme
 
 This project builds the virtual appliance using Ubuntu and [K3s](https://k3s.io/)&mdash;a lightweight Kubernetes environment. Pre-built OVA images are also available under [Releases](https://github.com/cmu-sei/foundry-appliance/releases).
 
+The appliance comes in three flavors depnding on your use case. It can be built with the foundry applications, curcible applications or both.
+
 ## Getting Started
 
 After deploying the appliance, visit https://foundry.local to begin using the apps. Or login using the VM console:
@@ -22,8 +24,18 @@ password: foundry
 The following SEI apps are loaded on the appliance:
 
 - [Identity](https://github.com/cmu-sei/identity) - OAuth2/OIDC identity provider
+
+### Foundry
+
 - [TopoMojo](https://github.com/cmu-sei/topomojo) - Virtual lab builder and player
 - [Gameboard](https://github.com/cmu-sei/gameboard) - Competition manager
+
+### Crucible
+
+- [Alloy]()
+- [Caster]()
+- [Player]()
+- [Steamfitter]()
 
 ## Build
 
@@ -73,3 +85,19 @@ To add VirtualBox to the previous build, run this command:
 ```
 ./build-appliance <hypervisor> <apps> -on-error=abort -force
 ```
+
+## Crucible - Configuration
+
+Deploy the OVA in a network that can reach the vCenter server. Once powered on run the following commands. it is recomended you place the OVA on fast storage such as SSDs
+
+`~/crucible/seetup-vcenter`
+
+you will be asked a series of questions about your infrastructure. This is to configure some of the crucible apps and optionally provide values for the example data.
+
+## Crucible - Example Data
+
+After configuration you may which to import the example data. Be warned this is a destructive operation. Do not run this script if you have existing data on the appliance.
+
+`~/curible/import-content`
+
+follow the quick start instructions for access to the appliance.
