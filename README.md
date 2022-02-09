@@ -88,16 +88,16 @@ To add VirtualBox to the previous build, run this command:
 
 ## Crucible - Configuration
 
-Deploy the OVA in a network that can reach the vCenter server. Once powered on run the following commands. it is recomended you place the OVA on fast storage such as SSDs
+Deploy the OVA in a network that can reach the vCenter server. Once powered on run the following commands. It is recomended you place the OVA on fast storage such as SSDs
 
-`~/crucible/seetup-vcenter`
+`~/crucible/setup-vcenter`
 
-you will be asked a series of questions about your infrastructure. This is to configure some of the crucible apps and optionally provide values for the example data.
+You will be asked a series of questions about your infrastructure. This is to configure some of the crucible apps and optionally provide values for the example data.
 
 ## Crucible - Example Data
 
-After configuration you may which to import the example data. Be warned this is a destructive operation. Do not run this script if you have existing data on the appliance.
+After configuration you may wish to import the example data. Be warned this is a destructive operation. Do not run this script if you have existing data on the appliance.
 
-`~/curible/import-content`
+`~/crucible/import-content`
 
-follow the quick start instructions for access to the appliance.
+Follow the quick start instructions for access to the appliance.
