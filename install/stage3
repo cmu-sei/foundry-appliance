@@ -13,3 +13,5 @@ update-ca-certificates
 
 # Restart mDNS daemon to avoid conflict with other hosts
 systemctl restart avahi-daemon
+
+

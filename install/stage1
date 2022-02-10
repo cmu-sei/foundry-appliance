@@ -121,4 +121,13 @@ echo -e "Foundry Appliance $APPLIANCE_VERSION \\\n \l \n" > /etc/issue
 # Enable quiet boot and reboot for changes to take effect
 sed -i -r 's/(GRUB_CMDLINE_LINUX_DEFAULT=).*/\1"quiet net.ifnames=0 biosdevname=0"/' /etc/default/grub
 update-grub
+
+# Ensure scrits are executable
+chmod +x ../common/certs/*.sh \
+  ../common/setup* \
+  ../foundry/setup* \
+  ../foundry/import-content \
+  ../crucible/setup* \
+  ../foundry/import-content \
+  ../setup* 
 reboot
