@@ -7,6 +7,9 @@
 
 # Minimal settings
 global:
+  image: 
+    pullPolicy: IfNotPresent
+    
   ingress:
     configureCertmanager: false
     class: "public"

@@ -119,6 +119,7 @@ build {
   provisioner "shell" {
     inline = [
       "dd if=/dev/zero of=~/zerofill bs=1M,
+      "rm -f ~/zerofill
     ]
   }
 }

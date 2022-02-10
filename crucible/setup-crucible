@@ -14,8 +14,6 @@ root_dir=/home/foundr1y
 # dependancy installs
 ./setup-gitlab
 
-helm repo add stackstorm https://helm.stackstorm.com/
-helm repo update
 helm upgrade --wait --install -f mongodb.values.yaml mongodb bitnami/mongodb
 if [ -f $root_dir/crucible/vcenter.env ]; then 
   import_vars $root_dir/crucible/vcenter.env

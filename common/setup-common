@@ -33,16 +33,6 @@ kubectl create secret tls appliance-cert --key certs/host-key.pem --cert <( cat 
 kubectl create secret generic appliance-root-ca --from-file=appliance-root-ca=certs/root-ca.pem --dry-run=client -o yaml | kubectl apply -f -
 kubectl create configmap appliance-root-ca --from-file=root-ca.crt=certs/root-ca.pem --dry-run=client -o yaml | kubectl apply -f -
 
-# Add helm repos and update
-helm repo add bitnami https://charts.bitnami.com/bitnami
-helm repo add runix https://helm.runix.net/
-helm repo add nicholaswilde https://nicholaswilde.github.io/helm-charts/
-helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
-helm repo add gitea https://dl.gitea.io/charts/
-helm repo add kvaps https://kvaps.github.io/charts
-helm repo add sei https://helm.cyberforce.site/charts
-helm repo update
-
 # Install PostgreSQL and pgAdmin4
 helm upgrade --install --version 11.0.2 -f postgresql.values.yaml postgresql bitnami/postgresql
 #helm install -f pgadmin4.values.yaml pgadmin4 runix/pgadmin4

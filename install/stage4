@@ -1,0 +1,21 @@
+#!/bin/bash -e
+#
+# Copyright 2022 Carnegie Mellon University.
+# Released under a BSD (SEI)-style license, please see LICENSE.md in the
+# project root or contact permission@sei.cmu.edu for full terms.
+#
+# Foundry Appliance Install - Stage 4
+# Support offline running of setup scripts
+
+# Add helm repos and update
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo add runix https://helm.runix.net/
+helm repo add nicholaswilde https://nicholaswilde.github.io/helm-charts/
+helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
+helm repo add gitea https://dl.gitea.io/charts/
+helm repo add kvaps https://kvaps.github.io/charts
+helm repo add sei https://helm.cyberforce.site/charts
+helm repo add stackstorm https://helm.stackstorm.com/
+helm repo add gitlab https://charts.gitlab.io
+helm repo update
+

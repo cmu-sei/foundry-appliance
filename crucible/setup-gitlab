@@ -24,9 +24,6 @@ api_url="$gitlab_host/api/v4"
 # add gitlab to hosts file
 echo "foundry" | sudo -S bash -c "source ../scripts/utils; add_host_entry $(ip route get 1 | awk '{print $(NF-2);exit}') gitlab.$DOMAIN"
 
-# add repo and update
-helm repo add gitlab https://charts.gitlab.io
-helm repo update
 echo "Waiting for Postgres to be ready."
 while [ "$(kubectl get pods postgresql-0 -o jsonpath="{.status.phase}")" != "Running" ]; do
   printf '.'
