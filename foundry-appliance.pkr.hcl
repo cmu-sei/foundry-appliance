@@ -110,4 +110,10 @@ build {
       "~/setup ${var.apps}",
     ]
   }
+
+  provisioner "shell" {
+    inline = [
+      "dd if=/dev/zero of=~/zerofill bs=1M,
+    ]
+  }
 }
