@@ -111,6 +111,19 @@ identity-api:
             ]
           },
           {
+            "Name": "gameboard-swagger",
+            "DisplayName": "Gameboard Swagger",
+            "Enabled": true,
+            "SeedFlags" : "AllowRememberConsent",
+            "SeedGrant": "authorization_code",
+            "SeedScopes": "openid profile gameboard-api",
+            "Urls": [
+              { "Type": "ClientUri", "Value": "https://foundry.local/gameboard/api" },
+              { "Type": "RedirectUri", "Value": "https://foundry.local/gameboard/api/oauth2-redirect.html" },
+              { "Type": "PostLogoutRedirectUri", "Value": "https://foundry.local/gameboard/api" }
+            ]
+          },
+          {
             "Name": "topomojo-client",
             "DisplayName": "TopoMojo",
             "Enabled": true,
@@ -122,6 +135,19 @@ identity-api:
               { "Type": "RedirectUri", "Value": "https://foundry.local/topomojo/oidc" },
               { "Type": "RedirectUri", "Value": "https://foundry.local/topomojo/oidc-silent.html" },
               { "Type": "PostLogoutRedirectUri", "Value": "https://foundry.local/topomojo" }
+            ]
+          },
+          {
+            "Name": "topomojo-swagger",
+            "DisplayName": "TopoMojo Swagger",
+            "Enabled": true,
+            "SeedFlags" : "AllowRememberConsent",
+            "SeedGrant": "authorization_code",
+            "SeedScopes": "openid profile topomojo-api",
+            "Urls": [
+              { "Type": "ClientUri", "Value": "https://foundry.local/topomojo/api" },
+              { "Type": "RedirectUri", "Value": "https://foundry.local/topomojo/api/oauth2-redirect.html" },
+              { "Type": "PostLogoutRedirectUri", "Value": "https://foundry.local/topomojo/api" }
             ]
           }
         ]
