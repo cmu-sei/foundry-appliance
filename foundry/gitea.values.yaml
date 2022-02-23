@@ -101,6 +101,8 @@ gitea:
       ROOT_URL: https://foundry.local/gitea/
     security:
       PASSWORD_COMPLEXITY: "off"
+    repository:
+      DEFAULT_BRANCH: main
 
   podAnnotations: {}
 
