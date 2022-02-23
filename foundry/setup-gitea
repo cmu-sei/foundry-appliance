@@ -29,13 +29,13 @@ curl "${CURL_OPTS[@]}" \
 EOF
 
 # Create repo
-# for repo in $(find $DOCS_DIR -maxdepth 1 -mindepth 1 -type d -printf '%P\n'); do
 curl "${CURL_OPTS[@]}" \
     --request POST "https://foundry.local/gitea/api/v1/orgs/foundry/repos?access_token=$USER_TOKEN" \
     --data @- <<EOF
 {
   "name": "web",
-  "private": false
+  "private": false,
+  "default_branch": "main"
 }
 EOF
 

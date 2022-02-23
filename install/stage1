@@ -17,6 +17,7 @@ swapoff -a
 sed -i -r 's/(\/swap\.img.*)/#\1/' /etc/fstab
 
 # Upgrade existing Ubuntu packages
+sudo add-apt-repository ppa:git-core/ppa -y
 apt-get update
 apt-get full-upgrade -y
 
