@@ -113,6 +113,7 @@ topomojo-api:
     Database__AdminId: dee684c5-2eaf-401a-915b-d3d4320fe5d5
     Database__AdminName: Administrator
     Cache__SharedFolder: ""
+    OpenApi__Client__ClientId: topomojo-swagger
     FileUpload__IsoRoot: /mnt/tm
     FileUpload__TopoRoot: /mnt/tm
     FileUpload__DocRoot: /mnt/tm/_docs
