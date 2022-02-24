@@ -1,0 +1,38 @@
+site_name: Foundry Appliance
+site_url: https://foundry.local/start
+markdown_extensions:
+  - attr_list
+  - md_in_html
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue
+      accent: pink
+      toggle:
+        icon: material/lightbulb-outline
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: light green
+      accent: amber
+      toggle:
+        icon: material/lightbulb
+        name: Switch to light mode
+  logo: assets/f-icon.svg
+  favicon: assets/favicon.png
+repo_url: https://github.com/cmu-sei/foundry-appliance
+repo_name: cmu-sei/foundry-appliance
+edit_uri: ""
+copyright: Copyright &copy; 2022 Carnegie Mellon University
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/cmu-sei
+    - icon: fontawesome/brands/docker
+      link: https://hub.docker.com/u/cmusei
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/sei_cmu
+    - icon: fontawesome/brands/linkedin
+      link: https://www.linkedin.com/company/software-engineering-institute/

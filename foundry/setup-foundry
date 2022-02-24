@@ -38,10 +38,10 @@ helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
 helm install -f kubernetes-dashboard.values.yaml kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard
 
 # Add root CA to chart values
-ed -s staticweb.values.yaml <<< $'/cacert:/s/\"\"/|-/\n/cacert:/r !sed "s/^/  /" certs/root-ca.pem\nw'
+ed -s mkdocs-material.values.yaml <<< $'/cacert:/s/\"\"/|-/\n/cacert:/r !sed "s/^/  /" certs/root-ca.pem\nw'
 ed -s gameboard.values.yaml <<< $'/cacert:/s/\"\"/|-/\n/cacert:/r !sed "s/^/    /" certs/root-ca.pem\nw'
 ed -s topomojo.values.yaml <<< $'/cacert.crt:/s/\"\"/|-/\n/cacert.crt:/r !sed "s/^/        /" certs/root-ca.pem\nw'
-cp certs/root-ca.pem web/root-ca.crt
+cp certs/root-ca.pem ../mkdocs/docs/root-ca.crt
 
 # Install Gitea
 git config --global init.defaultBranch main
@@ -63,7 +63,7 @@ kubectl apply -f topomojo-pvc.yaml
 # Foundry Stack install
 helm repo add sei https://helm.cyberforce.site/charts
 helm install -f identity.values.yaml identity sei/identity
-helm install -f staticweb.values.yaml staticweb sei/staticweb
+helm install -f mkdocs-material.values.yaml mkdocs-material sei/mkdocs-material
 helm install --wait -f topomojo.values.yaml topomojo sei/topomojo
 sleep 60
 
