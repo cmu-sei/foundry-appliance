@@ -5,14 +5,25 @@ replicaCount: 1
 ## pgAdmin4 container image
 ##
 image:
+  registry: docker.io
   repository: dpage/pgadmin4
-  tag: "4.27"
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
   pullPolicy: IfNotPresent
+
+## Deployment annotations
+annotations: {}
+
+## Deployment entrypoint override
+## Useful when there's a requirement to modify container's default:
+## https://www.vaultproject.io/docs/platform/k8s/injector/examples#environment-variable-example
+## ref: https://github.com/postgres/pgadmin4/blob/master/Dockerfile#L206
+# command: "['/bin/sh', '-c', 'source /vault/secrets/config && <entrypoint script>']"
 
 service:
   type: ClusterIP
   port: 80
-  targetPort: http
+  targetPort: 80
   # targetPort: 4181 To be used with a proxy extraContainer
   portName: http
 
@@ -25,6 +36,18 @@ service:
   ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
   ##
   # nodePort:
+
+## Pod Service Account
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
+##
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
 
 ## Strategy used to replace old Pods by new ones
 ## Ref: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
@@ -42,64 +65,38 @@ strategy: {}
 serverDefinitions:
   ## If true, server definitions will be created
   ##
-  enabled: false
+  enabled: true
 
-  servers: |-
-  #  "1": {
-  #    "Name": "Minimally Defined Server",
-  #    "Group": "Servers",
-  #    "Port": 5432,
-  #    "Username": "postgres",
-  #    "Host": "localhost",
-  #    "SSLMode": "prefer",
-  #    "MaintenanceDB": "postgres"
-  #  }
+  servers:
+    foundry:
+      Name: "foundry"
+      Group: "Servers"
+      Port: 5432
+      Username: "postgres"
+      Host: "postgresql"
+      PassFile: "../../pgpass.conf"
+      SSLMode: "prefer"
+      MaintenanceDB: "postgres"
 
 networkPolicy:
   enabled: true
 
+## Ingress
+## Ref: https://kubernetes.io/docs/concepts/services-networking/ingress/
 ingress:
-  ## If true, pgAdmin4 Ingress will be created
-  ##
   enabled: true
-
-  ## pgAdmin4 Ingress annotations
-  ##
-  annotations: {}
-    ## Indicate that the ingress should be handled by NGINX controller
-    # kubernetes.io/ingress.class: nginx
-    #
-    ## When setting `ingress.hosts.paths`, pgAdmin needs additional header
-    ## to be passed.
-    ## Ref: https://www.pgadmin.org/docs/pgadmin4/latest/container_deployment.html#http-via-nginx
-    # nginx.ingress.kubernetes.io/configuration-snippet: |
-    #   proxy_set_header X-Script-Name /pgadmin4;
-    #
-    ## If TLS is terminated elsewhere (on external load balancer), you may want
-    ## to redirect to `https://` URL scheme along with rewriting URL path if
-    ## `ingress.hosts.paths` is set. This is specific for image version >= 4.22.
-    ## Ref: https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#proxy-redirect
-    # nginx.ingress.kubernetes.io/proxy-redirect-from: "~^http://([^/]+)/(pgadmin4/)?(.*)$"
-    # nginx.ingress.kubernetes.io/proxy-redirect-to: "https://$1/pgadmin4/$3"
-    #
-    ## Secure Ingress with kube-lego or cert-manager if they are deployed into
-    ## the cluster.
-    ## Ref: https://cert-manager.io/docs/usage/ingress/#optional-configuration
-    # kubernetes.io/tls-acme: "true"
-
-  ## pgAdmin4 Ingress hostnames with optional path
-  ## Must be provided if Ingress is enabled
+  annotations:
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header X-Script-Name /pgadmin;
   hosts:
-    - host: pgadmin.foundry.local
+    - host: foundry.local
       paths:
-        - "/"
-
-  ## pgAdmin4 Ingress TLS configuration
-  ## Secrets must be manually created in the namespace
+        - path: /pgadmin
+          pathType: Prefix
   tls:
-    - secretName: pgadmin.foundry.local
+    - secretName: appliance-cert
       hosts:
-        - pgadmin.foundry.local
+        - foundry.local
 
 # Additional config maps to be mounted inside a container
 # Can be used to map config maps for sidecar as well
@@ -110,12 +107,12 @@ extraConfigmapMounts: []
   #   configMap: certs-configmap
   #   readOnly: true
 
-extraSecretMounts: []
-  # - name: pgpassfile
-  #   secret: pgpassfile
-  #   subPath: pgpassfile
-  #   mountPath: "/var/lib/pgadmin/storage/pgadmin/file.pgpass"
-  #   readOnly: true
+extraSecretMounts:
+  - name: pgpassfile
+    secret: pgpassfile
+    subPath: pgpassfile
+    mountPath: "/pgpass.conf"
+    readOnly: true
 
 ## Specify additional containers in extraContainers.
 ## For example, to add an authentication proxy to a pgadmin4 pod.
@@ -145,8 +142,11 @@ existingSecret: ""
 env:
   # can be email or nickname
   email: administrator@foundry.local
-  password: tartans
+  password: foundry
   # pgpassfile: /var/lib/pgadmin/storage/pgadmin/file.pgpass
+
+  # set context path for application (e.g. /pgadmin4/*)
+  # contextPath: /pgadmin4
 
   ## If True, allows pgAdmin4 to create session cookies based on IP address
   ## Ref: https://www.pgadmin.org/docs/pgadmin4/latest/config_py.html
@@ -199,14 +199,6 @@ securityContext:
   runAsGroup: 5050
   fsGroup: 5050
 
-resources: {}
-#   limits:
-#     cpu: 100m
-#     memory: 128Mi
-#   requests:
-#     cpu: 100m
-#     memory: 128Mi
-
 ## pgAdmin4 readiness and liveness probe initial delay and timeout
 ## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 ##
@@ -235,15 +227,45 @@ VolumePermissions:
 ## Additional InitContainers to initialize the pod
 ##
 extraInitContainers: |
-#   - name: add-folder-for-pgpass
-#     image: "dpage/pgadmin4:4.23"
-#     command: ["/bin/mkdir", "-p", "/var/lib/pgadmin/storage/pgadmin"]
-#     volumeMounts:
-#       - name: pgadmin-data
-#         mountPath: /var/lib/pgadmin
-#     securityContext:
-#       runAsUser: 5050
+  - name: prepare-pgpass
+    image: "dpage/pgadmin4:latest"
+    command:
+      - "sh"
+      - "-c"
+      - "cp /pgpass.conf /var/lib/pgadmin/pgpass.conf && chown pgadmin:pgadmin /var/lib/pgadmin/pgpass.conf && chmod 600 /var/lib/pgadmin/pgpass.conf"
+    volumeMounts:
+      - name: pgadmin-data
+        mountPath: /var/lib/pgadmin
+      - name: pgpassfile
+        subPath: pgpassfile
+        mountPath: /pgpass.conf
+    securityContext:
+      runAsUser: 0
 
+containerPorts:
+  http: 80
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+## Horizontal Pod Autoscaling
+## ref: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+#
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
 
 ## Node labels for pgAdmin4 pod assignment
 ## Ref: https://kubernetes.io/docs/user-guide/node-selection/
@@ -263,7 +285,34 @@ affinity: {}
 ##
 podAnnotations: {}
 
+## Pod labels
+##
+podLabels: {}
+  # key1: value1
+  # key2: value2
+
 init:
   ## Init container resources
   ##
   resources: {}
+
+## Define values for chart tests
+test:
+  ## Container image for test-connection.yaml
+  image:
+    registry: docker.io
+    repository: busybox
+    tag: latest
+  ## Resources request/limit for test-connection Pod
+  resources: {}
+#     limits:
+#       cpu: 25m
+#       memory: 16Mi
+#     requests:
+#       cpu: 50m
+#       memory: 32Mi
+  ## Security context for test-connection Pod
+  securityContext:
+    runAsUser: 5051
+    runAsGroup: 5051
+    fsGroup: 5051

@@ -27,7 +27,7 @@ The following Foundry applications are loaded on this appliance:
 | -------- | --- | ----------- |
 | [/identity](/identity)|[api](/identity/api)| _Identity_ manages logins/credentials across all of the apps. It can integrate with any OAuth2/OIDC application.|
 | [/topomojo](/topomojo)|[api](/topomojo/api)| _TopoMojo_ allows users to build on-demand labs.|
-| [/gameboard](/gameboard)|[api](/gameboard/api/)| _Gameboard_ provides a platform for cyber competition development and delivery.|
+| [/gameboard](/gameboard)|[api](/gameboard/api)| _Gameboard_ provides a platform for cyber competition development and delivery.|
 
 ## Third-party apps
 
@@ -37,6 +37,7 @@ The following third-party applications are loaded on this appliance:
 | -------- | ----------- |
 | [/dashboard](/dashboard)| _Kubernetes Dashboard_ provides details regarding the container deployment for the appliance. |
 | [/gitea](/gitea)| _Gitea_ provides a user interface for editing the web content on the appliance (including this page).|
+| [/pgadmin](/pgadmin)| _pgAdmin_ provides a GUI for managing the PostgreSQL databases for each app. |
 | [/vscode](/vscode)| _code-server_ runs a browser version of [Visual Studio Code](https://code.visualstudio.com) to configure the appliance.
 
 ## Demo challenge
