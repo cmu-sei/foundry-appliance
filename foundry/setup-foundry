@@ -26,7 +26,7 @@ kubectl create secret tls appliance-cert --key certs/host-key.pem --cert <( cat 
 # Install PostgreSQL and pgAdmin4
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo add runix https://helm.runix.net/
-helm install -f postgresql.values.yaml postgresql bitnami/postgresql
+helm install --wait -f postgresql.values.yaml postgresql bitnami/postgresql
 #helm install -f pgadmin4.values.yaml pgadmin4 runix/pgadmin4
 
 # Install code-server (browser-based VS Code)
@@ -46,6 +46,7 @@ cp certs/root-ca.pem ../mkdocs/docs/root-ca.crt
 # Install Gitea
 git config --global init.defaultBranch main
 helm repo add gitea https://dl.gitea.io/charts/
+kubectl exec postgresql-0 -- psql 'postgresql://postgres:foundry@localhost' -c 'CREATE DATABASE gitea;'
 helm install -f gitea.values.yaml gitea gitea/gitea
 timeout 5m bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' https://foundry.local/gitea)" != "200" ]]; do sleep 5; done' || false
 ./setup-gitea

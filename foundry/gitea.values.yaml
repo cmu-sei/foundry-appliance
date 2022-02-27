@@ -99,6 +99,13 @@ gitea:
     server:
       DOMAIN: https://foundry.local/gitea/
       ROOT_URL: https://foundry.local/gitea/
+    database:
+      DB_TYPE: postgres
+      HOST: postgresql:5432
+      NAME: gitea
+      USER: postgres
+      PASSWD: foundry
+      SCHEMA: public
     security:
       PASSWORD_COMPLEXITY: "off"
     repository:
@@ -142,7 +149,7 @@ memcached:
     port: 11211
 
 postgresql:
-  enabled: true
+  enabled: false
   global:
     postgresql:
       postgresqlDatabase: gitea
