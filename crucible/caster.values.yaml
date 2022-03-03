@@ -1,4 +1,5 @@
 caster-api:
+  kind: "StatefulSet"
   image:
     repository: cmusei/caster-api
     tag: '3.0.3'

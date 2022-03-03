@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # kex_q is a modified version of k-alias's 'kex' command, that allows you to add a quoted argument.
 # Many applications need quoted arguments to work. This function was inspired by gitlab-rails runner
 # single line commands but could be useful for 'jq' and others. It's designed to allow positional and 
@@ -265,4 +264,169 @@ function encrypt_string() {
 function decrypt_string() {
   string=$1
   echo "$string" | openssl enc -aes-256-cbc -md sha512 -a -d -pbkdf2 -iter 100000 -salt -pass pass:'gP47LkDeJmnmgx2rbsUPegJB33bHhp3DQheBSJv4YfheNtXFAzUnYy4azQceFMrB'
+}
+function is_online() {
+  wget -q --spider --timeout 3 http://google.com
+  if [ $? -eq 0 ]; then
+      echo true
+  else
+      echo false
+  fi
+}
+
+function helm_deploy() {
+ #!/bin/bash -xe
+  version=''
+  helm_dir=''
+  var_file=''
+  values_file=''
+  timeout=''
+
+  r=n 
+  p=n
+  w=n 
+  t=n
+  v= 
+  u=n 
+  f=
+
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      -r|--replace-vars)
+        r=y
+        var_file=$2
+        shift 2
+        ;;
+      -p|--pull-helm)
+        p=y
+        helm_dir="${2:-./helm}"
+        if [[ -n $2 ]]; then
+          shift 2
+        else
+          shift 1
+        fi
+        ;;
+      -v|--version)
+        version="$2"
+        shift 2
+        ;;
+      -u|--upgrade)
+        u=y
+        shift
+        ;;
+      -f|--values)
+        values_file="$2"
+        shift 2
+        ;;
+      -w|--wait)
+        w=y
+        shift
+        ;;
+      -t|--timeout)
+        t=y
+        timeout=$2
+        shift 2
+        ;;
+      *)
+        break;;
+    esac
+  done 
+
+  # Handle positional arguments
+  repo_app=$1
+  repo=$(cut -d "/" -f1 <<< "$repo_app")
+  app=$(cut -d "/" -f2 <<< "$repo_app")
+
+  echo "replace: $r, pull-helm: $p, version: ${version:-latest}, upgrade: $u"
+
+  # pull and cache the helm chart 
+  if [[ $p -eq y ]]; then 
+    helm_pull $repo_app ${version:-''} $helm_dir
+  fi
+
+  # Replace variables
+  if [[ $r == y ]]; then 
+    echo "$r"
+    import_vars $var_file
+    command+="envsubst < $values_file |"
+  fi
+
+  # Upgrade 
+  if [[ $u == y ]]; then 
+    command="${command} helm upgrade --install"
+  else
+    command="${command} helm install"
+  fi
+
+  # Wait
+  if [[ $w == y ]]; then 
+    command="${command} --wait"
+  fi
+
+  #timeout
+  if [[ $t == y ]]; then
+  command="${command} --timeout $timeout"
+  fi
+
+  # Values file
+  if [[ -n $values_file ]]; then 
+    if [[ $r == y ]]; then
+      command="${command} -f -"
+    else
+      command="${command} -f $values_file"
+    fi
+  fi
+
+  # version
+  if [[ -n $version ]]; then
+    command="${command} --version $version"
+  fi
+
+  # Force install from cache
+  if [[ $(is_online) == false ]]; then
+    if [[ -n $version ]]; then 
+      helm_file="$helm_dir/$app-$version.tgz"
+      command="${command} $app $helm_file"
+    else
+      # Latest.
+      helm_file=$(find $helm_dir -type f -iname "$app*" | sort -r | head -n1 | awk '{print $1}')
+      command="${command} $app $helm_file"
+    fi
+  else
+    command="${command} $app $@"
+  fi
+
+  echo "$command"
+  bash -c "$command"
+  command=''
+}
+
+function helm_pull() {
+  repo_app=$1
+  version=$2
+  helm_path=${3:-helm}
+  repo=$(cut -d "/" -f1 <<< "$repo_app")
+  app=$(cut -d "/" -f2 <<< "$repo_app")
+  mkdir -p $helm_path
+  
+  # Check if helm chart is cached 
+  if [[ $(is_online) == false ]]; then
+    if [[ -n $version ]] && [[ -f $helm_dir/$app-$version.tgz ]]; then
+      # Already Exists. Don't pull. 
+      echo "Helm chart exists for version $version, NOT downloading"
+    elif [[ -f $(find $helm_dir -type f -iname $app | sort -r | head -n1 | awk '{print $1}') ]]; then
+      # Latest.
+      helm_file=$(find $helm_dir -type f -iname $app | sort -r | head -n1 | awk '{print $1}')
+    fi
+  else
+    command="helm pull $repo_app"
+    if [[ -n $version ]]; then 
+      command="${command} --version $version -d $helm_path"
+    else
+      command="${command} -d $helm_path"
+    fi
+  echo $command
+  bash -c "$command"  
+  fi
+  command=''
 }

@@ -5,8 +5,8 @@ DIRECTORY=$(dirname "$BASH_SOURCE[0]")
 cd $DIRECTORY
 source ../scripts/utils
 EXPORTS_PATH="./seed/gitlab"
-TIMEOUT=0
-MAX_TIMEOUT=1200
+GITLAB_TIMEOUT=0
+MAX_GITLAB_TIMEOUT=1200
 DOMAIN="${DOMAIN:-foundry.local}"
 # set gitlab variables.
 GITLAB_TOKEN=$(awk '/Terraform__GitlabToken/ {print $2}' caster.values.yaml | tr -d '"')
@@ -28,8 +28,8 @@ echo "Waiting for Postgres to be ready."
 while [ "$(kubectl get pods postgresql-0 -o jsonpath="{.status.phase}")" != "Running" ]; do
   printf '.'
   sleep 5
-  timeout=$((timeout+5))
-  if [ ${TIMEOUT} -gt ${MAX_TIMEOUT} ]; then
+  gitlab_timeout=$((gitlab_timeout+5))
+  if [ ${GITLAB_TIMEOUT} -gt ${MAX_GITLAB_TIMEOUT} ]; then
     cat << EOF
     Postgres timed out
 
@@ -40,21 +40,22 @@ EOF
 done
 kubectl exec postgresql-0 -- psql 'postgresql://postgres:foundry@localhost' -c "CREATE DATABASE gitlab_db;" || true
 kubectl apply -f gitlab.secrets.yaml 
-helm upgrade --install --version 5.7.1 -f gitlab-min.values.yaml gitlab gitlab/gitlab
+helm_deploy -u -p ../helm --version 5.7.1 -f gitlab-min.values.yaml gitlab/gitlab
+#helm upgrade --install --version 5.7.1 -f gitlab-min.values.yaml gitlab gitlab/gitlab
 
 # Wait for gitllab to come up 
 cat << EOF 
 
   Waiting for gitlab to become available, this may take a while...
   
-  Timeout set to ${MAX_TIMEOUT} seconds
+  Timeout set to ${MAX_GITLAB_TIMEOUT} seconds
 EOF
 
 until $(curl --output /dev/null --silent --head --insecure --fail ${gitlab_host}/users/sign_in); do
   printf '.'
   sleep 5
-  TIMEOUT=$((TIMEOUT+5))
-  if [ $TIMEOUT -gt $MAX_TIMEOUT ]; then
+  GITLAB_TIMEOUT=$((GITLAB_TIMEOUT+5))
+  if [ $GITLAB_TIMEOUT -gt $MAX_GITLAB_TIMEOUT ]; then
     cat << EOF
     Gitlab connection timed out
 

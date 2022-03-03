@@ -9,6 +9,9 @@
 global:
   image: 
     pullPolicy: IfNotPresent
+  busybox:
+    image:
+      pullPolicy: IfNotPresent
     
   ingress:
     configureCertmanager: false
@@ -101,6 +104,8 @@ postgresql:
   install: false
 # Reduce replica counts, reducing CPU & memory requirements
 gitlab:
+  image:
+    pullPolicy: IfNotPresent
   webservice:
     minReplicas: 1
     maxReplicas: 1

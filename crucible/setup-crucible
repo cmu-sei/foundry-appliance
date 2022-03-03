@@ -5,23 +5,27 @@
 # project root or contact permission@sei.cmu.edu for full terms.
 
 #############################
-#   Crucible Stack Install   #
+#   Crucible Stack Install  #
 #############################
 
 # Change to the current directory
 cd "$(dirname "${BASH_SOURCE[0]}")"
-root_dir=/home/foundr1y
+root_dir=/home/foundry
+source ../scripts/utils
 # dependancy installs
 ./setup-gitlab
 
-helm upgrade --wait --install -f mongodb.values.yaml mongodb bitnami/mongodb
+helm_deploy --wait -u -p ../helm -f mongodb.values.yaml bitnami/mongodb
+#helm upgrade --wait --install -f mongodb.values.yaml mongodb bitnami/mongodb
 if [ -f $root_dir/crucible/vcenter.env ]; then 
   import_vars $root_dir/crucible/vcenter.env
   # decrypt Password
   VSPHERE_PASS=$(decrypt_string $VSPHERE_PASS)
-  envsubst < stackstorm-min.values.yaml | helm upgrade --wait --install --timeout 10m -f - stackstorm stackstorm/stackstorm-ha
+  helm_deploy -r $root_dir/crucible/vcenter.env -u -p ../helm --version 0.80.0 --wait --timeout 10m -f stackstorm-min.values.yaml stackstorm/stackstorm-ha
+  #envsubst < stackstorm-min.values.yaml | helm upgrade --wait --install --timeout 10m -f - stackstorm stackstorm/stackstorm-ha
 else
-  helm upgrade --wait --install --timeout 10m -f stackstorm-min.values.yaml stackstorm stackstorm/stackstorm-ha
+  helm_deploy -u -p ../helm --wait --timeout 10m --version 0.80.0 -f stackstorm-min.values.yaml stackstorm/stackstorm-ha
+  #helm upgrade --wait --install --timeout 10m -f stackstorm-min.values.yaml stackstorm stackstorm/stackstorm-ha
 fi
 kubectl apply -f stackstorm-ingress.yaml
 

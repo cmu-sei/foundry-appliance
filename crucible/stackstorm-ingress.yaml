@@ -9,7 +9,6 @@ metadata:
     tier: frontend
     vendor: stackstorm
   annotations:
-    ingress.kubernetes.io/secure-backends: "true"
     kubernetes.io/ingress.class: public
     nginx.ingress.kubernetes.io/rewrite-target: /$1
     nginx.ingress.kubernetes.io/proxy-read-timeout: '86400'
@@ -24,7 +23,7 @@ spec:
           pathType: Prefix
           backend:
             service:
-              name: stackstorm-st2web
+              name: stackstorm-ha-st2web
               port:
                 number: 80
   tls:

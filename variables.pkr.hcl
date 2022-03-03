@@ -44,6 +44,11 @@ variable "vsphere_network" {
   default = "VM Network"
 }
 
+variable "vm_hardware_version" {
+  type = string
+  default = "14"
+}
+
 variable "apps" {
   type = string
   default = "foundry,crucible"

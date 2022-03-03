@@ -96,11 +96,10 @@ if [[ -n ${MOID} ]]; then
   echo "vsphere cluster set"
 fi
 
+# Disable Caster Terraform install. 
+sed -i "s/SKIP_TERRAFORM_INSTALLATION:.*/SKIP_TERRAFORM_INSTALLATION: true/" "caster.values.yaml"
+
 # Redeploy crucible 
-helm delete alloy || true && sleep 5
-helm delete caster || true && sleep 5
-helm delete player || true && sleep 5
-helm delete steamfitter || true && sleep 5
 helm upgrade --install -f player.values.yaml player ../charts/player
 sleep 5
 helm upgrade --install -f caster.values.yaml caster ../charts/caster
