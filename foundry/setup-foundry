@@ -11,14 +11,18 @@
 # Change to the current directory
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-# Forward coredns to host dnsmasq
-kubectl get configmap/coredns -n kube-system -o yaml | sed "s/8.8.8.8 8.8.4.4/10.0.1.1/" | kubectl replace -f -
-kubectl rollout restart deployment/coredns -n kube-system
+# Install NFS server
+helm repo add kvaps https://kvaps.github.io/charts
+helm install -f nfs-server-provisioner.values.yaml nfs-server-provisioner kvaps/nfs-server-provisioner
+kubectl apply -f topomojo-pvc.yaml
 
-# Disable HSTS
-kubectl patch configmap nginx-load-balancer-microk8s-conf \
-                        --patch "$(cat ingress-hsts-disable.yaml)" \
-                        --namespace ingress
+# Install ingress-nginx
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm install ingress-nginx ingress-nginx/ingress-nginx \
+             --wait \
+             --values ingress/ingress-nginx.values.yaml \
+             --namespace ingress \
+             --create-namespace
 
 # Add host certificate
 kubectl create secret tls appliance-cert --key certs/host-key.pem --cert <( cat certs/host.pem certs/int-ca.pem )
@@ -53,16 +57,6 @@ kubectl exec postgresql-0 -- psql 'postgresql://postgres:foundry@localhost' -c '
 helm install -f gitea.values.yaml gitea gitea/gitea
 timeout 5m bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' https://foundry.local/gitea)" != "200" ]]; do sleep 5; done' || false
 ./setup-gitea
-
-# Install NFS server
-helm repo add kvaps https://kvaps.github.io/charts
-helm install -f nfs-server-provisioner.values.yaml nfs-server-provisioner kvaps/nfs-server-provisioner
-kubectl patch daemonset nginx-ingress-microk8s-controller -n ingress --type 'json' --patch \
-  '[{"op": "add", "path": "/spec/template/spec/containers/0/ports/-", "value": {"name":"nfs-tcp","hostPort":2049,"containerPort":2049,"protocol":"TCP"}}]'
-kubectl patch daemonset nginx-ingress-microk8s-controller -n ingress --type 'json' --patch \
-  '[{"op": "add", "path": "/spec/template/spec/containers/0/ports/-", "value": {"name":"nfs-udp","hostPort":2049,"containerPort":2049,"protocol":"UDP"}}]'
-kubectl apply -f nfs-ingress.yaml
-kubectl apply -f topomojo-pvc.yaml
 
 # Foundry Stack install
 helm repo add sei https://helm.cyberforce.site/charts

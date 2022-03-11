@@ -16,8 +16,12 @@ echo "$APPLIANCE_VERSION" > /etc/appliance_version
 swapoff -a
 sed -i -r 's/(\/swap\.img.*)/#\1/' /etc/fstab
 
-# Upgrade existing Ubuntu packages
+# Add new repositories and upgrade existing Ubuntu packages
 sudo add-apt-repository ppa:git-core/ppa -y
+curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+curl https://baltocdn.com/helm/signing.asc | sudo apt-key add -
+echo "deb https://baltocdn.com/helm/stable/debian/ all main" | tee /etc/apt/sources.list.d/helm-stable-debian.list
 apt-get update
 apt-get full-upgrade -y
 
@@ -53,20 +57,15 @@ listen-address=10.0.1.1
 interface-name=foundry.local,eth0
 EOF
 
-apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass
+apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass kubectl helm
 
-
-# Install MicroK8s
-snap install microk8s --classic --channel=1.23/stable
-microk8s status --wait-ready
-microk8s enable dns storage ingress metrics-server
-usermod -a -G microk8s $SSH_USERNAME
-chown -f -R $SSH_USERNAME:$SSH_USERNAME ~/.kube
-sed -i '/^DNS\.5.*/a DNS.6 = foundry.local' /var/snap/microk8s/current/certs/csr.conf.template
-
-# Install kubectl and Helm clients
-snap install kubectl --classic
-snap install helm --classic
+# Install k3s
+mkdir -p /etc/rancher/k3s
+echo "nameserver 10.0.1.1" >> /etc/rancher/k3s/resolv.conf
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=v1.23 INSTALL_K3S_EXEC="--disable traefik --disable servicelb --resolv-conf /etc/rancher/k3s/resolv.conf" sh -
+sudo -u $SSH_USERNAME mkdir ~/.kube
+cp /etc/rancher/k3s/k3s.yaml /home/$SSH_USERNAME/.kube/config
+chown $SSH_USERNAME:$SSH_USERNAME /home/$SSH_USERNAME/.kube/config
 
 # Install CFSSL for certificate generation
 curl -sLo /usr/local/bin/cfssl https://github.com/cloudflare/cfssl/releases/download/v1.5.0/cfssl_1.5.0_linux_amd64

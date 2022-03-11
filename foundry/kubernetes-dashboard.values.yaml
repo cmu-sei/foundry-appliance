@@ -248,7 +248,7 @@ rbac:
   # access to persistentvolumes, pods/log etc.
   #
   # Independent from rbac.create parameter.
-  clusterReadOnlyRole: false
+  clusterReadOnlyRole: true
 
 serviceAccount:
   # Specifies whether a service account should be created

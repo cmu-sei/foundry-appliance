@@ -32,7 +32,7 @@ identity-api:
     existing: ""
     size: "1Gi"
     mode: ReadWriteOnce
-    class: microk8s-hostpath
+    class: local-path
 
   # Config app settings with environment vars.
   # Those most likely needing values are listed. For others,
