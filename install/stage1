@@ -65,6 +65,7 @@ echo "nameserver 10.0.1.1" >> /etc/rancher/k3s/resolv.conf
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=v1.23 INSTALL_K3S_EXEC="--disable traefik --disable servicelb --resolv-conf /etc/rancher/k3s/resolv.conf" sh -
 sudo -u $SSH_USERNAME mkdir ~/.kube
 cp /etc/rancher/k3s/k3s.yaml /home/$SSH_USERNAME/.kube/config
+sed -i 's/default/foundry/g' /home/$SSH_USERNAME/.kube/config
 chown $SSH_USERNAME:$SSH_USERNAME /home/$SSH_USERNAME/.kube/config
 
 # Install CFSSL for certificate generation
@@ -80,7 +81,8 @@ sudo -u $SSH_USERNAME git clone https://github.com/jaggedmountain/k-alias.git
 chmod -x /etc/update-motd.d/00-header
 chmod -x /etc/update-motd.d/10-help-text
 sed -i -r 's/(ENABLED=)1/\10/' /etc/default/motd-news
-ln -s /home/foundry/foundry/foundry-banner /etc/update-motd.d/05-foundry-banner
+cp /home/foundry/$SSH_USERNAME/foundry-banner /etc/update-motd.d/05-foundry-banner
+rm /home/foundry/$SSH_USERNAME/foundry-banner
 sed -i "s/{version}/$APPLIANCE_VERSION/" ~/mkdocs/docs/index.md
 echo -e "Foundry Appliance $APPLIANCE_VERSION \\\n \l \n" > /etc/issue
 

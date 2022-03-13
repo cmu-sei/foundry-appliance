@@ -45,7 +45,8 @@ The following third-party applications are loaded on this appliance:
 The appliance comes preloaded with a sample challenge from _President's Cup 2020_. Run the following commands to download the virtual machine images (~20 GB) to ESXi and load the challenge into TopoMojo.
 
 ```
-cd ~/foundry && ./content-import content pc2-d01.json
+cd ~/foundry/topomojo
+./content-import content/pc2-d01.json
 ```
 
 ## Under the hood

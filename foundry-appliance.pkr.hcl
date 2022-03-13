@@ -108,6 +108,6 @@ build {
   }
 
   provisioner "shell" {
-    inline = ["~/foundry/setup-foundry"]
+    inline = ["~/foundry/install.sh"]
   }
 }

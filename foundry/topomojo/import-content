@@ -53,11 +53,6 @@ EOF
 )
 fi
 
-#workspace_gid=$(curl -s -X GET "https://foundry.local/topomojo/api/workspaces" \
-#  -H "Authorization: Bearer $TOPOMOJO_ACCESS_TOKEN" \
-#  | jq -r -e --arg workspace_name "$workspace_name" '.[] | select(.name==$workspace_name) | .globalId')
-
-
 # Import TopoMojo templates
 IFS=$'\n'
 for template in $(jq -c '.Templates[]' $1); do
@@ -88,7 +83,7 @@ for template in $(jq -c '.Templates[]' $1); do
         tar -xvf /vmfs/volumes/$DATASTORE/tmp/$ova_filename $vmdk_file
         mkdir ../topomojo/$workspace_id
         vmkfstools -i $vmdk_file -d thin ../topomojo/$workspace_id/$vmdk_file
-        rm -f $vmdk_file 
+        rm -f $vmdk_file
 EOF
     fi
 
@@ -122,7 +117,7 @@ EOF
       -c "update \"Templates\" set \"WorkspaceId\" = '$workspace_id' where \"Id\" = '$template_id';"
   fi
 done
-    
+
 # Upload challenge doc to TopoMojo API pod
 doc_path=$(sed 's/\.[^.]*$/\.md/' <<< "$1")
 kup $doc_path topomojo-api:/mnt/tm/_docs/$workspace_id.md
