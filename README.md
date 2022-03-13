@@ -6,7 +6,7 @@ A virtual appliance for building cyber labs, challenges and competitions
 
 Foundry Appliance is a virtual machine that integrates cyber workforce development apps from the [Software Engineering Institute](https://www.sei.cmu.edu) at [Carnegie Mellon University](https://www.cmu.edu).
 
-This project builds the virtual appliance using Ubuntu and [Microk8s](https://microk8s.io/)&mdash;a development Kubernetes environment. Pre-built OVA images are also available under [Releases](https://github.com/cmu-sei/foundry-appliance/releases).
+This project builds the virtual appliance using Ubuntu and [K3s](https://k3s.io/)&mdash;a lightweight Kubernetes environment. Pre-built OVA images are also available under [Releases](https://github.com/cmu-sei/foundry-appliance/releases).
 
 ## Getting Started
 

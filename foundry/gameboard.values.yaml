@@ -67,7 +67,7 @@ gameboard-api:
     existing: ""
     size: "1Gi"
     mode: ReadWriteOnce
-    class: microk8s-hostpath
+    class: local-path
 
   resources: {}
     # We usually recommend not to specify default resources and to leave this as a conscious

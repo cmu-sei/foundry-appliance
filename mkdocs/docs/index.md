@@ -64,6 +64,6 @@ kubectl get pods
 
 The code for building this virtual machine is [available on GitHub](https://github.com/cmu-sei/gameboard-appliance)
 
-The appliance runs all of the apps in a single-host Kubernetes cluster provided by [MicroK8s](https://github.com/ubuntu/microk8s). This provides a starting point for production-ready deployments in a datacenter or cloud.
+The appliance runs all of the apps in a single-host Kubernetes cluster provided by [K3s](https://k3s.io/). This provides a starting point for production-ready deployments in a datacenter or cloud.
 
 ![CMU SEI Unitmark](assets/cmu-sei-unitmark.png){: style="width:400px;margin:40px 0px 0px"}

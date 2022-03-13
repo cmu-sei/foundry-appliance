@@ -71,7 +71,7 @@ persistence:
   size: 1Gi
   accessModes:
     - ReadWriteOnce
-  storageClass: microk8s-hostpath
+  storageClass: local-path
 
 gitea:
   admin:
