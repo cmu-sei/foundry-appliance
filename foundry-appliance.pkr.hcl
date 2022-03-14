@@ -86,7 +86,8 @@ build {
       "./charts",
       "./scripts",
       "setup",
-      "reset"
+      "reset",
+      "appliance.vars"
     ]
   }
 
