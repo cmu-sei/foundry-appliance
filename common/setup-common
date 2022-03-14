@@ -13,17 +13,19 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 source ../scripts/utils
 
 # Add Helm repos and update
-mkdir -p ../helm
-helm repo add bitnami https://charts.bitnami.com/bitnami
-helm repo add runix https://helm.runix.net/
-helm repo add nicholaswilde https://nicholaswilde.github.io/helm-charts/
-helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
-helm repo add gitea https://dl.gitea.io/charts/
-helm repo add kvaps https://kvaps.github.io/charts
-helm repo add sei https://helm.cyberforce.site/charts
-helm repo add stackstorm https://helm.stackstorm.com/
-helm repo add gitlab https://charts.gitlab.io
-helm repo update
+if [[ $(is_online) == true ]]; then
+  mkdir -p ../helm
+  helm repo add bitnami https://charts.bitnami.com/bitnami
+  helm repo add runix https://helm.runix.net/
+  helm repo add nicholaswilde https://nicholaswilde.github.io/helm-charts/
+  helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
+  helm repo add gitea https://dl.gitea.io/charts/
+  helm repo add kvaps https://kvaps.github.io/charts
+  helm repo add sei https://helm.cyberforce.site/charts
+  helm repo add stackstorm https://helm.stackstorm.com/
+  helm repo add gitlab https://charts.gitlab.io
+  helm repo update
+fi
 
 # Forward coredns to host dnsmasq
 appliance_ip=$(ip route get 1 | awk '{print $(NF-2);exit}')
@@ -80,7 +82,7 @@ kubectl patch daemonset nginx-ingress-microk8s-controller -n ingress --type 'jso
 kubectl apply -f nfs-ingress.yaml --dry-run=client -o yaml | kubectl apply -f -
 
 # Install Common foundry apps
-#helm_deploy -u -f identity.values.yaml ../charts/identity
-helm upgrade --install --wait -f identity.values.yaml identity ../charts/identity
-#helm_deploy -u -p ../helm --version 0.2.0 -f staticweb.values.yaml sei/staticweb
-helm upgrade --install --version 0.2.0 -f staticweb.values.yaml staticweb ../charts/staticweb
+helm_deploy -r ../.env -p ../helm -v 0.2.0 -u -f identity.values.yaml sei/identity
+#helm upgrade --install --wait -f identity.values.yaml identity ../charts/identity
+helm_deploy -r ../.env -u -p ../helm --version 0.2.0 -f staticweb.values.yaml sei/staticweb
+#helm upgrade --install --version 0.2.0 -f staticweb.values.yaml staticweb ../charts/staticweb

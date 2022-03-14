@@ -334,15 +334,19 @@ function helm_deploy() {
 
   # Handle positional arguments
   repo_app=$1
-  repo=$(cut -d "/" -f1 <<< "$repo_app")
-  app=$(cut -d "/" -f2 <<< "$repo_app")
+  if [ -d $repo_app ]; then
+    repo=$(<<< $repo_app rev | cut -d "/" -f2)
+    app=$(<<< $repo_app rev | cut -d "/" -f3)
+  else
+    # pull and cache the helm chart 
+    if [[ $p == y ]]; then 
+      helm_pull $repo_app ${version:-''} $helm_dir
+    fi
+    repo=$(cut -d "/" -f1 <<< "$repo_app")
+    app=$(cut -d "/" -f2 <<< "$repo_app")
+  fi
 
   echo "replace: $r, pull-helm: $p, version: ${version:-latest}, upgrade: $u"
-
-  # pull and cache the helm chart 
-  if [[ $p -eq y ]]; then 
-    helm_pull $repo_app ${version:-''} $helm_dir
-  fi
 
   # Replace variables
   if [[ $r == y ]]; then 

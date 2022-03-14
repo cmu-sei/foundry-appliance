@@ -96,7 +96,7 @@ helm completion bash > /etc/bash_completion.d/helm
 # Install Powershell and PowerCLI (vcenter, steamfitter)
 snap install powershell --classic
 pwsh -c 'Set-PSRepository -Name PSGallery -InstallationPolicy Trusted; Install-Module -Name VMWare.PowerCLI -Confirm:$false'
-pwsh -c 'Set-PowerCLIConfiguration -Scope User -ParticipateInCEIP $false -Confirm:$false | Out-Null'
+pwsh -c 'Set-PowerCLIConfiguration -Scope User -ParticipateInCEIP $false -InvalidCertificateAction Ignore -Confirm:$false | Out-Null'
 
 # Install CFSSL for certificate generation
 curl -sLo /usr/local/bin/cfssl https://github.com/cloudflare/cfssl/releases/download/v1.5.0/cfssl_1.5.0_linux_amd64

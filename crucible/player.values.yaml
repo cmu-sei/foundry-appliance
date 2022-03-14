@@ -1,5 +1,5 @@
 player-api:
-
+  kind: "StatefulSet"
   # Docker image release version
   image: 
     repository: cmusei/player-api
@@ -38,94 +38,7 @@ player-api:
     size: ""
     mode: ReadWriteOnce
     class: ""
-  # identity - seed data for the identity server
-  identity:
-    register: true
-    identityMap: identity-identity-api
-    client: |-
-      [
-        {
-          "name": "player-api",
-          "displayName": "Player API",
-          "description": null,
-          "grants": "authorization_code client_credentials",
-          "scopes": "openid profile player-api",
-          "enabled": true,
-          "requirePkce": true,
-          "allowAccessTokensViaBrowser": false,
-          "requireConsent": false,
-          "consentLifetime": "30d",
-          "alwaysIncludeUserClaimsInIdToken": false,
-          "identityTokenLifetime": "5m",
-          "accessTokenLifetime": "1h",
-          "authorizationCodeLifetime": "5m",
-          "allowOfflineAccess": false,
-          "updateAccessTokenClaimsOnRefresh": false,
-          "useOneTimeRefreshTokens": false,
-          "slidingRefreshTokenLifetime": "15d",
-          "absoluteRefreshTokenLifetime": "30d",
-          "published": false,
-          "url": "https://foundry.local/player",
-          "logoUrl": null,
-          "frontChannelLogoutUrl": null,
-          "backChannelLogoutUrl": null,
-          "redirectUrls": [
-            { "value": "https://foundry.local/player/api/oauth2-redirect.html" }
-          ],
-          "postLogoutUrls": [{ "value": "https://foundry.local/player/api" }],
-          "corsUrls": [{ "value": "https://foundry.local" }],
-          "alwaysSendClientClaims": false,
-          "clientClaimsPrefix": "client_",
-          "claims": [],
-          "secrets": [],
-          "managers": []
-        },
-        {
-          "name": "player-admin",
-          "displayName": "Player Admin",
-          "description": null,
-          "grants": "password client_credentials",
-          "scopes": "player-api vm-api",
-          "enabled": true,
-          "requirePkce": true,
-          "allowAccessTokensViaBrowser": false,
-          "requireConsent": false,
-          "consentLifetime": "30d",
-          "alwaysIncludeUserClaimsInIdToken": false,
-          "identityTokenLifetime": "5m",
-          "accessTokenLifetime": "1h",
-          "authorizationCodeLifetime": "5m",
-          "allowOfflineAccess": false,
-          "updateAccessTokenClaimsOnRefresh": false,
-          "useOneTimeRefreshTokens": false,
-          "slidingRefreshTokenLifetime": "15d",
-          "absoluteRefreshTokenLifetime": "30d",
-          "published": false,
-          "url": "https://foundry.local/player",
-          "logoUrl": null,
-          "frontChannelLogoutUrl": null,
-          "backChannelLogoutUrl": null,
-          "corsUrls": [{ "value": "https://foundry.local" }],
-          "alwaysSendClientClaims": false,
-          "clientClaimsPrefix": "client_",
-          "claims": [],
-          "secrets": [],
-          "managers": []
-        }
-      ]
-      
-    resource: |-
-      {
-        "type": "api",
-        "name": "player-api",
-        "displayName": "Player Api",
-        "enabled": true,
-        "default": true,
-        "required": false,
-        "emphasize": false,
-        "showInDiscoveryDocument": true
-      }
-    
+  
   # Config app settings with environment vars.
   # Those most likely needing values are listed. For others,
   # see https://github.com/cmu-sei/crucible/blob/master/player.api/S3.Player.Api/appsettings.json
@@ -194,49 +107,6 @@ player-ui:
       - secretName: appliance-cert
         hosts:
          - foundry.local
-
-  identity:
-    register: true
-    identityMap: identity-identity-api
-    initCommand: ''
-    client: |-
-      {
-        "name": "player-ui",
-        "displayName": "Player UI",
-        "description": null,
-        "grants": "authorization_code client_credentials",
-        "scopes": "openid profile player-api",
-        "enabled": true,
-        "requirePkce": true,
-        "allowAccessTokensViaBrowser": true,
-        "requireConsent": false,
-        "consentLifetime": "30d",
-        "alwaysIncludeUserClaimsInIdToken": false,
-        "identityTokenLifetime": "5m",
-        "accessTokenLifetime": "1h",
-        "authorizationCodeLifetime": "5m",
-        "allowOfflineAccess": false,
-        "updateAccessTokenClaimsOnRefresh": false,
-        "useOneTimeRefreshTokens": false,
-        "slidingRefreshTokenLifetime": "15d",
-        "absoluteRefreshTokenLifetime": "30d",
-        "published": true,
-        "url": "https://foundry.local/player",
-        "logoUrl": null,
-        "frontChannelLogoutUrl": null,
-        "backChannelLogoutUrl": null,
-        "redirectUrls": [
-          { "value": "https://foundry.local/player/auth-callback" },
-          { "value": "https://foundry.local/player/auth-callback-silent" }
-        ],
-        "postLogoutUrls": [{ "value": "https://foundry.local/player" }],
-        "corsUrls": [{ "value": "https://foundry.local" }],
-        "alwaysSendClientClaims": false,
-        "clientClaimsPrefix": "client_",
-        "claims": [],
-        "secrets": [],
-        "managers": []
-      }
 
   env: 
     ## basehref is path to the app
@@ -342,60 +212,6 @@ vm-api:
 
   certificateMap: "appliance-root-ca"
 
-  identity:
-    register: true
-    identityMap: identity-identity-api
-    initCommand: ''
-    client: |-
-      {
-        "name": "vm-api",
-        "displayName": "VM API",
-        "description": null,
-        "grants": "authorization_code client_credentials",
-        "scopes": "openid profile vm-api player-api",
-        "enabled": true,
-        "requirePkce": true,
-        "allowAccessTokensViaBrowser": false,
-        "requireConsent": false,
-        "consentLifetime": "30d",
-        "alwaysIncludeUserClaimsInIdToken": false,
-        "identityTokenLifetime": "5m",
-        "accessTokenLifetime": "1h",
-        "authorizationCodeLifetime": "5m",
-        "allowOfflineAccess": false,
-        "updateAccessTokenClaimsOnRefresh": false,
-        "useOneTimeRefreshTokens": false,
-        "slidingRefreshTokenLifetime": "15d",
-        "absoluteRefreshTokenLifetime": "30d",
-        "published": false,
-        "url": "https://foundry.local/vm",
-        "logoUrl": null,
-        "frontChannelLogoutUrl": null,
-        "backChannelLogoutUrl": null,
-        "redirectUrls": [
-          { "value": "https://foundry.local/vm/api/oauth2-redirect.html" }
-        ],
-        "postLogoutUrls": [{ "value": "https://foundry.local/vm/api" }],
-        "corsUrls": [{ "value": "https://foundry.local" }],
-        "alwaysSendClientClaims": false,
-        "clientClaimsPrefix": "client_",
-        "claims": [],
-        "secrets": [],
-        "managers": []
-      }
-      
-    resource: |-
-      {
-        "type": "api",
-        "name": "vm-api",
-        "displayName": "VM Api",
-        "enabled": true,
-        "default": true,
-        "required": false,
-        "emphasize": false,
-        "showInDiscoveryDocument": true
-      }
-    
   # Config app settings with environment vars.
   # Those most likely needing values are listed. For others,
   # see https://github.com/cmu-sei/crucible/blob/master/vm.api/S3.VM.Api/appsettings.json
@@ -493,49 +309,6 @@ vm-ui:
         hosts:
          - foundry.local
 
-  identity:
-    register: true
-    identityMap: identity-identity-api
-    initCommand: ''
-    client: |-
-      {
-        "name": "vm-ui",
-        "displayName": "VM UI",
-        "description": null,
-        "grants": "authorization_code client_credentials",
-        "scopes": "openid profile vm-api player-api",
-        "enabled": true,
-        "requirePkce": true,
-        "allowAccessTokensViaBrowser": true,
-        "requireConsent": false,
-        "consentLifetime": "30d",
-        "alwaysIncludeUserClaimsInIdToken": false,
-        "identityTokenLifetime": "5m",
-        "accessTokenLifetime": "1h",
-        "authorizationCodeLifetime": "5m",
-        "allowOfflineAccess": false,
-        "updateAccessTokenClaimsOnRefresh": false,
-        "useOneTimeRefreshTokens": false,
-        "slidingRefreshTokenLifetime": "15d",
-        "absoluteRefreshTokenLifetime": "30d",
-        "published": false,
-        "url": "https://foundry.local/vm",
-        "logoUrl": null,
-        "frontChannelLogoutUrl": null,
-        "backChannelLogoutUrl": null,
-        "redirectUrls": [
-          { "value": "https://foundry.local/vm/auth-callback" },
-          { "value": "https://foundry.local/vm/auth-callback-silent" }
-        ],
-        "postLogoutUrls": [{ "value": "https://foundry.local/vm" }],
-        "corsUrls": [{ "value": "https://foundry.local" }],
-        "alwaysSendClientClaims": false,
-        "clientClaimsPrefix": "client_",
-        "claims": [],
-        "secrets": [],
-        "managers": []
-      }
-
   env: 
     ## basehref is path to the app
     APP_BASEHREF: "/vm"
@@ -550,14 +323,14 @@ vm-ui:
       "WelderUrl": "",
       "UserFollowUrl": "https://foundry.local/vm/console/user/{userId}/view/{viewId}/console",
       "OIDCSettings": {
-          "authority": "https://foundry.local/identity",
-          "client_id": "vm-ui",
-          "redirect_uri": "https://foundry.local/vm/auth-callback",
-          "post_logout_redirect_uri": "https://foundry.local/vm",
-          "response_type": "code",
-          "scope": "openid profile player-api vm-api",
-          "automaticSilentRenew": true,
-          "silent_redirect_uri": "https://foundry.local/vm/auth-callback-silent"
+        "authority": "https://foundry.local/identity",
+        "client_id": "vm-ui",
+        "redirect_uri": "https://foundry.local/vm/auth-callback",
+        "post_logout_redirect_uri": "https://foundry.local/vm",
+        "response_type": "code",
+        "scope": "openid profile player-api vm-api",
+        "automaticSilentRenew": true,
+        "silent_redirect_uri": "https://foundry.local/vm/auth-callback-silent"
       },
       "UseLocalAuthStorage": true
     }
@@ -590,47 +363,6 @@ console-ui:
         hosts:
          - foundry.local
   
-  identity:
-    register: true
-    identityMap: identity-identity-api
-    client: |-
-      {
-        "name": "vm-console-ui",
-        "displayName": "VM Console UI",
-        "description": null,
-        "grants": "authorization_code client_credentials",
-        "scopes": "openid profile vm-api player-api",
-        "enabled": true,
-        "requirePkce": true,
-        "allowAccessTokensViaBrowser": true,
-        "requireConsent": false,
-        "consentLifetime": "30d",
-        "alwaysIncludeUserClaimsInIdToken": false,
-        "identityTokenLifetime": "5m",
-        "accessTokenLifetime": "1h",
-        "authorizationCodeLifetime": "5m",
-        "allowOfflineAccess": false,
-        "updateAccessTokenClaimsOnRefresh": false,
-        "useOneTimeRefreshTokens": false,
-        "slidingRefreshTokenLifetime": "15d",
-        "absoluteRefreshTokenLifetime": "30d",
-        "published": false,
-        "url": "https://foundry.local/vm",
-        "logoUrl": null,
-        "frontChannelLogoutUrl": null,
-        "backChannelLogoutUrl": null,
-        "redirectUrls": [
-          { "value": "https://foundry.local/console/auth-callback" },
-          { "value": "https://foundry.local/console/auth-callback-silent" }
-        ],
-        "postLogoutUrls": [{ "value": "https://foundry.local/console" }],
-        "corsUrls": [{ "value": "https://foundry.local" }],
-        "alwaysSendClientClaims": false,
-        "clientClaimsPrefix": "client_",
-        "claims": [],
-        "secrets": [],
-        "managers": []
-      }
   env: 
     ## basehref is path to the app
     APP_BASEHREF: "/console"

@@ -12,14 +12,14 @@ identity-api:
       kubernetes.io/ingress.class: public
       nginx.ingress.kubernetes.io/use-regex: "true"
     hosts:
-      - host: foundry.local
+      - host: $DOMAIN
         paths:
           - path: /identity
             pathType: ImplementationSpecific
     tls:
       - secretName: appliance-cert
         hosts:
-          - foundry.local
+          - $DOMAIN
 
   resources: {}
   #  limits:
@@ -48,12 +48,12 @@ identity-api:
     Branding__UiHost: /identity/ui
     Branding__PathBase: /identity
     Account__Registration__AllowManual: true
-    Account__Registration__AllowedDomains: foundry.local
+    Account__Registration__AllowedDomains: $DOMAIN
     Cache__Key: idsrv
     Cache__RedisUrl: ""
     Cache__SharedFolder: ""
     Logging__Console__DisableColors: true
-    Account__AdminEmail: "administrator@foundry.local"
+    Account__AdminEmail: "administrator@$DOMAIN"
     Account__AdminPassword: "foundry"
     Account__AdminGuid: "dee684c5-2eaf-401a-915b-d3d4320fe5d5"
     Account__OverrideCode: "123456"
@@ -66,12 +66,12 @@ identity-api:
     Headers__Cors__AllowAnyOrigin: true
     Headers__Cors__AllowAnyMethod: true
     Headers__Cors__AllowAnyHeader: true
-    # Headers__Cors__Origins__0: "https://foundry.local"
+    # Headers__Cors__Origins__0: "https://$DOMAIN"
     # Headers__Cors__Origins__1: "http://localhost:4302"
     # Headers__Cors__Origins__2: "http://localhost"
-#    Headers__Cors__Methods__0: "*"
-#    Headers__Cors__Headers__0: "*"
-#    Headers__Cors__AllowCredentials: true
+    # Headers__Cors__Methods__0: "*"
+    # Headers__Cors__Headers__0: "*"
+    # Headers__Cors__AllowCredentials: true
     Headers__Forwarding__TargetHeaders: All
     Headers__Forwarding__KnownNetworks: "10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 ::ffff:a00:0/104 ::ffff:ac10:0/108 ::ffff:c0a8:0/112"
 
@@ -84,7 +84,7 @@ identity-api:
       {
         "Users": [
           {
-            "Username": "crucible-admin@foundry.local",
+            "Username": "crucible-admin@$DOMAIN",
             "Password": "foundry",
             "GlobalId": "32c11441-7eec-47eb-a915-607c4f2529f4"
           }
@@ -99,7 +99,32 @@ identity-api:
             "Name": "topomojo-api",
             "DisplayName": "TopoMojo API",
             "Enabled": true
-          }
+          },
+          {
+            "Name": "caster-api",
+            "DisplayName": "Caster API",
+            "Enabled": true
+          },
+          {
+            "Name": "player-api",
+            "DisplayName": "Player API",
+            "Enabled": true
+          },
+          {
+            "Name": "vm-api",
+            "DisplayName": "VM API",
+            "Enabled": true
+          },
+          {
+            "Name": "alloy-api",
+            "DisplayName": "Alloy API",
+            "Enabled": true
+          },
+          {
+            "Name": "steamfitter-api",
+            "DisplayName": "Gameboard API",
+            "Enabled": true
+          },
         ],
         "Clients": [
           {
@@ -118,10 +143,10 @@ identity-api:
             "SeedGrant": "authorization_code",
             "SeedScopes": "openid profile gameboard-api",
             "Urls": [
-              { "Type": "ClientUri", "Value": "https://foundry.local/gameboard" },
-              { "Type": "RedirectUri", "Value": "https://foundry.local/gameboard/oidc" },
-              { "Type": "RedirectUri", "Value": "https://foundry.local/gameboard/oidc-silent.html" },
-              { "Type": "PostLogoutRedirectUri", "Value": "https://foundry.local/gameboard" }
+              { "Type": "ClientUri", "Value": "https://$DOMAIN/gameboard" },
+              { "Type": "RedirectUri", "Value": "https://$DOMAIN/gameboard/oidc" },
+              { "Type": "RedirectUri", "Value": "https://$DOMAIN/gameboard/oidc-silent.html" },
+              { "Type": "PostLogoutRedirectUri", "Value": "https://$DOMAIN/gameboard" }
             ]
           },
           {
@@ -132,232 +157,198 @@ identity-api:
             "SeedGrant": "authorization_code",
             "SeedScopes": "openid profile topomojo-api",
             "Urls": [
-              { "Type": "ClientUri", "Value": "https://foundry.local/topomojo" },
-              { "Type": "RedirectUri", "Value": "https://foundry.local/topomojo/oidc" },
-              { "Type": "RedirectUri", "Value": "https://foundry.local/topomojo/oidc-silent.html" },
-              { "Type": "PostLogoutRedirectUri", "Value": "https://foundry.local/topomojo" }
+              { "Type": "ClientUri", "Value": "https://$DOMAIN/topomojo" },
+              { "Type": "RedirectUri", "Value": "https://$DOMAIN/topomojo/oidc" },
+              { "Type": "RedirectUri", "Value": "https://$DOMAIN/topomojo/oidc-silent.html" },
+              { "Type": "PostLogoutRedirectUri", "Value": "https://$DOMAIN/topomojo" }
             ]
-          }
+          },
+          {
+            "Name": "caster-api",
+            "DisplayName": "Caster Api",
+            "Enabled": true,
+            "SeedFlags" : "RequirePkce",
+            "SeedGrant": "authorization_code",
+            "SeedScopes": "caster-api",
+            "Urls": [
+              { "Type": "ClientUri", "Value": "https://$DOMAIN/caster" },
+              { "Type": "RedirectUri", "Value": "https://$DOMAIN/caster/api/oauth2-redirect.html" },
+              { "Type": "PostLogoutRedirectUri", "Value": "https://$DOMAIN/caster-api" }
+            ]
+          },
+          {
+            "Name": "caster-admin",
+            "DisplayName": "Caster Admin",
+            "Enabled": true,
+            "SeedFlags" : "RequirePkce",
+            "SeedGrant": "password client_credentials",
+            "SeedScopes": "player-api vm-api",
+            "Urls": [
+              { "Type": "ClientUri", "Value": "https://$DOMAIN/caster" }
+            ]
+          },
+          {
+            "Name": "caster-ui",
+            "DisplayName": "Caster",
+            "Enabled": true,
+            "SeedFlags" : "Published, RequirePkce",
+            "SeedGrant": "authorization_code",
+            "SeedScopes": "openid profile email caster-api",
+            "Urls": [
+              { "Type": "ClientUri", "Value": "https://$DOMAIN/caster" },
+              { "Type": "RedirectUri", "Value": "https://$DOMAIN/caster/auth-callback" },
+              { "Type": "RedirectUri", "Value": "https://$DOMAIN/caster/auth-callback-silent" },
+              { "Type": "PostLogoutRedirectUri", "Value": "https://$DOMAIN/caster" }
+            ]
+          },
+          {
+            "Name": "player-api",
+            "DisplayName": "Player API",
+            "Enabled": true,
+            "SeedFlags" : "RequirePkce",
+            "SeedGrant": "authorization_code",
+            "SeedScopes": "player-api",
+            "Urls": [
+              { "Type": "ClientUri", "Value": "https://$DOMAIN/player" },
+              { "Type": "RedirectUri", "Value": "https://$DOMAIN/player/api/oauth2-redirect.html" },
+              { "Type": "PostLogoutRedirectUri", "Value": "https://$DOMAIN/player/api" }
+            ]
+          },
+          {
+            "Name": "player-admin",
+            "DisplayName": "Player Admin",
+            "Enabled": true,
+            "SeedFlags" : "RequirePkce",
+            "SeedGrant": "password client_credentials",
+            "SeedScopes": "player-api vm-api",
+            "Urls": [
+              { "Type": "ClientUri", "Value": "https://$DOMAIN/player" }
+            ]
+          },
+          {
+            "Name": "player-ui",
+            "DisplayName": "Player",
+            "Enabled": true,
+            "SeedFlags" : "Published, RequirePkce",
+            "SeedGrant": "authorization_code",
+            "SeedScopes": "openid profile player-api",
+            "Urls": [
+              { "Type": "ClientUri", "Value": "https://$DOMAIN/player" },
+              { "Type": "RedirectUri", "Value": "https://$DOMAIN/player/auth-callback" },
+              { "Type": "RedirectUri", "Value": "https://$DOMAIN/player/auth-callback-silent" },
+              { "Type": "PostLogoutRedirectUri", "Value": "https://$DOMAIN/player" }
+            ]
+          },
+          {
+            "Name": "vm-api",
+            "DisplayName": "VM API",
+            "Enabled": true,
+            "SeedFlags" : "RequirePkce",
+            "SeedGrant": "authorization_code",
+            "SeedScopes": "openid profile vm-api player-api",
+            "Urls": [
+              { "Type": "ClientUri", "Value": "https://$DOMAIN/vm" },
+              { "Type": "RedirectUri", "Value": "https://$DOMAIN/vm/api/oauth2-redirect.html" },
+              { "Type": "PostLogoutRedirectUri", "Value": "https://$DOMAIN/vm/api" }
+            ]
+          },
+          {
+            "Name": "vm-ui",
+            "DisplayName": "VM",
+            "Enabled": true,
+            "SeedFlags" : "RequirePkce",
+            "SeedGrant": "authorization_code",
+            "SeedScopes": "openid profile vm-api player-api",
+            "Urls": [
+              { "Type": "ClientUri", "Value": "https://$DOMAIN/vm" },
+              { "Type": "RedirectUri", "Value": "https://$DOMAIN/vm/auth-callback" },
+              { "Type": "RedirectUri", "Value": "https://$DOMAIN/vm/auth-callback-silent" },
+              { "Type": "PostLogoutRedirectUri", "Value": "https://$DOMAIN/vm" }
+            ]
+          },
+          {
+            "Name": "vm-console-ui",
+            "DisplayName": "VM Console UI",
+            "Enabled": true,
+            "SeedFlags" : "RequirePkce",
+            "SeedGrant": "authorization_code",
+            "SeedScopes": "openid profile vm-api player-api",
+            "Urls": [
+              { "Type": "ClientUri", "Value": "https://$DOMAIN/console" },
+              { "Type": "RedirectUri", "Value": "https://$DOMAIN/console/auth-callback" },
+              { "Type": "RedirectUri", "Value": "https://$DOMAIN/console/auth-callback-silent" },
+              { "Type": "PostLogoutRedirectUri", "Value": "https://$DOMAIN/console" }
+            ]
+          },
+          {
+            "Name": "alloy-api",
+            "DisplayName": "Alloy API",
+            "Enabled": true,
+            "SeedFlags" : "RequirePkce",
+            "SeedGrant": "authorization_code",
+            "SeedScopes": "alloy-api player-api vm-api caster-api steamfitter-api",
+            "Urls": [
+              { "Type": "ClientUri", "Value": "https://$DOMAIN/alloy/api" },
+              { "Type": "RedirectUri", "Value": "https://$DOMAIN/alloy/api/oauth2-redirect.html" },
+              { "Type": "PostLogoutRedirectUri", "Value": "https://$DOMAIN/alloy/api" }
+            ]
+          },
+          {
+            "Name": "alloy-ui",
+            "DisplayName": "Alloy",
+            "Enabled": true,
+            "SeedFlags" : "Published, RequirePkce",
+            "SeedGrant": "authorization_code",
+            "SeedScopes": "openid profile alloy-api player-api caster-api steamfitter-api vm-api",
+            "Urls": [
+              { "Type": "ClientUri", "Value": "https://$DOMAIN/alloy" },
+              { "Type": "RedirectUri", "Value": "https://$DOMAIN/alloy/auth-callback" },
+              { "Type": "RedirectUri", "Value": "https://$DOMAIN/alloy/auth-callback-silent" },
+              { "Type": "PostLogoutRedirectUri", "Value": "https://$DOMAIN/alloy" }
+            ]
+          },
+          {
+            "Name": "steamfitter-api",
+            "DisplayName": "Steamfitter API",
+            "Enabled": true,
+            "SeedFlags" : "RequirePkce",
+            "SeedGrant": "authorization_code",
+            "SeedScopes": "steamfitter-api vm-api player-api",
+            "Urls": [
+              { "Type": "ClientUri", "Value": "https://$DOMAIN/steamfitter/api" },
+              { "Type": "RedirectUri", "Value": "https://$DOMAIN/steamfitter/api/oauth2-redirect.html" },
+              { "Type": "PostLogoutRedirectUri", "Value": "https://$DOMAIN/steamfitter/api" }
+            ]
+          },
+          {
+            "Name": "steamfitter-admin",
+            "DisplayName": "Steamfitterr Admin",
+            "Enabled": true,
+            "SeedFlags" : "RequirePkce",
+            "SeedGrant": "password client_credentials",
+            "SeedScopes": "player-api steamfitter-api vm-api",
+            "Urls": [
+              { "Type": "ClientUri", "Value": "https://$DOMAIN/steamfitter" }
+            ]
+          },
+          {
+            "Name": "steamfitter-ui",
+            "DisplayName": "Steamfitter",
+            "Enabled": true,
+            "SeedFlags" : "Published, RequirePkce",
+            "SeedGrant": "authorization_code",
+            "SeedScopes": "openid profile steamfitter-api vm-api player-api",
+            "Urls": [
+              { "Type": "ClientUri", "Value": "https://$DOMAIN/steamfitter" },
+              { "Type": "RedirectUri", "Value": "https://$DOMAIN/steamfitter/auth-callback" },
+              { "Type": "RedirectUri", "Value": "https://$DOMAIN/steamfitter/auth-callback-silent" },
+              { "Type": "PostLogoutRedirectUri", "Value": "https://$DOMAIN/steamfitter" }
+            ]
+          },
         ]
       }
     signer: ""
-    seedScript: |
-      #!/bin/sh -xe
-      # 
-      # Copyright 2021 Carnegie Mellon University.
-      # Released under a BSD (SEI)-style license, please see LICENSE.md in the
-      # project root or contact permission@sei.cmu.edu for full terms.
-
-      #############################
-      #   Identity Seed Script    #
-      #############################
-
-      # WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING #
-      #                                                                                         #
-      # If you are dependant on the id or globalId of an item use the Identity seed file        #
-      # In many cases this script will delete and re-create items due to limitation of the      #
-      # Identity API                                                                            #
-      #                                                                                         #
-      # WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING #    
-
-      APP_NAME=${1}
-      # If JSON files are not in the same directory as the script 
-      # Specify the directory as the second argument.
-      DIRECTORY=${2-$(dirname "$BASH_SOURCE[0]")}
-      cd $DIRECTORY
-
-      # http or https
-      PROTO="https"
-      DOMAIN="${DOMAIN:-foundry.local}"
-
-      # get access token
-      ACCESS_TOKEN=$(curl --silent --insecure --request POST \
-        --url "$PROTO://$DOMAIN/identity/connect/token" \
-        --data grant_type=password \
-        --data scope="identity-api identity-api-privileged" \
-        --data client_id=bootstrap-client \
-        --data client_secret=foundry \
-        --data username=administrator@foundry.local \
-        --data password=foundry | jq -r '.access_token')
-
-      # Function exists() 
-      # Returns ID if the item exists
-      # returns empty string if it doesn't. 
-      function exists() {
-        TYPE=$1
-        NAME=$2
-
-        URL="$PROTO://$DOMAIN/identity/api/${TYPE}s?term=$NAME"
-        EXISTS=$(curl --silent --insecure --request GET \
-          --url "$URL" \
-          -H "Authorization: Bearer $ACCESS_TOKEN" \
-          -H "Content-Type: application/json")
-        # RETURN
-        echo $(printf '%s' "$EXISTS" | jq '.[0].id // empty')
-      }
-
-      function update() {
-        # TYPE can also be used like a path "resource/enlist" without the quotes
-        TYPE=$1
-        NAME=$2
-        ID=$3
-        DATA=$4
-        
-        URL="$PROTO://$DOMAIN/identity/api/${TYPE}"
-        
-
-        API_JSON=$(curl --silent --insecure --request GET \
-          --url "$URL/$ID" \
-          -H "Authorization: Bearer $ACCESS_TOKEN" \
-          -H "Content-Type: application/json" | jq '.')
-        
-        #Combine file and API json
-        JSON=$(printf '%s' "$API_JSON $DATA" | jq -sr add)
-        UPDATED=$(curl --silent --insecure --request PUT \
-        --url "$URL" \
-        -H "Authorization: Bearer $ACCESS_TOKEN" \
-        -H "Content-Type: application/json" \
-        -d "$JSON")
-        if [[ -n "$UPDATED" ]]; then 
-          echo "$NAME Updated" 
-        fi
-      }
-
-      function add() {
-        TYPE=$1
-        NAME=$2
-        DATA=$3
-        # PROPS is a jq filter string
-        # In some cases when creating we need a subset of the json data
-        # e.g. '. | {usernames: .usernames, password: .password}'
-        PROPS=${4-'.'}
-        URL="$PROTO://$DOMAIN/identity/api/${TYPE}"
-        
-        # Parse JSON for initial POST
-          INIT_JSON=$(printf '%s' "$DATA" | jq "$PROPS")
-          echo "CREATING NEW $TYPE"
-          #Create the resource, get the resource ID and full resource.
-          INIT_API=$(curl --silent --insecure --request POST \
-          --url "$URL" \
-          -H "Authorization: Bearer $ACCESS_TOKEN" \
-          -H "Content-Type: application/json" \
-          -d "$INIT_JSON")
-          
-          ID=$(printf '%s' "$INIT_API" |jq -r '. | if type=="array" then .[0].id else .id end // empty')
-          
-          if [[ -n "$ID" ]]; then
-            API_JSON=$(curl --silent --insecure --request GET \
-            --url "$URL/$ID" \
-            -H "Authorization: Bearer $ACCESS_TOKEN" \
-            -H "Content-Type: application/json")
-
-            # Merge JSON
-            JSON=$(printf '%s\n%s\n' "$API_JSON" "$DATA" | jq -n '[inputs] | add')
-            
-            # PUT Update
-            ADDED=$(curl --silent --insecure --request PUT \
-            --url "$PROTO://$DOMAIN/identity/api/$TYPE" \
-            -H "Authorization: Bearer $ACCESS_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d "$JSON" | jq -r '.')
-            if [[ -n "$ADDED" ]]; then 
-              echo $ADDED
-              # Check client scope
-              # In some cases the Identity API will create a client successfully but omit scope resources
-              # if they don't exists. This can cause authorization to fail, do to invalid scopes. In this 
-              # case we assume that if a scope is specified it is required. We fail the script if DATA 
-              # scope and ADDED scope do not match so that the init container will restart and try again.
-              if [[ "$TYPE" == "client" ]]; then
-                DATA_SCOPES=$(printf '%s' "$DATA" | jq -r '.scopes')
-                ADD_SCOPES=$(printf '%s' "$ADDED" | jq -r '.scopes')
-                if [[ "$DATA_SCOPES" != "$ADD_SCOPES" ]]; then 
-                  echo "Intended Scopes: $DATA_SCOPES"
-                  echo "Created Scopes: $ADD_SCOPES\n\n"
-                  echo "Compare the scopes and make sure the missing scopes application initialized correctly."
-                  echo "In most cases this is a race condition and a retry is all that is needed.\n"
-                  echo "Sleeping for 10 seconds before exiting..."
-                  sleep 10
-                  exit 1
-                fi
-              fi
-            fi
-          fi
-      }
-
-      function delete() {
-        TYPE=$1
-        NAME=$2
-        ID=$3
-        URL="$PROTO://$DOMAIN/identity/api/${TYPE}"
-        EXISTS=$(curl --silent --insecure --request DELETE \
-          --url "$URL/$ID" \
-          -H "Authorization: Bearer $ACCESS_TOKEN" \
-          -H "Content-Type: application/json")
-        # RETURN
-        echo $(printf '%s' "$EXISTS" | jq '.[0].id // empty')
-      }
-
-      # Checks if the file is an array or object 
-      # Objects will be returned as an array
-      function isArray() {
-        FILE=$1
-        RET=$(jq -rc '. | if type!="array" then [.] else . end' "$FILE")
-        echo $RET
-      }
-
-      #If Resource JSON exists. Configure Resource
-      if [[ -e "${DIRECTORY}/$APP_NAME-resource.json" ]]; then
-        FILE="${DIRECTORY}/$APP_NAME-resource.json"
-        isArray $FILE | jq -c '.[]' | while read object; do
-          NAME=$(printf '%s' "$object" | jq -r '.name')
-          RESOURCE_ID=$(exists resource $NAME)
-          
-          if [[ -n "$RESOURCE_ID" ]]; then  
-            # Because of some API limitations, delete the resource and add it again
-            delete resource $NAME $RESOURCE_ID
-            add resource $NAME "$object"
-          else
-            add resource $NAME "$object"
-          fi
-        done
-      fi
-
-
-      #If a client JSON file exists. Configure Client. 
-      if [[ -e "${DIRECTORY}/$APP_NAME-client.json" ]]; then
-        FILE="${DIRECTORY}/$APP_NAME-client.json"
-        isArray $FILE | jq -c '.[]' | while read object; do
-          NAME=$(printf '%s' "$object" | jq -r '.name')
-          CLIENT_ID=$(exists client $NAME)
-          
-          if [[ -n "$CLIENT_ID" ]]; then  
-            # Because of some API limitations, delete the client and add it again
-            delete client $NAME $CLIENT_ID
-            add client $NAME "$object" '. | {name: .name, displayName: .displayName, description: .description}'
-          else
-            add client $NAME "$object" '. | {name: .name, displayName: .displayName, description: .description}'
-          fi
-        done
-      fi
-
-      #If a account JSON file exists. Create Account as long as it doesn't exist. 
-      if [[ -e "${DIRECTORY}/$APP_NAME-account.json" ]]; then
-        FILE="${DIRECTORY}/$APP_NAME-account.json"
-        isArray $FILE | jq -c '.[]' | while read object; do
-          USERNAME=$(printf '%s' "$object" | jq -r '.usernames[0]')
-          ACCOUNT_ID=$(exists account $USERNAME)
-          
-          if [[ -n "$ACCOUNT_ID" ]]; then  
-            # Because of some API limitations, delete the resource and add it again
-            echo "Account Exists. Accounts cannot be updated with this script."
-          else
-            add account $USERNAME "$object" '. | {usernames: .usernames, password: .password}'
-          fi
-        done
-      fi
-
-
-
+    
 identity-ui:
 
   replicaCount: 1
@@ -372,14 +363,14 @@ identity-ui:
       kubernetes.io/ingress.class: public
       nginx.ingress.kubernetes.io/use-regex: "true"
     hosts:
-      - host: foundry.local
+      - host: $DOMAIN
         paths: 
           - path: /identity/ui
             pathType: ImplementationSpecific
     tls:
       - secretName: appliance-cert
         hosts:
-          - foundry.local
+          - $DOMAIN
 
   resources: {}
   #  limits:
