@@ -30,8 +30,8 @@ fi
 kubectl apply -f stackstorm-ingress.yaml
 
 # Crucible Stack install
-helm_deploy -r ../appliance.vars -p ../helm -u -v 1.4.0 -f player.values.yaml sei/player
-helm_deploy -r ../appliance.vars -p ../helm -u -v 1.4.0 -f caster.values.yaml sei/caster
+helm_deploy -r ../appliance.vars -p ../helm -u -v 1.4.1 -f player.values.yaml sei/player
+helm_deploy -r ../appliance.vars -p ../helm -u -v 1.4.1 -f caster.values.yaml sei/caster
 helm_deploy -r ../appliance.vars -p ../helm -u -v 1.4.0 -f alloy.values.yaml sei/alloy
 helm_deploy -r ../appliance.vars -p ../helm -u -v 1.4.0 -f steamfitter.values.yaml sei/steamfitter
 #helm upgrade --wait --install -f player.values.yaml player ../charts/player 
