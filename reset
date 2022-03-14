@@ -14,7 +14,7 @@ helm delete kubernetes-dashboard || true
 helm delete player || true 
 helm delete steamfitter || true 
 helm delete staticweb || true
-helm delete stackstorm || true
+helm delete stackstorm-ha || true
 helm delete mongodb || true
 echo "Sleeping for 60 seconds"
 sleep 60

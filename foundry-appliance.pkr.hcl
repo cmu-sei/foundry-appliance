@@ -36,7 +36,7 @@ source "vmware-iso" "foundry-appliance" {
   ssh_password         = "${var.ssh_password}"
   ssh_timeout          = "30m"
   ssh_username         = "${var.ssh_username}"
-  version              = "14"
+  version              = "${var.vm_hardware_version}"
   vm_name              = "foundry-appliance-${var.appliance_version}"
 }
 
@@ -110,10 +110,12 @@ build {
       "~/setup ${var.apps}",
     ]
   }
-
+  
   provisioner "shell" {
+    execute_command = "echo '${var.ssh_password}' | {{ .Vars }} sudo -E -S bash '{{ .Path }}'"
     inline = [
-      "dd if=/dev/zero of=~/zerofill bs=1M,
+      "dd if=/dev/zero of=~/zerofill bs=1M",
+      "rm -f ~/zerofill"
     ]
   }
 }
