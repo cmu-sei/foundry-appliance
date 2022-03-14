@@ -82,7 +82,7 @@ kubectl patch daemonset nginx-ingress-microk8s-controller -n ingress --type 'jso
 kubectl apply -f nfs-ingress.yaml --dry-run=client -o yaml | kubectl apply -f -
 
 # Install Common foundry apps
-helm_deploy -r ../.env -p ../helm -v 0.2.0 -u -f identity.values.yaml sei/identity
+helm_deploy -r ../appliance.vars -p ../helm -v 0.2.0 -u -f identity.values.yaml sei/identity
 #helm upgrade --install --wait -f identity.values.yaml identity ../charts/identity
-helm_deploy -r ../.env -u -p ../helm --version 0.2.0 -f staticweb.values.yaml sei/staticweb
+helm_deploy -r ../appliance.vars -u -p ../helm --version 0.2.0 -f staticweb.values.yaml sei/staticweb
 #helm upgrade --install --version 0.2.0 -f staticweb.values.yaml staticweb ../charts/staticweb
