@@ -103,7 +103,7 @@ gameboard-api:
   env:
     PathBase: "/gameboard"
     Database__Provider: PostgreSQL
-    Database__ConnectionString: "Server=postgresql;Port=5432;Database=gameboard;Username=postgres;Password=foundry;SSL Mode=Prefer;Trust Server Certificate=true;"
+    Database__ConnectionString: "Server=postgresql.common.svc.cluster.local;Port=5432;Database=gameboard;Username=postgres;Password=foundry;SSL Mode=Prefer;Trust Server Certificate=true;"
     # Cache__SharedFolder: ""
     Oidc__Audience: gameboard-api
     Oidc__Authority: https://foundry.local/identity

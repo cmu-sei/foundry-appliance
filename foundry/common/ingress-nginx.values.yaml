@@ -906,7 +906,7 @@ imagePullSecrets: []
 ## Ref: https://github.com/kubernetes/ingress-nginx/blob/main/docs/user-guide/exposing-tcp-udp-services.md
 ##
 tcp:
-  2049: "default/nfs-server-provisioner:2049"
+  2049: "common/nfs-server-provisioner:2049"
 
 # -- UDP service key:value pairs
 ## Ref: https://github.com/kubernetes/ingress-nginx/blob/main/docs/user-guide/exposing-tcp-udp-services.md

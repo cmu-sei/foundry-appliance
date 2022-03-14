@@ -11,4 +11,4 @@
 ssh-keygen -t rsa -f ~/.ssh/id_rsa -q -N ''
 
 # Generate CA and host certificates
-~/foundry/certs/generate-certs.sh -loglevel 3
+~/foundry/certs/generate-certs -loglevel 3

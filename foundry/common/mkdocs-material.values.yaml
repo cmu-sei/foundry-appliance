@@ -100,7 +100,7 @@ giturl: https://foundry.local/gitea/foundry/mkdocs
 gitbranch: ""
 
 ## pollInterval sets minutes between git pull
-pollInterval: 1
+pollInterval: 5
 
 # cacert - add custom CA certificate
 cacert: ""
