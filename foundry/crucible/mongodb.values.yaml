@@ -25,7 +25,7 @@ service:
 
 persistence:
   enabled: true
-  storageClass: "microk8s-hostpath"
+  storageClass: "local-path"
   accessModes:
     - ReadWriteOnce
   size: 8Gi

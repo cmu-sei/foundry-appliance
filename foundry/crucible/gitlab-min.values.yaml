@@ -15,7 +15,7 @@ global:
     
   ingress:
     configureCertmanager: false
-    class: "public"
+    class: "nginx"
     tls:
       enabled: true
       secretName: appliance-cert
@@ -38,7 +38,7 @@ global:
       useSecret: true
       secret: gitlab-secrets
       key: databasePassword
-    host: postgresql
+    host: postgresql.common.svc.cluster.local
     port: 5432
     username: postgres
     database: gitlab_db

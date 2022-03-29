@@ -32,7 +32,7 @@ jobs:
       with:
         timeout_minutes: 40
         max_attempts: 5
-        command: ./build-appliance virtualbox foundry
+        command: ./build-appliance virtualbox topomojo
 
     - name: Get build_name from OVF file
       run: echo "build_name=$(sh -c "find . -name '*.ovf' | xargs basename -s '.ovf'")" >> $GITHUB_ENV

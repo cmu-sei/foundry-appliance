@@ -273,8 +273,9 @@ function is_online() {
       echo false
   fi
 }
-
-function helm_deploy() {
+# hin_o is a modified version of k-alias's 'hin' command, it supports offline helm chart installation 
+# as well as replacing values files with environment variables. 
+function hin_o() {
  #!/bin/bash -xe
   version=''
   helm_dir=''

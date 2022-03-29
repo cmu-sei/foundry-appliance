@@ -9,14 +9,18 @@
 ##############################
 
 # Change to the current directory
-cd "$(dirname "${BASH_SOURCE[0]}")"
+DIRECTORY="$(dirname "${BASH_SOURCE[0]}")"
+cd $DIRECTORY
 
-# Install stacks
-common/install.sh
-topomojo/install.sh
-
-# Switch to common namespace
-kubectl config set-context --current --namespace=common
+apps="common,$1"
+IFS=',' read -a stacks <<< $apps
+echo "The following apps will be installed ${stacks[@]}"
+# Always run common apps. 
+for stack in ${stacks[@]}; do
+  kubectl config set-context --current --namespace=$stack
+  echo "Installing $stack with script located at $DIRECTORY/$stack/install.sh"
+  $DIRECTORY/$stack/install.sh
+done
 
 # Create git repo to track changes
 git init

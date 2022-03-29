@@ -2,27 +2,53 @@
 # Change to the current directory
 DIRECTORY="$(dirname "${BASH_SOURCE[0]}")"
 cd $DIRECTORY
-helm delete topomojo|| true 
-helm delete gameboard || true
-helm delete alloy || true 
-helm delete caster || true 
+# Remove common apps 
+kubectl config set-context --current --namespace=common
 helm delete code-server || true 
 helm delete gitea || true 
-helm delete gitlab || true 
 helm delete identity || true 
 helm delete kubernetes-dashboard || true 
+helm delete mkdocs-material || true
+#Remove Crucible apps
+kubectl config set-context --current --namespace=crucible
+helm delete alloy || true 
+helm delete caster || true 
 helm delete player || true 
 helm delete steamfitter || true 
-helm delete staticweb || true
+helm delete gitlab || true 
 helm delete stackstorm-ha || true
 helm delete mongodb || true
-echo "Sleeping for 60 seconds"
-sleep 60
+# Remove Topomojo apps
+kubectl config set-context --current --namespace=topomojo
+helm delete topomojo|| true 
+helm delete gameboard || true
+
+echo "Waiting or pods to terminate - Sleeping for 20 seconds"
+sleep 20
+kubectl config set-context --current --namespace=common
 helm delete postgresql || true 
 helm delete nfs-server-provisioner || true 
-echo "Sleeping for 30 seconds"
-sleep 30
+helm delete ingress-nginx || true
+
+echo "Waiting for storage to terminate - Sleeping for 20 seconds"
+sleep 20 
+echo " Cleaning up volumes, configmaps, secrets and jobs from all namespaces"
+kubectl config set-context --current --namespace=common
 kubectl delete pvc --all
 kubectl delete configmap --all
 kubectl delete secret --all
 kubectl delete job --all
+
+kubectl config set-context --current --namespace=crucible
+kubectl delete pvc --all
+kubectl delete configmap --all
+kubectl delete secret --all
+kubectl delete job --all
+
+kubectl config set-context --current --namespace=topomojo
+kubectl delete pvc --all
+kubectl delete configmap --all
+kubectl delete secret --all
+kubectl delete job --all
+
+

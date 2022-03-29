@@ -6,7 +6,6 @@ steamfitter-api:
   ingress:
     enabled: true
     annotations:
-      kubernetes.io/ingress.class: public
       nginx.ingress.kubernetes.io/proxy-read-timeout: '86400'
       nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
       nginx.ingress.kubernetes.io/use-regex: "true"
@@ -24,7 +23,7 @@ steamfitter-api:
   env:
     PathBase: "/steamfitter"
     # Connection String to database
-    ConnectionStrings__PostgreSQL: "Server=postgresql;Port=5432;Database=steamfitter_db;Username=postgres;Password=foundry;SSL Mode=Prefer;Trust Server Certificate=true;"
+    ConnectionStrings__PostgreSQL: "Server=postgresql.common.svc.cluster.local;Port=5432;Database=steamfitter_db;Username=postgres;Password=foundry;SSL Mode=Prefer;Trust Server Certificate=true;"
 
     CorsPolicy__Origins__0: https://foundry.local
     CorsPolicy__Origins__1: "http://localhost:4303"

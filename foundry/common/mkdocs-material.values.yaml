@@ -43,14 +43,10 @@ service:
 ingress:
   enabled: true
   annotations:
-<<<<<<< HEAD:foundry/common/mkdocs-material.values.yaml
     nginx.ingress.kubernetes.io/app-root: /start
     nginx.ingress.kubernetes.io/rewrite-target: /$2
     nginx.ingress.kubernetes.io/configuration-snippet: |
       rewrite ^(/start)$ $1/ redirect;
-=======
-    kubernetes.io/ingress.class: public
->>>>>>> cae3aec... Adds Crucible to the Foundry appliance:common/staticweb.values.yaml
   hosts:
     - host: foundry.local
       paths:

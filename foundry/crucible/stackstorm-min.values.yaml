@@ -74,7 +74,6 @@ st2:
 ingress:
   enabled: false
   annotations:
-    kubernetes.io/ingress.class: public
     nginx.ingress.kubernetes.io/rewrite-target: /$1
     nginx.ingress.kubernetes.io/proxy-read-timeout: '86400'
     nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'

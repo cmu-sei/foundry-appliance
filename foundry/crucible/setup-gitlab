@@ -3,7 +3,7 @@
 #[ `whoami` = root ] || { sudo "$0" "$@"; exit $?; }
 DIRECTORY=$(dirname "$BASH_SOURCE[0]")
 cd $DIRECTORY
-source ../scripts/utils
+source ~/scripts/utils
 EXPORTS_PATH="./seed/gitlab"
 GITLAB_TIMEOUT=0
 MAX_GITLAB_TIMEOUT=1200
@@ -22,10 +22,10 @@ gitlab_password="foundry"
 api_url="$gitlab_host/api/v4"
 
 # add gitlab to hosts file
-echo "foundry" | sudo -S bash -c "source ../scripts/utils; add_host_entry $(ip route get 1 | awk '{print $(NF-2);exit}') gitlab.$DOMAIN"
+echo "foundry" | sudo -S bash -c "source ../../scripts/utils; add_host_entry $(ip route get 1 | awk '{print $(NF-2);exit}') gitlab.$DOMAIN"
 
 echo "Waiting for Postgres to be ready."
-while [ "$(kubectl get pods postgresql-0 -o jsonpath="{.status.phase}")" != "Running" ]; do
+while [ "$(kubectl get pods postgresql-0 -n common -o jsonpath="{.status.phase}")" != "Running" ]; do
   printf '.'
   sleep 5
   gitlab_timeout=$((gitlab_timeout+5))
@@ -38,9 +38,9 @@ EOF
     exit;
   fi
 done
-kubectl exec postgresql-0 -- psql 'postgresql://postgres:foundry@localhost' -c "CREATE DATABASE gitlab_db;" || true
+kubectl exec -n common postgresql-0 -- psql 'postgresql://postgres:foundry@localhost' -c "CREATE DATABASE gitlab_db;" || true
 kubectl apply -f gitlab.secrets.yaml 
-helm_deploy -u -p ../helm --version 5.7.1 -f gitlab-min.values.yaml gitlab/gitlab
+hin_o -u -p ../helm --version 5.7.1 -f gitlab-min.values.yaml gitlab/gitlab
 #helm upgrade --install --version 5.7.1 -f gitlab-min.values.yaml gitlab gitlab/gitlab
 
 # Wait for gitllab to come up 
@@ -151,8 +151,3 @@ EOF
   rm -rf $file
   sleep 3
 done
-cd ../../
-helm delete caster || true
-sleep 20
-helm upgrade --install -f caster.values.yaml caster ../charts/caster
-

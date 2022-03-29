@@ -7,7 +7,6 @@ alloy-api:
   ingress:
     enabled: true
     annotations:
-      kubernetes.io/ingress.class: public
       nginx.ingress.kubernetes.io/proxy-read-timeout: '86400'
       nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
       nginx.ingress.kubernetes.io/use-regex: 'true'
@@ -35,7 +34,7 @@ alloy-api:
     CorsPolicy__AllowAnyHeader: true
     Logging__LogLevel__Default: "debug"
     # Connection String to database
-    ConnectionStrings__PostgreSQL: "Server=postgresql;Port=5432;Database=alloy_db;Username=postgres;Password='foundry';SSL Mode=Prefer;Trust Server Certificate=true;"
+    ConnectionStrings__PostgreSQL: "Server=postgresql.common.svc.cluster.local;Port=5432;Database=alloy_db;Username=postgres;Password='foundry';SSL Mode=Prefer;Trust Server Certificate=true;"
 
     # OAuth2 Identity Client for Application
     Authorization__Authority: https://foundry.local/identity
@@ -66,7 +65,6 @@ alloy-ui:
   ingress:
     enabled: true
     annotations:
-      kubernetes.io/ingress.class: public
       nginx.ingress.kubernetes.io/proxy-read-timeout: '86400'
       nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
       nginx.ingress.kubernetes.io/use-regex: "true"

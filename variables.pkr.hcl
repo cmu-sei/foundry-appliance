@@ -51,7 +51,7 @@ variable "vm_hardware_version" {
 
 variable "apps" {
   type = string
-  default = "foundry,crucible"
+  default = "topomojo"
 }
 
 variable "cpus" {

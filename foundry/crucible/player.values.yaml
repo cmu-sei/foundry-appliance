@@ -11,7 +11,6 @@ player-api:
   ingress:
     enabled: true
     annotations:
-      kubernetes.io/ingress.class: public
       nginx.ingress.kubernetes.io/proxy-read-timeout: '86400'
       nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
       nginx.ingress.kubernetes.io/use-regex: "true"
@@ -67,7 +66,7 @@ player-api:
     # CorsPolicy__SupportsCredentials: false
     # Connection String to database
     # database requires the 'uuid-ossp' extension installed
-    ConnectionStrings__PostgreSQL: "Server=postgresql;Port=5432;Database=player_db;Username=postgres;Password=foundry;"
+    ConnectionStrings__PostgreSQL: "Server=postgresql.common.svc.cluster.local;Port=5432;Database=player_db;Username=postgres;Password=foundry;"
 
     # OAuth2 Identity Client for Application
     Authorization__Authority: https://foundry.local/identity
@@ -94,7 +93,6 @@ player-ui:
   ingress:
     enabled: true    
     annotations:
-      kubernetes.io/ingress.class: public
       nginx.ingress.kubernetes.io/proxy-read-timeout: '86400'
       nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
       nginx.ingress.kubernetes.io/use-regex: "true"
@@ -154,7 +152,6 @@ vm-api:
   ingress:
     enabled: true  
     annotations:
-      kubernetes.io/ingress.class: public
       nginx.ingress.kubernetes.io/proxy-read-timeout: '86400'
       nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
       nginx.ingress.kubernetes.io/use-regex: "true"
@@ -229,7 +226,7 @@ vm-api:
 
     # Connection String to database
     # database requires the 'uuid-ossp' extension installed
-    ConnectionStrings__PostgreSQL: "Server=postgresql;Port=5432;Database=vm_db;Username=postgres;Password=foundry;"
+    ConnectionStrings__PostgreSQL: "Server=postgresql.common.svc.cluster.local;Port=5432;Database=vm_db;Username=postgres;Password=foundry;"
 
    # CORS policy settings.
     # The first entry should be the URL to VM App
@@ -295,7 +292,6 @@ vm-ui:
     enabled: true  
     className: ""
     annotations:
-      kubernetes.io/ingress.class: public
       nginx.ingress.kubernetes.io/proxy-read-timeout: '86400'
       nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
       nginx.ingress.kubernetes.io/use-regex: "true"
@@ -349,7 +345,6 @@ console-ui:
     enabled: true  
     className: ""
     annotations:
-      kubernetes.io/ingress.class: public
       nginx.ingress.kubernetes.io/proxy-read-timeout: '86400'
       nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
       nginx.ingress.kubernetes.io/use-regex: "true"
