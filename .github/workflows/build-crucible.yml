@@ -27,7 +27,7 @@ jobs:
       env:
         GITHUB_PULL_REQUEST: ${{ github.event.number }}
       with:
-        timeout_minutes: 30
+        timeout_minutes: 90
         max_attempts: 5
         command: ./build-appliance virtualbox crucible -var "cpus=6" -var "memory=8192" -var "disk_size=51200"
 
