@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - dev
+      - crucible
   pull_request:
   release:
     types: [published]
