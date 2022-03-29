@@ -76,8 +76,8 @@ locals {
   ]
   cpus             = "${var.cpus}"
   disk_size        = "${var.disk_size}"
-  iso_url          = "http://www.releases.ubuntu.com/20.04/ubuntu-20.04.3-live-server-amd64.iso"
-  iso_checksum     = "sha256:f8e3086f3cea0fb3fefb29937ab5ed9d19e767079633960ccb50e76153effc98"
+  iso_url          = "https://releases.ubuntu.com/20.04/ubuntu-20.04.4-live-server-amd64.iso"
+  iso_checksum     = "sha256:28ccdb56450e643bad03bb7bcf7507ce3d8d90e8bf09e38f6bd9ac298a98eaad"
   memory           = "${var.memory}"
   shutdown_command = "echo '${var.ssh_password}'|sudo -S shutdown -P now"
 }
