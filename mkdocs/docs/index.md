@@ -10,44 +10,32 @@ To get started using the virtual appliance:
 
 1. Download [root-ca.crt](root-ca.crt) and trust it in your keychain/certificate store. This removes browser certificate warnings.
 2. Navigate to any of the apps in the following two sections.
-3. Unless otherwise noted, the default credentials are:  
+3. Unless otherwise noted, the default credentials are:
 
-    |key|value|
-    |-|-|
-    |username|`administrator@foundry.local`|
-    |password|`foundry`|
-    |code|`123456`|
+   | key      | value                         |
+   | -------- | ----------------------------- |
+   | username | `administrator@foundry.local` |
+   | password | `foundry`                     |
+   | code     | `123456`                      |
 
-
-## Foundry apps
+## Common apps
 
 The following Foundry applications are loaded on this appliance:
 
-| location | api | description |
-| -------- | --- | ----------- |
-| [/identity](/identity)|[api](/identity/api)| _Identity_ manages logins/credentials across all of the apps. It can integrate with any OAuth2/OIDC application.|
-| [/topomojo](/topomojo)|[api](/topomojo/api)| _TopoMojo_ allows users to build on-demand labs.|
-| [/gameboard](/gameboard)|[api](/gameboard/api)| _Gameboard_ provides a platform for cyber competition development and delivery.|
+| location               | api                  | description                                                                                                      |
+| ---------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| [/identity](/identity) | [api](/identity/api) | _Identity_ manages logins/credentials across all of the apps. It can integrate with any OAuth2/OIDC application. |
 
 ## Third-party apps
 
 The following third-party applications are loaded on this appliance:
 
-| location | description |
-| -------- | ----------- |
-| [/dashboard](/dashboard)| _Kubernetes Dashboard_ provides details regarding the container deployment for the appliance. |
-| [/gitea](/gitea)| _Gitea_ provides a user interface for editing the web content on the appliance (including this page).|
-| [/pgadmin](/pgadmin)| _pgAdmin_ provides a GUI for managing the PostgreSQL databases for each app. |
-| [/vscode](/vscode)| _code-server_ runs a browser version of [Visual Studio Code](https://code.visualstudio.com) to configure the appliance.
-
-## Demo challenge
-
-The appliance comes preloaded with a sample challenge from _President's Cup 2020_. Run the following commands to download the virtual machine images (~20 GB) to ESXi and load the challenge into TopoMojo.
-
-```
-cd ~/foundry/topomojo
-./content-import content/pc2-d01.json
-```
+| location                 | description                                                                                                             |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| [/dashboard](/dashboard) | _Kubernetes Dashboard_ provides details regarding the container deployment for the appliance.                           |
+| [/gitea](/gitea)         | _Gitea_ provides a user interface for editing the web content on the appliance (including this page).                   |
+| [/pgadmin](/pgadmin)     | _pgAdmin_ provides a GUI for managing the PostgreSQL databases for each app.                                            |
+| [/vscode](/vscode)       | _code-server_ runs a browser version of [Visual Studio Code](https://code.visualstudio.com) to configure the appliance. |
 
 ## Under the hood
 

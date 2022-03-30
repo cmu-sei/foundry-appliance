@@ -10,7 +10,7 @@ USER_TOKEN=$( curl "${CURL_OPTS[@]}" \
                 --request POST "https://foundry.local/gitea/api/v1/users/administrator/tokens" \
                 --data "{ \"name\": \"appliance-setup\"}" | jq -r '.sha1'
 )
-MKDOCS_DIR=~/mkdocs
+
 
 # Change to the current directory
 cd "$(dirname "${BASH_SOURCE[0]}")"
@@ -39,8 +39,3 @@ curl "${CURL_OPTS[@]}" \
   "default_branch": "main"
 }
 EOF
-
-git -C $MKDOCS_DIR init || true
-git -C $MKDOCS_DIR add -A || true
-git -C $MKDOCS_DIR commit -m "Initial commit" || true
-git -C $MKDOCS_DIR push -u https://administrator:foundry@foundry.local/gitea/foundry/mkdocs.git --all || true

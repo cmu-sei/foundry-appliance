@@ -44,7 +44,7 @@ jobs:
       working-directory: ./output-virtualbox
 
     - name: Package OVA image
-      run: tar -cvf ../${{ env.build_name }}.ova --format=ustar ${{ env.build_name }}{.ovf,-disk001.vmdk,.mf}
+      run: tar -cvf ../${{ env.build_name }}.ova --format=posix ${{ env.build_name }}{.ovf,-disk001.vmdk,.mf}
       working-directory: ./output-virtualbox
 
     - name: Upload OVA to Azure Storage
