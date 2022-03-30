@@ -9,6 +9,7 @@ helm delete gitea || true
 helm delete identity || true 
 helm delete kubernetes-dashboard || true 
 helm delete mkdocs-material || true
+helm delete pgadmin4 || true
 #Remove Crucible apps
 kubectl config set-context --current --namespace=crucible
 helm delete alloy || true 
@@ -22,6 +23,8 @@ helm delete mongodb || true
 kubectl config set-context --current --namespace=topomojo
 helm delete topomojo|| true 
 helm delete gameboard || true
+kubectl delete pvc --all
+
 
 echo "Waiting or pods to terminate - Sleeping for 20 seconds"
 sleep 20

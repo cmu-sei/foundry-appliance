@@ -20,6 +20,11 @@ jobs:
       with:
         path: ~/.cache/packer
         key: ${{ runner.os }}-packer
+    
+    - name: Install Dependencies
+      run: |
+        brew update
+        brew install xmlstarlet
 
     - name: Install Dependencies
       run: |

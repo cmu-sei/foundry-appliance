@@ -11,6 +11,7 @@
 # Change to the current directory
 cd "$(dirname "${BASH_SOURCE[0]}")"
 source ~/scripts/utils
+MKDOCS_DIR=~/mkdocs
 
 # Add Helm repos and update
 if [[ $(is_online) == true ]]; then
@@ -73,3 +74,9 @@ timeout 5m bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' https:/
 
 hin_o -r ../../appliance-vars -u -v 0.2.0 -p ~/.helm -f identity.values.yaml sei/identity
 hin_o -r ../../appliance-vars -u -p ~/.helm -f mkdocs-material.values.yaml sei/mkdocs-material
+
+# setup repo and push mkdocs
+git -C $MKDOCS_DIR init || true
+git -C $MKDOCS_DIR add -A || true
+git -C $MKDOCS_DIR commit -m "Initial commit" || true
+git -C $MKDOCS_DIR push -u https://administrator:foundry@foundry.local/gitea/foundry/mkdocs.git --all || true

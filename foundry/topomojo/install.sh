@@ -10,7 +10,7 @@
 
 # Change to the current directory
 cd "$(dirname "${BASH_SOURCE[0]}")"
-
+MKDOCS_DIR=~/mkdocs
 # Create topomojo namespace and switch to it
 kubectl apply -f namespace.yaml
 kubectl config set-context --current --namespace=topomojo
@@ -57,3 +57,9 @@ helm install --wait -f gameboard.values.yaml gameboard sei/gameboard
 timeout 5m bash -c 'until kubectl exec postgresql-0 -n common -- env PGPASSWORD=foundry psql -lqt -U postgres | cut -d \| -f 1 | grep -qw gameboard; do sleep 5; done' || false
 sleep 5
 kubectl exec postgresql-0 -n common -- psql 'postgresql://postgres:foundry@localhost/gameboard' -c "INSERT INTO \"Users\" (\"Id\",\"Name\",\"ApprovedName\",\"Role\") VALUES ('dee684c5-2eaf-401a-915b-d3d4320fe5d5', 'Administrator', 'Administrator', 63);"
+
+# Add TopoMojo docs to mkdocs-material
+sed -i '/topomojo.md/d' $MKDOCS_DIR/.gitignore
+git -C $MKDOCS_DIR add -A || true
+git -C $MKDOCS_DIR commit -m "Add Topomojo docs" || true
+git -C $MKDOCS_DIR push -u https://administrator:foundry@foundry.local/gitea/foundry/mkdocs.git --all || true

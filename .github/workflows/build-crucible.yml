@@ -21,6 +21,11 @@ jobs:
       with:
         path: ~/.cache/packer
         key: ${{ runner.os }}-packer
+    
+    - name: Install Dependencies
+      run: |
+        brew update
+        brew install xmlstarlet
 
     - name: Build VirtualBox OVF image
       uses: nick-invision/retry@v2
@@ -35,9 +40,18 @@ jobs:
       run: echo "build_name=$(sh -c "find . -name '*.ovf' | xargs basename -s '.ovf'")" >> $GITHUB_ENV
       working-directory: ./output-virtualbox
 
-    - name: Change virtual hardware version
-      run: sed -i '' 's/virtualbox-2.2/vmx-13/' ${{ env.build_name }}.ovf
+    - name: Update OVF for VMWare Compatability
+      run: |
+        sed -i '' 's/virtualbox-2.2/vmx-13/' ${{ env.build_name }}.ovf
+        xml ed --inplace -N ns='http://schemas.dmtf.org/ovf/envelope/1' \
+        -N rsad='http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_ResourceAllocationSettingData' \
+        -d "//ns:Item[rsad:ResourceSubType[contains(text(), 'PIIX4')]]" ${{ env.build_name }}.ovf
+        xml ed --inplace -N ns='http://schemas.dmtf.org/ovf/envelope/1' \
+        -d "//ns:StorageController[@type='PIIX4']" ${{ env.build_name }}.ovf
+        
       working-directory: ./output-virtualbox
+        
+      
 
     - name: Create OVA manifest
       run: openssl sha256 *.ovf *.vmdk > ${{ env.build_name }}.mf

@@ -12,7 +12,9 @@
 DIRECTORY="$(dirname "${BASH_SOURCE[0]}")"
 cd $DIRECTORY
 MKDOCS_DIR=~/mkdocs
-mkdir -p $MKDOCS_DIR/hidden
+
+#Remove mkdocs exceptions
+sed -i '/^!/d' $MKDOCS_DIR/.gitignore
 
 apps="common,$1"
 IFS=',' read -a stacks <<< $apps
@@ -23,12 +25,6 @@ for stack in ${stacks[@]}; do
   echo "Installing $stack with script located at $DIRECTORY/$stack/install.sh"
   $DIRECTORY/$stack/install.sh
 done
-
-# setup repo and push mkdocs
-git -C $MKDOCS_DIR init || true
-git -C $MKDOCS_DIR add -A || true
-git -C $MKDOCS_DIR commit -m "Initial commit" || true
-git -C $MKDOCS_DIR push -u https://administrator:foundry@foundry.local/gitea/foundry/mkdocs.git --all || true
 
 # Create git repo to track changes
 git init
