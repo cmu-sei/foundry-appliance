@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 # 
 # Copyright 2021 Carnegie Mellon University.
 # Released under a BSD (SEI)-style license, please see LICENSE.md in the
@@ -25,10 +25,10 @@ kubectl create secret generic appliance-root-ca --from-file=appliance-root-ca=..
 kubectl create configmap appliance-root-ca --from-file=root-ca.crt=../certs/root-ca.pem --dry-run=client -o yaml | kubectl apply -f -
 
 # Update coredns config
-export appliance_ip=$(ip route get 1 | awk '{print $(NF-2);exit}')
-export dns_server=${DNS_01:-8.8.8.8}
-envsubst < coredns-configmap.yaml | kubectl apply -n kube-system -f -
-kubectl rollout restart deployment/coredns -n kube-system
+# export appliance_ip=$(ip route get 1 | awk '{print $(NF-2);exit}')
+# export dns_server=${DNS_01:-8.8.8.8}
+# envsubst < coredns-configmap.yaml | kubectl apply -n kube-system -f -
+# kubectl rollout restart deployment/coredns -n kube-system
 
 # dependancy installs
 ./setup-gitlab

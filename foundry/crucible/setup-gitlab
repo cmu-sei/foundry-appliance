@@ -22,6 +22,7 @@ gitlab_password="foundry"
 api_url="$gitlab_host/api/v4"
 
 # add gitlab to hosts file
+echo "foundry" | sudo -S bash -c "sed -i /gitlab.$DOMAIN/d /etc/hosts" 
 echo "foundry" | sudo -S bash -c "source ../../scripts/utils; add_host_entry $(ip route get 1 | awk '{print $(NF-2);exit}') gitlab.$DOMAIN"
 
 echo "Waiting for Postgres to be ready."

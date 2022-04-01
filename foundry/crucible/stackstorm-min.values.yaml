@@ -28,11 +28,15 @@ st2:
     [api]
     allow_origin = 'https://foundry.local'
     [database]
-    host = mongodb
+    host = mongodb.crucible.svc.cluster.local
     port = 27017
     db_name = st2
     username = st2
     password = foundry
+    [coordination]
+    url = redis://stackstorm-ha-redis-headless.crucible.svc.cluster.local:26379?sentinel=mymaster
+    [messaging]
+    url = amqp://administrator:foundry@stackstorm-ha-rabbitmq.crucible.svc.cluster.local:5672/
   system_user:
     user: stanley
     # templating is allowed for this key

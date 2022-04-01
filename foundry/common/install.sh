@@ -66,7 +66,7 @@ cp ../certs/root-ca.pem ../../mkdocs/docs/root-ca.crt
 # Install Gitea
 git config --global init.defaultBranch main
 kubectl exec postgresql-0 -- psql 'postgresql://postgres:foundry@localhost' -c 'CREATE DATABASE gitea;' || true
-hin_o -r ../../appliance-vars -u -p ~/.helm -f gitea.values.yaml gitea/gitea
+hin_o -r ../../appliance-vars -u -p ~/.helm -w -f gitea.values.yaml gitea/gitea
 timeout 5m bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' https://foundry.local/gitea)" != "200" ]]; do sleep 5; done' || false
 ./setup-gitea
 
