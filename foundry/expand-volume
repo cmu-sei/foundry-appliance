@@ -12,7 +12,10 @@ if [[ $UID != 0 ]]; then
     exit 1
 fi
 
-VOLUME=/dev/ubuntu-vg/ubuntu-lv
+PV=/dev/sda3
+LV=/dev/ubuntu-vg/ubuntu-lv
 
-lvextend -l +100%FREE $VOLUME
-resize2fs $VOLUME
+growpart $(sed -E "s/([0-9]+)$/ \1/" <<< $PV)
+pvresize $PV
+lvextend -l +100%FREE $LV
+resize2fs $LV
