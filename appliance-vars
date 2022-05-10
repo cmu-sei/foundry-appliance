@@ -1,2 +1,3 @@
 [global]
 DOMAIN=foundry.local
+DNS_01=

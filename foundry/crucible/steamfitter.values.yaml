@@ -56,7 +56,7 @@ steamfitter-api:
     VmTaskProcessing__ApiUsername: "administrator"
     VmTaskProcessing__ApiPassword: "foundry"
     VmTaskProcessing__ApiBaseUrl: "https://foundry.local/stackstorm/"
-    VmTaskProcessing__ApiParameters__clusters: ""
+    VmTaskProcessing__ApiParameters__clusters: "$MOID"
 
     # Basic seed data to jumpstart deployement
     # TODO - Document Seed data
@@ -80,7 +80,6 @@ steamfitter-ui:
   ingress:
     enabled: true
     annotations:
-      kubernetes.io/ingress.class: public
       nginx.ingress.kubernetes.io/proxy-read-timeout: '86400'
       nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
       nginx.ingress.kubernetes.io/use-regex: "true"

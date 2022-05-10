@@ -22,7 +22,7 @@ caster-api:
 
   # Gets placed in /etc/gitconfig to allow immediate Gitlab access via access token
   # Replace TOKEN with an access token created in Gitlab, and update the Gitlab URL
-  gitconfig: '[url "https://git-access-token:wMa2RPQP_ZR3fxc5zQtv@gitlab-webservice:8080/"]
+  gitconfig: '[url "http://git-access-token:wMa2RPQP_ZR3fxc5zQtv@gitlab.foundry.local"]
         insteadOf = https://gitlab.foundry.local/'
   
   certificateMap: "appliance-root-ca"
@@ -83,8 +83,8 @@ caster-api:
     # - GitlabApiUrl - URL to the deployed Gitlab instance
     Terraform__BinaryPath: /terraform/binaries
     Terraform__RootWorkingDirectory: /terraform/root
-    Terraform__DefaultVersion: "0.14.0"
-    Terraform__GitlabApiUrl: "http://gitlab-webservice:8080/api/v4/"
+    Terraform__DefaultVersion: "1.1.7"
+    Terraform__GitlabApiUrl: "http://gitlab-webservice.crucible.svc.cluster.local:8080/api/v4/"
     # Gitlab token and group ID are dynamically updated with setup-gitlab script.
     Terraform__GitlabToken: "wMa2RPQP_ZR3fxc5zQtv"
     Terraform__GitlabGroupId: "2"

@@ -7,9 +7,9 @@
 # check for a variables file
 # Change to the current directory
 directory="${BASH_SOURCE%/*}"
-root_dir=/home/$USER
+root_dir=/home/$USER/foundry
 echo "Current Directory $PWD"
-echo "Script running from $directory"
+echo "Script running from $directory" 
 cd $directory
 source ../../scripts/utils
 echo "Checking if variables file exists $root_dir/crucible/vcenter.env"
@@ -20,7 +20,7 @@ if [ ! -f $root_dir/crucible/vcenter.env ]; then
   read -e -p "Enter the username for vCenter [administrator@vsphere.local]: " VSPHERE_USER
   VSPHERE_USER=${VSPHERE_USER:-"administrator@vsphere.local"}
   read -e -sp "Enter the password for vCenter: " VSPHERE_PASS
-  VSPHERE_PASS=$(encrypt_string $VSPHERE_PASS)
+  VSPHERE_PASS=$VSPHERE_PASS
   read -e -p "Enter the vCenter datacenter: " VSPHERE_DATACENTER
   read -e -p "Enter the vCenter cluster: " VSPHERE_CLUSTER
   read -e -p "Enter the vCenter distributed switch [dvSwitch]: " VSPHERE_DV_SWITCH
@@ -57,39 +57,36 @@ EOF
 else
   echo "vCenter variable file exists, using $root_dir/vcenter.env"
 fi
-import_vars $root_dir/foundry/crucible/vcenter.env
-# decrypt Password
-VSPHERE_PASS=$(decrypt_string $VSPHERE_PASS)
+
+import_vars $root_dir/crucible/vcenter.env
+
 export appliance_ip=$(ip route get 1 | awk '{print $(NF-2);exit}')
 export dns_server=${DNS_01:-8.8.8.8}
 
-replace_vars . '.*\.(json|conf|yaml|yml|sql)'
-chmod +x $root_dir/foundry/crucible/setup-gitlab
-chmod +x $root_dir/foundry/crucible/import-content
+replace_vars . '.*\.(sql)'
+chmod +x $root_dir/crucible/setup-gitlab
+chmod +x $root_dir/crucible/import-content
 
 # Update DNS
-# echo "foundry" | sudo -S rm -rf /etc/resolv.conf
-# echo "foundry" | sudo -S touch /etc/resolv.conf
-# echo "foundry" | sudo -S chmod a+w /etc/resolv.conf
-# echo "foundry" | sudo -S echo "nameserver $DNS_01 $DNS_02" > /etc/resolv.conf
-# echo "foundry" | sudo -S systemctl restart dnsmasq
-# envsubst < ~/foundry/crucible/coredns-configmap.yaml | kubectl apply -n kube-system -f -
-# kubectl rollout restart deployment/coredns -n kube-system
+echo "foundry" | sudo -S sed -i "s/server=.*/server=$DNS_01/" /etc/dnsmasq.d/foundry.conf
+echo "foundry" | sudo -S systemctl restart dnsmasq
+echo "foundry" | sudo -S systemctl restart avahi-daemon
 
 # Download vCenter root CA
 echo "Downloading vCenter root certificate from $VSPHERE_SERVER"
-download_vsphere_cert $VSPHERE_SERVER 443 /home/$USER/common/certs/vsphere.pem
-echo "foundry" | sudo -S cp $root_dir/common/certs/vsphere.pem /usr/local/share/ca-certificates/vsphere.crt
+download_vsphere_cert $VSPHERE_SERVER 443 $root_dir/certs/vsphere.pem
+echo "foundry" | sudo -S cp $root_dir/certs/vsphere.pem /usr/local/share/ca-certificates/vsphere.crt
 echo "foundry" | sudo -S update-ca-certificates
 
 # Update certificates configmap
-cd $root_dir/common/
-kubectl create configmap appliance-root-ca --from-file=root-ca.crt=certs/root-ca.pem --from-file=vsphere-ca.crt=certs/vsphere.pem --dry-run=client -o yaml | kubectl apply -f -
+
+kubectl create configmap appliance-root-ca --from-file=root-ca.crt=../certs/root-ca.pem --from-file=vsphere-ca.crt=../certs/vsphere.pem --dry-run=client -o yaml | kubectl apply -f -
 cd $root_dir/crucible
 
 # get MOID for steamfitter
 echo "Attempting to get vsphere cluster"
-MOID=$(pwsh -c 'Connect-VIServer -server $env:VSPHERE_SERVER -user $env:VSPHERE_USER -password $env:VSPHERE_PASS | Out-Null; Get-Cluster -Name $env:VSPHERE_CLUSTER | select id | %{$arr = $_.id.split("-"); write-host ($arr[1..($arr.length)] -join "-")}')
+MOID=$(pwsh -c 'Connect-VIServer -server $env:VSPHERE_SERVER -user $env:VSPHERE_USER -password $env:VSPHERE_PASS | Out-Null; Get-Cluster -Name $env:VSPHERE_CLUSTER | select -ExpandProperty id')
+MOID=$(echo "${MOID}" | rev | cut -d '-' -f 1,2 | rev)
 echo "${MOID}"
 if [[ -n ${MOID} ]]; then
   sed -i "s/ VmTaskProcessing__ApiParameters__clusters:.*/ VmTaskProcessing__ApiParameters__clusters: ${MOID}/" "steamfitter.values.yaml"
@@ -99,8 +96,14 @@ fi
 # Disable Caster Terraform install. 
 sed -i "s/SKIP_TERRAFORM_INSTALLATION:.*/SKIP_TERRAFORM_INSTALLATION: true/" "caster.values.yaml"
 
-# Redeploy crucible 
-helm_deploy -r ../appliance.vars -p ../helm -u -v 1.4.0 -f player.values.yaml sei/player
-helm_deploy -r vcenter.env -p ../helm -u -v 1.4.0 -f caster.values.yaml sei/caster
-helm_deploy -r ../appliance.vars -p ../helm -u -v 1.4.0 -f alloy.values.yaml sei/alloy
-helm_deploy -r ../appliance.vars -p ../helm -u -v 1.4.0 -f steamfitter.values.yaml sei/steamfitter
+IMPORT_CONTENT=${IMPORT_CONTENT:-n}
+read -e -p "Would you like to import sample content (THIS WILL DELETE ANY EXISTING DATA) [y/n]: " IMPORT_CONTENT
+if [[ $IMPORT_CONTENT = y ]]; then 
+  ./import-content
+else 
+  hin_o -r vcenter.env -p ~/.helm -u -v 1.4.1 -f player.values.yaml sei/player
+  hin_o -r vcenter.env -p ~/.helm -u -v 1.4.1 -f caster.values.yaml sei/caster
+  hin_o -r vcenter.env -p ~/.helm -u -v 1.4.0 -f alloy.values.yaml sei/alloy
+  hin_o -r vcenter.env -p ~/.helm -u -v 1.4.0 -f steamfitter.values.yaml sei/steamfitter
+  hin_o -u -p ~/.helm --version 0.80.0 --wait --timeout 10m -f stackstorm-min.values.yaml stackstorm/stackstorm-ha
+fi

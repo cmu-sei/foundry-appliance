@@ -1,16 +1,20 @@
-#!/bin/bash -e
+#!/bin/bash -xe
 #
 # Copyright 2022 Carnegie Mellon University.
 # Released under a BSD (SEI)-style license, please see LICENSE.md in the
 # project root or contact permission@sei.cmu.edu for full terms.
 
 CURL_OPTS=( --silent --header "accept: application/json" --header "Content-Type: application/json" )
+# Delete in case this is a re-run 
+REQ=$( curl "${CURL_OPTS[@]}" \
+                --user administrator:foundry \
+                --request DELETE "https://foundry.local/gitea/api/v1/users/administrator/tokens/appliance-setup"
+)
 USER_TOKEN=$( curl "${CURL_OPTS[@]}" \
                 --user administrator:foundry \
                 --request POST "https://foundry.local/gitea/api/v1/users/administrator/tokens" \
                 --data "{ \"name\": \"appliance-setup\"}" | jq -r '.sha1'
 )
-
 
 # Change to the current directory
 cd "$(dirname "${BASH_SOURCE[0]}")"

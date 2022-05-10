@@ -60,7 +60,7 @@ alloy-ui:
   image:
     repository: cmusei/alloy-ui
     pullPolicy: IfNotPresent
-    tag: '3.2.3'
+    tag: '3.2.4'
 
   ingress:
     enabled: true

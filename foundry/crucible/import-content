@@ -10,9 +10,9 @@
 exports_path="seed/crucible"
 domain=${domain-foundry.local}
 directory=$(dirname "$BASH_SOURCE[0]")
-root_dir=/home/$USER
+root_dir=/home/$USER/foundry
 cd $directory
-source ../scripts/utils
+source ../../scripts/utils
 if [ ! -f $root_dir/crucible/vcenter.env ]; then 
   read -e -p "Enter the DNS name of your vcenter server [vcsa.example.com]: " VSPHERE_SERVER
   VSPHERE_SERVER=${VSPHERE_SERVER:-vcsa.example.com}
@@ -58,9 +58,10 @@ else
   echo "vCenter variable file exists, using $root_dir/crucible/vcenter.env"
 fi
 import_vars $root_dir/crucible/vcenter.env
+import_vars ../../appliance-vars
 # decrypt Password
 VSPHERE_PASS=$(decrypt_string $VSPHERE_PASS)
-replace_vars . '.*\.(json|conf|yaml|yml|sql)'
+replace_vars . '.*\.(sql)'
 replace foundry.local $domain $directory/$exports_path
 replace crucible.io $domain $directory/$exports_path
 
@@ -72,7 +73,7 @@ helm delete steamfitter || true && sleep 5
 echo "sleeping for 20 seconds"
 sleep 20
 echo "forwarding port" 
-kubectl port-forward service/postgresql 5432:5432 > /dev/null 2>&1 &
+kubectl -n common port-forward service/postgresql 5432:5432 > /dev/null 2>&1 &
 pid=$!
 
 trap '{
@@ -86,15 +87,12 @@ done
 
 files=$(find $exports_path -type f -iname "*.sql" | sed "s/.*\///; s/\.sql//")
 for file in $files; do
-  #kubectl exec postgresql-0 -- psql 'postgresql://postgres:foundry@localhost' -c "DROP DATABASE IF EXISTS $file;" || true
-  #kubectl exec postgresql-0 -- psql 'postgresql://postgres:foundry@localhost' -c "CREATE DATABASE $file;" || true
   PGPASSWORD=foundry dropdb -h localhost -U postgres ${file}
   PGPASSWORD=foundry createdb -h localhost -U postgres -T template0 ${file}
-  # PGPASSWORD=postgres psql -h localhost -U postgres < $exports_path/${file}.sql
   cat $exports_path/${file}.sql | sed 's/LOCALE/LC_COLLATE/' | PGPASSWORD=foundry psql -h localhost -p 5432 -U postgres ${file}
 done
 
-helm_deploy -r ../appliance.vars -p ../helm -u -v 1.4.0 -f player.values.yaml sei/player
-helm_deploy -r vcenter.env -p ../helm -u -v 1.4.0 -f caster.values.yaml sei/caster
-helm_deploy -r ../appliance.vars -p ../helm -u -v 1.4.0 -f alloy.values.yaml sei/alloy
-helm_deploy -r ../appliance.vars -p ../helm -u -v 1.4.0 -f steamfitter.values.yaml sei/steamfitter
+hin_o -r vcenter.env -p ~/.helm -u -v 1.4.1 -f player.values.yaml sei/player
+hin_o -r vcenter.env -p ~/.helm -u -v 1.4.1 -f caster.values.yaml sei/caster
+hin_o -r vcenter.env -p ~/.helm -u -v 1.4.0 -f alloy.values.yaml sei/alloy
+hin_o -r vcenter.env -p ~/.helm -u -v 1.4.0 -f steamfitter.values.yaml sei/steamfitter

@@ -12,6 +12,7 @@
 DIRECTORY="$(dirname "${BASH_SOURCE[0]}")"
 cd $DIRECTORY
 MKDOCS_DIR=~/mkdocs
+source ../scripts/utils
 
 #Remove mkdocs exceptions
 sed -i '/^!/d' $MKDOCS_DIR/.gitignore
@@ -30,3 +31,5 @@ done
 git init
 git add *
 git commit -m "Initial commit"
+# Redeploy mkdocs to update
+hin_o -r ../appliance-vars -u -p ~/.helm -f common/mkdocs-material.values.yaml sei/mkdocs-material -n common

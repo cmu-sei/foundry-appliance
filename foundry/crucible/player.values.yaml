@@ -179,7 +179,6 @@ vm-api:
     className: ""
     name: player-connect
     annotations: 
-      kubernetes.io/ingress.class: public
       nginx.ingress.kubernetes.io/proxy-read-timeout: "86400"
       nginx.ingress.kubernetes.io/proxy-send-timeout: "86400"
       nginx.ingress.kubernetes.io/use-regex: "true"

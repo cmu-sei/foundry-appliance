@@ -33,25 +33,25 @@ kubectl create configmap appliance-root-ca --from-file=root-ca.crt=../certs/root
 # dependancy installs
 ./setup-gitlab
 
-hin_o --wait -u -p ../helm -f mongodb.values.yaml bitnami/mongodb
+hin_o --wait -u -p ~/.helm -f mongodb.values.yaml bitnami/mongodb
 kubectl apply -f stackstorm-ingress.yaml
 if [ -f $root_dir/crucible/vcenter.env ]; then 
   import_vars $root_dir/crucible/vcenter.env
   # decrypt Password
   VSPHERE_PASS=$(decrypt_string $VSPHERE_PASS)
-  hin_o -r $root_dir/crucible/vcenter.env -p ../helm -u -v 1.4.0 -f steamfitter.values.yaml sei/steamfitter  
-  hin_o -r $root_dir/crucible/vcenter.env -p ../helm -u -v 1.4.1 -f caster.values.yaml sei/caster
+  hin_o -r $root_dir/crucible/vcenter.env -p ~/.helm -u -v 1.4.0 -f steamfitter.values.yaml sei/steamfitter  
+  hin_o -r $root_dir/crucible/vcenter.env -p ~/.helm -u -v 1.4.1 -f caster.values.yaml sei/caster
   #envsubst < stackstorm-min.values.yaml | helm upgrade --wait --install --timeout 10m -f - stackstorm stackstorm/stackstorm-ha
 else
-  hin_o -p ../helm -u -v 1.4.0 -f steamfitter.values.yaml sei/steamfitter  
-  hin_o -p ../helm -u -v 1.4.1 -f caster.values.yaml sei/caster
+  hin_o -p ~/.helm -u -v 1.4.0 -f steamfitter.values.yaml sei/steamfitter  
+  hin_o -p ~/.helm -u -v 1.4.1 -f caster.values.yaml sei/caster
 fi
 
 
 # Crucible Stack install
-hin_o -r ../../appliance-vars -p ../helm -u -v 1.4.1 -f player.values.yaml sei/player
-hin_o -r ../../appliance-vars -p ../helm -u -v 1.4.0 -f alloy.values.yaml sei/alloy
-hin_o -u -p ../helm --version 0.80.0 --wait --timeout 10m -f stackstorm-min.values.yaml stackstorm/stackstorm-ha
+hin_o -r ../../appliance-vars -p ~/.helm -u -v 1.4.1 -f player.values.yaml sei/player
+hin_o -r ../../appliance-vars -p ~/.helm -u -v 1.4.0 -f alloy.values.yaml sei/alloy
+hin_o -u -p ~/.helm --version 0.80.0 --wait --timeout 10m -f stackstorm-min.values.yaml stackstorm/stackstorm-ha
 
 # Add crucible docs to mkdocs-material
 sed -i '/crucible.md/d' $MKDOCS_DIR/.gitignore

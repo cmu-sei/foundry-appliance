@@ -65,10 +65,10 @@ st2:
         ssl_verify: false
         vsphere:
           default:
-            host: "vcsa.covert-cloud.com"
+            host: "$VSPHERE_SERVER"
             port: 443
-            user: "administrator@vsphere.local"
-            passwd: "Tartans@1"
+            user: "$VSPHERE_USER"
+            passwd: "$VSPHERE_PASS"
     images:
       - repository: cmusei
         name: st2packs

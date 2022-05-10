@@ -41,7 +41,7 @@ identity-api:
   env:
     # Supported providers: InMemory, PostgreSQL, SqlServer
     Database__Provider: PostgreSQL
-    Database__ConnectionString: Server=postgresql;Port=5432;Database=identity;Username=postgres;Password=foundry;SSL Mode=Prefer;Trust Server Certificate=true;
+    Database__ConnectionString: Server=postgresql.common.svc.cluster.local;Port=5432;Database=identity;Username=postgres;Password=foundry;SSL Mode=Prefer;Trust Server Certificate=true;
     Database__SeedFile: conf/seed.json
     Branding__ApplicationName: Foundry Identity
     Branding__UiHost: /identity/ui
@@ -202,6 +202,20 @@ identity-api:
             ]
           },
           {
+            "Name": "gitlab",
+            "DisplayName": "Gitlab",
+            "Enabled": true,
+            "SeedFlags" : "Published",
+            "SeedGrant": "authorization_code",
+            "SeedScopes": "openid profile email",
+            "SeedSecret": "337bdcb1a23143a9b5a6aaa33c0e87d7",
+            "Urls": [
+              { "Type": "ClientUri", "Value": "https://gitlab.$DOMAIN" },
+              { "Type": "RedirectUri", "Value": "https://gitlab.$DOMAIN/users/auth/identity/callback" },
+              { "Type": "PostLogoutRedirectUri", "Value": "https://gitlab.$DOMAIN" }
+            ]
+          },
+          {
             "Name": "player-api",
             "DisplayName": "Player API",
             "Enabled": true,
@@ -291,6 +305,17 @@ identity-api:
               { "Type": "ClientUri", "Value": "https://$DOMAIN/alloy/api" },
               { "Type": "RedirectUri", "Value": "https://$DOMAIN/alloy/api/oauth2-redirect.html" },
               { "Type": "PostLogoutRedirectUri", "Value": "https://$DOMAIN/alloy/api" }
+            ]
+          },
+          {
+            "Name": "alloy-admin",
+            "DisplayName": "Alloy Admin",
+            "Enabled": true,
+            "SeedFlags" : "RequirePkce",
+            "SeedGrant": "password client_credentials",
+            "SeedScopes": "alloy-api player-api vm-api caster-api steamfitter-api",
+            "Urls": [
+              { "Type": "ClientUri", "Value": "https://$DOMAIN/alloy" }
             ]
           },
           {
