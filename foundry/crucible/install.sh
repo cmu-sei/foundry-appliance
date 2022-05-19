@@ -33,7 +33,7 @@ kubectl create configmap appliance-root-ca --from-file=root-ca.crt=../certs/root
 # dependancy installs
 ./setup-gitlab
 
-hin_o --wait -u -p ~/.helm -f mongodb.values.yaml bitnami/mongodb
+hin_o -p ~/.helm -u -v 10.30.9 -f mongodb.values.yaml bitnami/mongodb
 kubectl apply -f stackstorm-ingress.yaml
 if [ -f $root_dir/crucible/vcenter.env ]; then 
   import_vars $root_dir/crucible/vcenter.env
