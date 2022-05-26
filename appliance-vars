@@ -1,3 +1,29 @@
 [global]
 DOMAIN=foundry.local
 DNS_01=
+
+[oAuth]
+# 'identity' or 'keycloak' (case-sensitive)
+OAUTH_PROVIDER=keycloak
+
+# The Following URL variables should only be the url suffix 
+# anything after https://foundry.local/(identity|keycloak)/$OAUTH_*_URL
+# You do not need the starting slash
+
+############
+# Keycloak #
+############
+OAUTH_AUTHORITY_URL=realms/crucible
+OAUTH_AUTHORIZATION_URL=realms/crucible/protocol/openid-connect/auth
+OAUTH_TOKEN_URL=realms/crucible/protocol/openid-connect/token
+
+############
+# Identity #
+############
+# OAUTH_AUTHORITY_URL=
+# OAUTH_AUTHORIZATION_URL=connect/authorize
+# OAUTH_TOKEN_URL=connect/token
+
+# If you need to change these user guids you must change them in th realm.json file as well.
+OAUTH_ADMIN_GUID=d29518c4-f61c-4284-81c4-f2fbd79e6e9a
+OAUTH_CRUCIBLE_ADMIN_GUID=de8f558b-95a4-46bc-89e6-9a801dc41e5a

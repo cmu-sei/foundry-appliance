@@ -13,6 +13,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 root_dir=/home/foundry
 source ~/scripts/utils
 MKDOCS_DIR=~/mkdocs
+import_vars ../../appliance-vars
 # Create crucible namespace and switch to it
 kubectl apply -f namespace.yaml
 kubectl config set-context --current --namespace=crucible
@@ -33,25 +34,26 @@ kubectl create configmap appliance-root-ca --from-file=root-ca.crt=../certs/root
 # dependancy installs
 ./setup-gitlab
 
-hin_o -p ~/.helm -u -v 10.30.9 -f mongodb.values.yaml bitnami/mongodb
-kubectl apply -f stackstorm-ingress.yaml
+hin_o -r ../../appliance-vars -p ~/.helm -u -v 10.31.5 -f mongodb.values.yaml bitnami/mongodb
+envsubst < stackstorm-ingress.yaml | kubectl apply -f -
 if [ -f $root_dir/crucible/vcenter.env ]; then 
   import_vars $root_dir/crucible/vcenter.env
   # decrypt Password
   VSPHERE_PASS=$(decrypt_string $VSPHERE_PASS)
-  hin_o -r $root_dir/crucible/vcenter.env -p ~/.helm -u -v 1.4.0 -f steamfitter.values.yaml sei/steamfitter  
-  hin_o -r $root_dir/crucible/vcenter.env -p ~/.helm -u -v 1.4.1 -f caster.values.yaml sei/caster
-  #envsubst < stackstorm-min.values.yaml | helm upgrade --wait --install --timeout 10m -f - stackstorm stackstorm/stackstorm-ha
+  cat ../../appliance-vars vcenter.env > vcenter.tmp
+  hin_o -r $root_dir/crucible/vcenter.tmp -p ~/.helm -u -v 1.4.0 -f steamfitter.values.yaml sei/steamfitter  
+  hin_o -r $root_dir/crucible/vcenter.tmp -p ~/.helm -u -v 1.4.1 -f caster.values.yaml sei/caster
+  rm -rf vcenter.tmp
 else
-  hin_o -p ~/.helm -u -v 1.4.0 -f steamfitter.values.yaml sei/steamfitter  
-  hin_o -p ~/.helm -u -v 1.4.1 -f caster.values.yaml sei/caster
+  hin_o -r ../../appliance-vars -p ~/.helm -u -v 1.4.0 -f steamfitter.values.yaml sei/steamfitter  
+  hin_o -r ../../appliance-vars -p ~/.helm -u -v 1.4.1 -f caster.values.yaml sei/caster
 fi
 
 
 # Crucible Stack install
 hin_o -r ../../appliance-vars -p ~/.helm -u -v 1.4.1 -f player.values.yaml sei/player
 hin_o -r ../../appliance-vars -p ~/.helm -u -v 1.4.0 -f alloy.values.yaml sei/alloy
-hin_o -u -p ~/.helm --version 0.80.0 --wait --timeout 10m -f stackstorm-min.values.yaml stackstorm/stackstorm-ha
+hin_o -r ../../appliance-vars -u -p ~/.helm --version 0.80.0 --wait --timeout 10m -f stackstorm-min.values.yaml stackstorm/stackstorm-ha
 
 # Add crucible docs to mkdocs-material
 sed -i '/crucible.md/d' $MKDOCS_DIR/.gitignore

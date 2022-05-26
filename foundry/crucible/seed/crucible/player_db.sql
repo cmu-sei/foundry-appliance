@@ -428,10 +428,10 @@ COPY public.roles (id, name) FROM stdin;
 --
 
 COPY public.team_memberships (id, team_id, user_id, view_membership_id, role_id) FROM stdin;
-8cad5b27-f654-48f3-a9c6-cd0270ba5c8b	e6207d5c-6c2b-4634-8ecf-bf2325ba7ec7	dee684c5-2eaf-401a-915b-d3d4320fe5d5	cec205ac-8d3b-446e-8c15-3d04d6d0ae3a	\N
-3d5065e8-fe11-4771-b43b-42e23092aa8a	8b78629b-1b2b-4d06-9c4b-70c326bc5e40	dee684c5-2eaf-401a-915b-d3d4320fe5d5	cec205ac-8d3b-446e-8c15-3d04d6d0ae3a	\N
-8a542c99-a308-4c70-8cda-64ec863e65ed	43003d68-752b-4084-8adc-c2f352c55591	dee684c5-2eaf-401a-915b-d3d4320fe5d5	71ff3bc6-5c87-41c5-9eb8-c03e54315b95	\N
-cc93895a-43c3-467e-8b8b-ec81f6f8f693	485ffd07-2f9e-4dbc-8504-2f31dbe49cf4	dee684c5-2eaf-401a-915b-d3d4320fe5d5	71ff3bc6-5c87-41c5-9eb8-c03e54315b95	\N
+8cad5b27-f654-48f3-a9c6-cd0270ba5c8b	e6207d5c-6c2b-4634-8ecf-bf2325ba7ec7	$OAUTH_ADMIN_GUID	cec205ac-8d3b-446e-8c15-3d04d6d0ae3a	\N
+3d5065e8-fe11-4771-b43b-42e23092aa8a	8b78629b-1b2b-4d06-9c4b-70c326bc5e40	$OAUTH_ADMIN_GUID	cec205ac-8d3b-446e-8c15-3d04d6d0ae3a	\N
+8a542c99-a308-4c70-8cda-64ec863e65ed	43003d68-752b-4084-8adc-c2f352c55591	$OAUTH_ADMIN_GUID	71ff3bc6-5c87-41c5-9eb8-c03e54315b95	\N
+cc93895a-43c3-467e-8b8b-ec81f6f8f693	485ffd07-2f9e-4dbc-8504-2f31dbe49cf4	$OAUTH_ADMIN_GUID	71ff3bc6-5c87-41c5-9eb8-c03e54315b95	\N
 \.
 
 
@@ -462,8 +462,8 @@ e6207d5c-6c2b-4634-8ecf-bf2325ba7ec7	17fbb622-a42e-4220-ae58-5a4638981ae4	Admin	
 --
 
 COPY public.user_permissions (id, user_id, permission_id) FROM stdin;
-5faf972d-fe02-40e1-8a41-2e6cd1e3eb87	dee684c5-2eaf-401a-915b-d3d4320fe5d5	24b2a62f-4ca1-498c-9dfa-74c4f55bad9b
-14e9fc33-ef35-464e-8a0a-8787c46b624a	32c11441-7eec-47eb-a915-607c4f2529f4	24b2a62f-4ca1-498c-9dfa-74c4f55bad9b
+5faf972d-fe02-40e1-8a41-2e6cd1e3eb87	$OAUTH_ADMIN_GUID	24b2a62f-4ca1-498c-9dfa-74c4f55bad9b
+14e9fc33-ef35-464e-8a0a-8787c46b624a	$OAUTH_CRUCIBLE_ADMIN_GUID	24b2a62f-4ca1-498c-9dfa-74c4f55bad9b
 \.
 
 
@@ -472,8 +472,8 @@ COPY public.user_permissions (id, user_id, permission_id) FROM stdin;
 --
 
 COPY public.users (key, id, name, role_id) FROM stdin;
-1	dee684c5-2eaf-401a-915b-d3d4320fe5d5	Administrator	\N
-2	32c11441-7eec-47eb-a915-607c4f2529f4	Crucible-Admin	\N
+1	$OAUTH_ADMIN_GUID	Administrator	\N
+2	$OAUTH_CRUCIBLE_ADMIN_GUID	Crucible-Admin	\N
 \.
 
 
@@ -482,8 +482,8 @@ COPY public.users (key, id, name, role_id) FROM stdin;
 --
 
 COPY public.view_memberships (id, view_id, user_id, primary_team_membership_id) FROM stdin;
-cec205ac-8d3b-446e-8c15-3d04d6d0ae3a	17fbb622-a42e-4220-ae58-5a4638981ae4	dee684c5-2eaf-401a-915b-d3d4320fe5d5	8cad5b27-f654-48f3-a9c6-cd0270ba5c8b
-71ff3bc6-5c87-41c5-9eb8-c03e54315b95	5ecdbed4-8513-4729-b17b-21c930be9ae9	dee684c5-2eaf-401a-915b-d3d4320fe5d5	8a542c99-a308-4c70-8cda-64ec863e65ed
+cec205ac-8d3b-446e-8c15-3d04d6d0ae3a	17fbb622-a42e-4220-ae58-5a4638981ae4	$OAUTH_ADMIN_GUID	8cad5b27-f654-48f3-a9c6-cd0270ba5c8b
+71ff3bc6-5c87-41c5-9eb8-c03e54315b95	5ecdbed4-8513-4729-b17b-21c930be9ae9	$OAUTH_ADMIN_GUID	8a542c99-a308-4c70-8cda-64ec863e65ed
 \.
 
 

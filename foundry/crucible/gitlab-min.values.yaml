@@ -21,10 +21,10 @@ global:
       secretName: appliance-cert
   
   hosts:
-    domain: foundry.local/gitlab
+    domain: $DOMAIN
     externalIP:
     gitlab:
-      name: gitlab.foundry.local
+      name: gitlab.$DOMAIN
       https: true
     
 
@@ -61,14 +61,14 @@ global:
       enabled: false
     omniauth:
       enabled: true
-      autoSignInWithProvider: identity
+      autoSignInWithProvider: '$OAUTH_PROVIDER'
       syncProfileFromProvider: []
       syncProfileAttributes: ['email']
       allowSingleSignOn: true
       blockAutoCreatedUsers: false
       autoLinkLdapUser: false
       autoLinkSamlUser: false
-      autoLinkUser: ['openid_connect', 'identity']
+      autoLinkUser: ['openid_connect', '$OAUTH_PROVIDER']
       externalProviders: []
       allowBypassTwoFactor: []
       providers: 

@@ -4,6 +4,7 @@
 DIRECTORY=$(dirname "$BASH_SOURCE[0]")
 cd $DIRECTORY
 source ~/scripts/utils
+import_vars ../../appliance-vars
 EXPORTS_PATH="./seed/gitlab"
 GITLAB_TIMEOUT=0
 MAX_GITLAB_TIMEOUT=1200
@@ -11,7 +12,7 @@ DOMAIN="${DOMAIN:-foundry.local}"
 # set gitlab variables.
 GITLAB_TOKEN=$(awk '/Terraform__GitlabToken/ {print $2}' caster.values.yaml | tr -d '"')
 MODULES_GROUP="caster-modules"
-ADMIN_UID=$(awk '/Account__AdminGuid/ {print $2}' ../common/identity.values.yaml | tr -d '"')
+ADMIN_UID=$OAUTH_ADMIN_GUID
 GITLAB_GROUP_ID=$(awk '/Terraform__GitlabGroupId/ {print $2}' caster.values.yaml | tr -d '"')
 echo "GitlabToken: $GITLAB_TOKEN"
 echo "GitlabGroupId: $GITLAB_GROUP_ID"
@@ -20,6 +21,7 @@ gitlab_host="https://gitlab.${DOMAIN}"
 gitlab_user="administrator@${DOMAIN}"
 gitlab_password="foundry"
 api_url="$gitlab_host/api/v4"
+
 
 # add gitlab to hosts file
 echo "foundry" | sudo -S bash -c "sed -i /gitlab.$DOMAIN/d /etc/hosts" 
@@ -40,8 +42,8 @@ EOF
   fi
 done
 kubectl exec -n common postgresql-0 -- psql 'postgresql://postgres:foundry@localhost' -c "CREATE DATABASE gitlab_db;" || true
-kubectl apply -f gitlab.secrets.yaml 
-hin_o -u -p ../helm --version 5.7.1 -f gitlab-min.values.yaml gitlab/gitlab
+envsubst < gitlab.secrets.yaml | kubectl apply -f - 
+hin_o -r ../../appliance-vars -u -p ../helm --version 5.7.1 -f gitlab-min.values.yaml gitlab/gitlab
 #helm upgrade --install --version 5.7.1 -f gitlab-min.values.yaml gitlab gitlab/gitlab
 
 # Wait for gitllab to come up 

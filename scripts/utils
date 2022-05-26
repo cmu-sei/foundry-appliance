@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -xe
 # kex_q is a modified version of k-alias's 'kex' command, that allows you to add a quoted argument.
 # Many applications need quoted arguments to work. This function was inspired by gitlab-rails runner
 # single line commands but could be useful for 'jq' and others. It's designed to allow positional and 
@@ -116,7 +116,6 @@ function import_vars() {
     esac
   done
   shift $((OPTIND -1))
-  echo "$1"
   VARS_PATH=$1
   if [[ $remove = true ]]; then 
     echo "UNSETTING VARS at $VARS_PATH"

@@ -8,11 +8,11 @@ CURL_OPTS=( --silent --header "accept: application/json" --header "Content-Type:
 # Delete in case this is a re-run 
 REQ=$( curl "${CURL_OPTS[@]}" \
                 --user administrator:foundry \
-                --request DELETE "https://foundry.local/gitea/api/v1/users/administrator/tokens/appliance-setup"
+                --request DELETE "https://$DOMAIN/gitea/api/v1/users/administrator/tokens/appliance-setup"
 )
 USER_TOKEN=$( curl "${CURL_OPTS[@]}" \
                 --user administrator:foundry \
-                --request POST "https://foundry.local/gitea/api/v1/users/administrator/tokens" \
+                --request POST "https://$DOMAIN/gitea/api/v1/users/administrator/tokens" \
                 --data "{ \"name\": \"appliance-setup\"}" | jq -r '.sha1'
 )
 
@@ -21,11 +21,11 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 
 # Set git user vars
 git config --global user.name "Foundry Administrator"
-git config --global user.email "administrator@foundry.local"
+git config --global user.email "administrator@$DOMAIN"
 
 # Create foundry-docs organization
 curl "${CURL_OPTS[@]}" \
-  --request POST "https://foundry.local/gitea/api/v1/orgs?access_token=$USER_TOKEN" \
+  --request POST "https://$DOMAIN/gitea/api/v1/orgs?access_token=$USER_TOKEN" \
   --data @- <<EOF
 {
   "username": "foundry",
@@ -35,7 +35,7 @@ EOF
 
 # Create repo
 curl "${CURL_OPTS[@]}" \
-    --request POST "https://foundry.local/gitea/api/v1/orgs/foundry/repos?access_token=$USER_TOKEN" \
+    --request POST "https://$DOMAIN/gitea/api/v1/orgs/foundry/repos?access_token=$USER_TOKEN" \
     --data @- <<EOF
 {
   "name": "mkdocs",

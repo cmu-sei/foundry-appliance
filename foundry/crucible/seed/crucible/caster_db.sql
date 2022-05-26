@@ -370,11 +370,11 @@ COPY public.file_versions (id, file_id, name, modified_by_id, content, date_save
 --
 
 COPY public.files (id, name, directory_id, content, workspace_id, date_saved, is_deleted, modified_by_id, locked_by_id, administratively_locked) FROM stdin;
-67528aa9-54ef-4846-ad04-16eee4181d30	variables.tf	4f45e422-088e-42a0-bbfa-3b9dfc1cc98e	variable datacenter {}\nvariable cluster {}\nvariable dvswitch {}\nvariable vsphere_datastore {}\nvariable iso_datastore {}\nvariable ubuntu_template {}\nvariable folder {\n    default = ""\n}\nvariable view_id {\n    default = "unique"\n}\nvariable admin {\n    default = "e6207d5c-6c2b-4634-8ecf-bf2325ba7ec7"\n}\nvariable blue {\n    default = "8b78629b-1b2b-4d06-9c4b-70c326bc5e40"\n}\nvariable default_network {}\n	\N	2021-12-01 18:16:25.893021	f	dee684c5-2eaf-401a-915b-d3d4320fe5d5	\N	f
-6ecf9dfd-e625-4430-a002-0a91a8f48947	networking.tf	4f45e422-088e-42a0-bbfa-3b9dfc1cc98e	\nmodule "distributed-port-group" {\n  source = "git::https://gitlab.$DOMAIN/caster-modules/distributed-port-group.git?ref=v0.0.1"\n  dc_id = module.infrastructure.dc.id\n  cluster_id = module.infrastructure.cluster.id\n  dvswitch_id = module.infrastructure.dvswitch[0].id\n  portgroups = {\n        "${var.default_network}-${var.view_id}": {\n          "cidr": "192.168.1.0/24",\n          "vlan": "0"\n        }\n      }\n}\n	\N	2021-12-02 03:29:05.179604	f	dee684c5-2eaf-401a-915b-d3d4320fe5d5	\N	f
-e56a6924-66da-472e-86f2-252adb315c88	infrastructure.tf	4f45e422-088e-42a0-bbfa-3b9dfc1cc98e	\nmodule "infrastructure" {\n  source = "git::https://gitlab.$DOMAIN/caster-modules/infrastructure.git?ref=v0.0.3"\n  vsphere_datacenter = "${var.datacenter}"\n  vsphere_cluster = "${var.cluster}"\n  vsphere_dvswitch = "${var.dvswitch}"\n  vsphere_datastore = "${var.vsphere_datastore}"\n  vsphere_folder = var.folder\n}\n	\N	2021-12-02 03:28:19.475365	f	dee684c5-2eaf-401a-915b-d3d4320fe5d5	\N	f
-0b18d28f-ff17-4a93-8566-896064c088c4	machines.tf	4f45e422-088e-42a0-bbfa-3b9dfc1cc98e	module "vm-generic" {\n  source = "git::https://gitlab.$DOMAIN/caster-modules/vm-generic.git?ref=v0.0.4"\n  vmname = "ubuntu-${var.view_id}"\n  dc = module.infrastructure.dc.name\n  datastore = module.infrastructure.datastore.name\n  vmfolder = ""\n  vmrp = ""\n  vm_depends_on = [module.infrastructure]\n  network_depends_on = [module.distributed-port-group] \n  vmrp_id = module.infrastructure.cluster.resource_pool_id\n  network_cards = [module.distributed-port-group.portgroups["${var.default_network}-${var.view_id}"].name]\n  vmtemp = var.ubuntu_template\n  cpu_number = 4\n  ram_size = 1024\n  iso_datastore = var.iso_datastore\n  iso_paths = {\n        "path": "/"\n      }\n  \n  extra_config = {\n    "guestinfo.team_id" = "${var.admin},${var.blue}"\n      }\n}\n	\N	2021-12-02 03:28:50.223232	f	dee684c5-2eaf-401a-915b-d3d4320fe5d5	\N	f
-701474b8-80c7-480e-ba2e-25d3cc516aae	variables.auto.tfvars	4f45e422-088e-42a0-bbfa-3b9dfc1cc98e	datacenter = "$VSPHERE_DATACENTER"\n# Cluster needs to match VSPHERE_CLUSTER Environment variable\ncluster = "$VSPHERE_CLUSTER"\ndvswitch = "$VSPHERE_DV_SWITCH"\nvsphere_datastore = "$VSPHERE_DATASTORE"\niso_datastore = "$VSPHERE_ISO_DATASTORE"\n# Must have a snapshot\nubuntu_template = "$UBUNTU_TEMPLATE"\nfolder = "$VSPHERE_DATACENTER/vm"\ndefault_network = "terraform-default"\n	\N	2021-12-02 03:27:58.344623	f	dee684c5-2eaf-401a-915b-d3d4320fe5d5	\N	f
+67528aa9-54ef-4846-ad04-16eee4181d30	variables.tf	4f45e422-088e-42a0-bbfa-3b9dfc1cc98e	variable datacenter {}\nvariable cluster {}\nvariable dvswitch {}\nvariable vsphere_datastore {}\nvariable iso_datastore {}\nvariable ubuntu_template {}\nvariable folder {\n    default = ""\n}\nvariable view_id {\n    default = "unique"\n}\nvariable admin {\n    default = "e6207d5c-6c2b-4634-8ecf-bf2325ba7ec7"\n}\nvariable blue {\n    default = "8b78629b-1b2b-4d06-9c4b-70c326bc5e40"\n}\nvariable default_network {}\n	\N	2021-12-01 18:16:25.893021	f	$OAUTH_ADMIN_GUID	\N	f
+6ecf9dfd-e625-4430-a002-0a91a8f48947	networking.tf	4f45e422-088e-42a0-bbfa-3b9dfc1cc98e	\nmodule "distributed-port-group" {\n  source = "git::https://gitlab.$DOMAIN/caster-modules/distributed-port-group.git?ref=v0.0.1"\n  dc_id = module.infrastructure.dc.id\n  cluster_id = module.infrastructure.cluster.id\n  dvswitch_id = module.infrastructure.dvswitch[0].id\n  portgroups = {\n        "${var.default_network}-${var.view_id}": {\n          "cidr": "192.168.1.0/24",\n          "vlan": "0"\n        }\n      }\n}\n	\N	2021-12-02 03:29:05.179604	f	$OAUTH_ADMIN_GUID	\N	f
+e56a6924-66da-472e-86f2-252adb315c88	infrastructure.tf	4f45e422-088e-42a0-bbfa-3b9dfc1cc98e	\nmodule "infrastructure" {\n  source = "git::https://gitlab.$DOMAIN/caster-modules/infrastructure.git?ref=v0.0.3"\n  vsphere_datacenter = "${var.datacenter}"\n  vsphere_cluster = "${var.cluster}"\n  vsphere_dvswitch = "${var.dvswitch}"\n  vsphere_datastore = "${var.vsphere_datastore}"\n  vsphere_folder = var.folder\n}\n	\N	2021-12-02 03:28:19.475365	f	$OAUTH_ADMIN_GUID	\N	f
+0b18d28f-ff17-4a93-8566-896064c088c4	machines.tf	4f45e422-088e-42a0-bbfa-3b9dfc1cc98e	module "vm-generic" {\n  source = "git::https://gitlab.$DOMAIN/caster-modules/vm-generic.git?ref=v0.0.4"\n  vmname = "ubuntu-${var.view_id}"\n  dc = module.infrastructure.dc.name\n  datastore = module.infrastructure.datastore.name\n  vmfolder = ""\n  vmrp = ""\n  vm_depends_on = [module.infrastructure]\n  network_depends_on = [module.distributed-port-group] \n  vmrp_id = module.infrastructure.cluster.resource_pool_id\n  network_cards = [module.distributed-port-group.portgroups["${var.default_network}-${var.view_id}"].name]\n  vmtemp = var.ubuntu_template\n  cpu_number = 4\n  ram_size = 1024\n  iso_datastore = var.iso_datastore\n  iso_paths = {\n        "path": "/"\n      }\n  \n  extra_config = {\n    "guestinfo.team_id" = "${var.admin},${var.blue}"\n      }\n}\n	\N	2021-12-02 03:28:50.223232	f	$OAUTH_ADMIN_GUID	\N	f
+701474b8-80c7-480e-ba2e-25d3cc516aae	variables.auto.tfvars	4f45e422-088e-42a0-bbfa-3b9dfc1cc98e	datacenter = "$VSPHERE_DATACENTER"\n# Cluster needs to match VSPHERE_CLUSTER Environment variable\ncluster = "$VSPHERE_CLUSTER"\ndvswitch = "$VSPHERE_DV_SWITCH"\nvsphere_datastore = "$VSPHERE_DATASTORE"\niso_datastore = "$VSPHERE_ISO_DATASTORE"\n# Must have a snapshot\nubuntu_template = "$UBUNTU_TEMPLATE"\nfolder = "$VSPHERE_DATACENTER/vm"\ndefault_network = "terraform-default"\n	\N	2021-12-02 03:27:58.344623	f	$OAUTH_ADMIN_GUID	\N	f
 \.
 
 
@@ -458,8 +458,8 @@ COPY public.runs (id, workspace_id, created_at, is_destroy, status, targets, cre
 --
 
 COPY public.user_permissions (id, user_id, permission_id) FROM stdin;
-c0164b19-e522-4ad5-903c-e87a362c59f2	dee684c5-2eaf-401a-915b-d3d4320fe5d5	00000000-0000-0000-0000-000000000001
-0405258f-3d33-4049-b1b3-d35eb03ed7d3	32c11441-7eec-47eb-a915-607c4f2529f4	00000000-0000-0000-0000-000000000001
+c0164b19-e522-4ad5-903c-e87a362c59f2	$OAUTH_ADMIN_GUID	00000000-0000-0000-0000-000000000001
+0405258f-3d33-4049-b1b3-d35eb03ed7d3	$OAUTH_CRUCIBLE_ADMIN_GUID	00000000-0000-0000-0000-000000000001
 \.
 
 
@@ -468,9 +468,9 @@ c0164b19-e522-4ad5-903c-e87a362c59f2	dee684c5-2eaf-401a-915b-d3d4320fe5d5	000000
 --
 
 COPY public.users (id, name) FROM stdin;
-3b680d97-6d0b-44c9-8cc7-fd10ea79c2a6	crucible-admin@crucible.io
-dee684c5-2eaf-401a-915b-d3d4320fe5d5	Administrator
-32c11441-7eec-47eb-a915-607c4f2529f4	crucible-admin@crucible.io
+3b680d97-6d0b-44c9-8cc7-fd10ea79c2a6	crucible-admin@$DOMAIN
+$OAUTH_ADMIN_GUID	Administrator
+$OAUTH_CRUCIBLE_ADMIN_GUID	crucible-admin@$DOMAIN
 \.
 
 

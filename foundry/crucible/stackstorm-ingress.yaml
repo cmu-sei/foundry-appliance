@@ -16,7 +16,7 @@ metadata:
     nginx.ingress.kubernetes.io/use-regex: 'true'
 spec:
   rules:
-  - host: foundry.local
+  - host: $DOMAIN
     http:
       paths:
         - path: "/stackstorm/(.*)"

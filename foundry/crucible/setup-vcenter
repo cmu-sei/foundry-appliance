@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 # 
 # Copyright 2021 Carnegie Mellon University.
 # Released under a BSD (SEI)-style license, please see LICENSE.md in the
@@ -63,8 +63,6 @@ import_vars $root_dir/crucible/vcenter.env
 export appliance_ip=$(ip route get 1 | awk '{print $(NF-2);exit}')
 export dns_server=${DNS_01:-8.8.8.8}
 
-replace_vars . '.*\.(sql)'
-chmod +x $root_dir/crucible/setup-gitlab
 chmod +x $root_dir/crucible/import-content
 
 # Update DNS
@@ -101,9 +99,11 @@ read -e -p "Would you like to import sample content (THIS WILL DELETE ANY EXISTI
 if [[ $IMPORT_CONTENT = y ]]; then 
   ./import-content
 else 
-  hin_o -r vcenter.env -p ~/.helm -u -v 1.4.1 -f player.values.yaml sei/player
-  hin_o -r vcenter.env -p ~/.helm -u -v 1.4.1 -f caster.values.yaml sei/caster
-  hin_o -r vcenter.env -p ~/.helm -u -v 1.4.0 -f alloy.values.yaml sei/alloy
-  hin_o -r vcenter.env -p ~/.helm -u -v 1.4.0 -f steamfitter.values.yaml sei/steamfitter
-  hin_o -u -p ~/.helm --version 0.80.0 --wait --timeout 10m -f stackstorm-min.values.yaml stackstorm/stackstorm-ha
+  cat ../../appliance-vars vcenter.env > vcenter.tmp
+  hin_o -r vcenter.tmp -p ~/.helm -u -v 1.4.1 -f player.values.yaml sei/player
+  hin_o -r vcenter.tmp -p ~/.helm -u -v 1.4.1 -f caster.values.yaml sei/caster
+  hin_o -r vcenter.tmp -p ~/.helm -u -v 1.4.0 -f alloy.values.yaml sei/alloy
+  hin_o -r vcenter.tmp -p ~/.helm -u -v 1.4.0 -f steamfitter.values.yaml sei/steamfitter
+  hin_o -r vcenter.tmp -u -p ~/.helm --version 0.80.0 --wait --timeout 10m -f stackstorm-min.values.yaml stackstorm/stackstorm-ha
+  rm -rf vcenter.tmp
 fi

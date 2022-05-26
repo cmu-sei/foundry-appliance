@@ -1,7 +1,7 @@
 steamfitter-api:
   image:
     repository: cmusei/steamfitter-api
-    tag: '3.6.1'
+    tag: '3.6.5'
     pullPolicy: IfNotPresent
   ingress:
     enabled: true
@@ -10,14 +10,14 @@ steamfitter-api:
       nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
       nginx.ingress.kubernetes.io/use-regex: "true"
     hosts:
-      - host: foundry.local
+      - host: $DOMAIN
         paths:
           - path: /steamfitter/(api|swagger|hubs)
             pathType: Prefix
     tls:
       - secretName: appliance-cert
         hosts:
-         - foundry.local
+         - $DOMAIN
   certificateMap: "appliance-root-ca"
 
   env:
@@ -25,48 +25,48 @@ steamfitter-api:
     # Connection String to database
     ConnectionStrings__PostgreSQL: "Server=postgresql.common.svc.cluster.local;Port=5432;Database=steamfitter_db;Username=postgres;Password=foundry;SSL Mode=Prefer;Trust Server Certificate=true;"
 
-    CorsPolicy__Origins__0: https://foundry.local
+    CorsPolicy__Origins__0: https://$DOMAIN
     CorsPolicy__Origins__1: "http://localhost:4303"
     # CorsPolicy__AllowAnyOrigin: true
     CorsPolicy__AllowAnyMethod: true
     CorsPolicy__AllowAnyHeader: true
 
     # OAuth2 Identity Client for Application
-    Authorization__Authority: https://foundry.local/identity
-    Authorization__AuthorizationUrl: https://foundry.local/identity/connect/authorize
-    Authorization__TokenUrl: https://foundry.local/identity/connect/token
+    Authorization__Authority: https://$DOMAIN/keycloak/$OAUTH_AUTHORITY_URL
+    Authorization__AuthorizationUrl: https://$DOMAIN/keycloak/$OAUTH_AUTHORIZATION_URL
+    Authorization__TokenUrl: https://$DOMAIN/keycloak/$OAUTH_TOKEN_URL
     Authorization__AuthorizationScope: "steamfitter-api vm-api player-api"
     Authorization__ClientId: steamfitter-api
     Authorization__ClientName: "Steamfitter API"
 
     # OAuth2 Identity Client /w Password
-    ResourceOwnerAuthorization__Authority: https://foundry.local/identity
+    ResourceOwnerAuthorization__Authority: https://$DOMAIN/identity
     ResourceOwnerAuthorization__ClientId: steamfitter-admin
-    ResourceOwnerAuthorization__UserName: crucible-admin@foundry.local #TODO
+    ResourceOwnerAuthorization__UserName: crucible-admin@$DOMAIN #TODO
     ResourceOwnerAuthorization__Password: foundry #TODO
     ResourceOwnerAuthorization__Scope: "vm-api player-api"
 
-    ClientSettings__urls__steamfitterApi: https://foundry.local/steamfitter
-    ClientSettings__urls__vmApi: https://foundry.local/vm
-    ClientSettings__urls__playerApi: https://foundry.local/player
+    ClientSettings__urls__steamfitterApi: https://$DOMAIN/steamfitter
+    ClientSettings__urls__vmApi: https://$DOMAIN/vm
+    ClientSettings__urls__playerApi: https://$DOMAIN/player
 
     # Stackstorm Configuration
     # TODO - Document Stackstorm dependencies
     VmTaskProcessing__ApiType: st2
     VmTaskProcessing__ApiUsername: "administrator"
     VmTaskProcessing__ApiPassword: "foundry"
-    VmTaskProcessing__ApiBaseUrl: "https://foundry.local/stackstorm/"
+    VmTaskProcessing__ApiBaseUrl: "https://$DOMAIN/stackstorm/"
     VmTaskProcessing__ApiParameters__clusters: "$MOID"
 
     # Basic seed data to jumpstart deployement
     # TODO - Document Seed data
-    SeedData__Users__0__id: "dee684c5-2eaf-401a-915b-d3d4320fe5d5"
-    SeedData__Users__0__name:  "administrator@foundry.local"
+    SeedData__Users__0__id: "$OAUTH_ADMIN_GUID"
+    SeedData__Users__0__name:  "administrator@$DOMAIN"
 
     # SeedData__Users__1__id:  "3b680d97-6d0b-44c9-8cc7-fd10ea79c2a6"
-    # SeedData__Users__1__name:  "caster-admin@foundry.local"
+    # SeedData__Users__1__name:  "caster-admin@$DOMAIN"
 
-    SeedData__UserPermissions__0__UserId: "dee684c5-2eaf-401a-915b-d3d4320fe5d5"
+    SeedData__UserPermissions__0__UserId: "$OAUTH_ADMIN_GUID"
     SeedData__UserPermissions__0__PermissionId: "00000000-0000-0000-0000-000000000001"
     # SeedData__UserPermissions__1__UserId: ""
     # SeedData__UserPermissions__1__PermissionId: ""
@@ -84,14 +84,14 @@ steamfitter-ui:
       nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
       nginx.ingress.kubernetes.io/use-regex: "true"
     hosts:
-        - host: foundry.local
+        - host: $DOMAIN
           paths:
             - path: "/steamfitter(/|$)(.*)"
               pathType: Prefix
     tls:
       - secretName: appliance-cert
         hosts:
-        - foundry.local
+        - $DOMAIN
   env: 
     ## basehref is path to the app
     APP_BASEHREF: "/steamfitter"
@@ -100,18 +100,18 @@ steamfitter-ui:
   # These values correspond to an OpenID connect client
   settings: |- 
     {
-      "ApiUrl": "https://foundry.local/steamfitter",
-      "VmApiUrl": "https://foundry.local/vm",
-      "ApiPlayerUrl": "https://foundry.local/player",
+      "ApiUrl": "https://$DOMAIN/steamfitter",
+      "VmApiUrl": "https://$DOMAIN/vm",
+      "ApiPlayerUrl": "https://$DOMAIN/player",
       "OIDCSettings": {
-          "authority": "https://foundry.local/identity",
+          "authority": "https://$DOMAIN/keycloak/$OAUTH_AUTHORITY_URL",
           "client_id": "steamfitter-ui",
-          "redirect_uri": "https://foundry.local/steamfitter/auth-callback",
-          "post_logout_redirect_uri": "https://foundry.local/steamfitter",
+          "redirect_uri": "https://$DOMAIN/steamfitter/auth-callback",
+          "post_logout_redirect_uri": "https://$DOMAIN/steamfitter",
           "response_type": "code",
           "scope": "openid profile steamfitter-api vm-api player-api",
           "automaticSilentRenew": true,
-          "silent_redirect_uri": "https://foundry.local/steamfitter/auth-callback-silent"
+          "silent_redirect_uri": "https://$DOMAIN/steamfitter/auth-callback-silent"
       },
       "UseLocalAuthStorage": true
     }

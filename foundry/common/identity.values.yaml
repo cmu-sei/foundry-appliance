@@ -54,7 +54,7 @@ identity-api:
     Logging__Console__DisableColors: true
     Account__AdminEmail: "administrator@$DOMAIN"
     Account__AdminPassword: "foundry"
-    Account__AdminGuid: "dee684c5-2eaf-401a-915b-d3d4320fe5d5"
+    Account__AdminGuid: "$OAUTH_ADMIN_GUID"
     Account__OverrideCode: "123456"
     Account__Authentication__SigningCertificate: conf/signer.pfx
     Account__Authentication__SigningCertificatePassword: foundry
@@ -86,7 +86,7 @@ identity-api:
           {
             "Username": "crucible-admin@$DOMAIN",
             "Password": "foundry",
-            "GlobalId": "32c11441-7eec-47eb-a915-607c4f2529f4"
+            "GlobalId": "$OAUTH_CRUCIBLE_ADMIN_GUID"
           }
         ],
         "ApiResources": [

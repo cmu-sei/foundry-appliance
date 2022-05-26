@@ -8,7 +8,7 @@ Foundry Appliance is a virtual machine that integrates cyber workforce developme
 
 This project builds the virtual appliance using Ubuntu and [K3s](https://k3s.io/)&mdash;a lightweight Kubernetes environment. Pre-built OVA images are also available under [Releases](https://github.com/cmu-sei/foundry-appliance/releases).
 
-The appliance comes in three flavors depnding on your use case. It can be built with the foundry applications, curcible applications or both.
+The appliance comes in three flavors depnding on your use case. It can be built with the foundry applications, crucible applications or both.
 
 ## Getting Started
 
@@ -24,6 +24,7 @@ password: foundry
 The following SEI apps are loaded on the appliance:
 
 - [Identity](https://github.com/cmu-sei/identity) - OAuth2/OIDC identity provider
+- [Keycloak](https://keycloak.org) - OAuth2/OIDC identity provider (**default**)
 
 ### Foundry
 
@@ -71,13 +72,13 @@ Run the following command, where `<hypervisor>` is a comma-delimited list of tar
 For example, to build the appliance with Fusion or Workstation, run this command:
 
 ```
-./build-appliance vmware foundry
+./build-appliance vmware topomojo
 ```
 
 To add VirtualBox to the previous build, run this command:
 
 ```
-./build-appliance vmware,virtualbox foundry,crucible
+./build-appliance vmware,virtualbox topomojo,crucible
 ```
 
 [Packer `build` options](https://www.packer.io/docs/commands/build) can be appended to the end of the command. For example, this will save partial builds and automatically overwrite the previous build (useful for debugging):
@@ -100,4 +101,4 @@ After configuration you may wish to import the example data. Be warned this is a
 
 `~/crucible/import-content`
 
-Follow the quick start instructions for access to the appliance.
+Follow the getting started instructions for access to the appliance.

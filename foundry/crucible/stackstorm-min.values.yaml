@@ -26,7 +26,7 @@ st2:
   password: foundry
   config: |
     [api]
-    allow_origin = 'https://foundry.local'
+    allow_origin = 'https://$DOMAIN'
     [database]
     host = mongodb.crucible.svc.cluster.local
     port = 27017
@@ -83,7 +83,7 @@ ingress:
     nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
     nginx.ingress.kubernetes.io/use-regex: 'true'
   hosts:
-    - host: foundry.local
+    - host: $DOMAIN
       paths:
         - path: /stackstorm/(.*)
           pathType: Prefix
@@ -92,7 +92,7 @@ ingress:
   tls:
     - secretName: appliance-cert
       hosts:
-        - foundry.local
+        - $DOMAIN
 
 st2web:
   # Minimum 2 replicas are recommended to run st2web in HA mode
@@ -116,7 +116,7 @@ st2web:
     # type can be one of "ClusterIP", "NodePort", "LoadBalancer" or "ExternalName"
     type: "NodePort"
     # The hostname associated with st2web service (externalName, added to external DNS, etc.)
-    hostname: foundry.local
+    hostname: $DOMAIN
     # For more information regarding annotations, see
     # https://kubernetes.io/docs/concepts/services-networking/service/#ssl-support-on-aws
     annotations: {}
@@ -131,9 +131,9 @@ st2web:
         hosts: [
           {
             name: 'test',
-            url: 'https://foundry.local/stackstorm/api',
-            auth: 'https://foundry.local/stackstorm/auth',
-            stream: 'https://foundry.local/stackstorm/stream',
+            url: 'https://$DOMAIN/stackstorm/api',
+            auth: 'https://$DOMAIN/stackstorm/auth',
+            stream: 'https://$DOMAIN/stackstorm/stream',
           }
         ]
       });

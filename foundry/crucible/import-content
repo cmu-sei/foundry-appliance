@@ -1,4 +1,4 @@
-[#!/bin/bash
+#!/bin/bash 
 # 
 # Copyright 2021 Carnegie Mellon University.
 # Released under a BSD (SEI)-style license, please see LICENSE.md in the
@@ -46,7 +46,7 @@ VSPHERE_CLUSTER=$VSPHERE_CLUSTER
 VSPHERE_DV_SWITCH=$VSPHERE_DV_SWITCH
 VSPHERE_DATASTORE=$VSPHERE_DATASTORE
 VSPHERE_ISO_DATASTORE=$VSPHERE_ISO_DATASTORE
-VSPHERE_DEFAULT_PORTGROUP=VSPHERE_DEFAULT_PORTGROUP
+VSPHERE_DEFAULT_PORTGROUP=$VSPHERE_DEFAULT_PORTGROUP
 #Must have a snapshot
 UBUNTU_TEMPLATE=$UBUNTU_TEMPLATE
 
@@ -62,8 +62,8 @@ import_vars ../../appliance-vars
 # decrypt Password
 VSPHERE_PASS=$(decrypt_string $VSPHERE_PASS)
 replace_vars . '.*\.(sql)'
-replace foundry.local $domain $directory/$exports_path
-replace crucible.io $domain $directory/$exports_path
+echo "Administrator GUID: $OAUTH_ADMIN_GUID"
+echo "CRUCIBLE GUID: $OAUTH_CRUCIBLE_ADMIN_GUID"
 
 helm delete alloy || true && sleep 5
 helm delete caster || true && sleep 5
@@ -87,12 +87,17 @@ done
 
 files=$(find $exports_path -type f -iname "*.sql" | sed "s/.*\///; s/\.sql//")
 for file in $files; do
-  PGPASSWORD=foundry dropdb -h localhost -U postgres ${file}
+  
+  echo "Attempting to drop database $file"
+  PGPASSWORD=foundry psql -h localhost postgres postgres -c "DROP DATABASE $file WITH (FORCE);"
   PGPASSWORD=foundry createdb -h localhost -U postgres -T template0 ${file}
-  cat $exports_path/${file}.sql | sed 's/LOCALE/LC_COLLATE/' | PGPASSWORD=foundry psql -h localhost -p 5432 -U postgres ${file}
+  
+  envsubst < $exports_path/${file}.sql | sed 's/LOCALE/LC_COLLATE/' | PGPASSWORD=foundry psql -h localhost -p 5432 -U postgres $file
 done
 
-hin_o -r vcenter.env -p ~/.helm -u -v 1.4.1 -f player.values.yaml sei/player
-hin_o -r vcenter.env -p ~/.helm -u -v 1.4.1 -f caster.values.yaml sei/caster
-hin_o -r vcenter.env -p ~/.helm -u -v 1.4.0 -f alloy.values.yaml sei/alloy
-hin_o -r vcenter.env -p ~/.helm -u -v 1.4.0 -f steamfitter.values.yaml sei/steamfitter
+cat ../../appliance-vars <(echo) vcenter.env > vcenter.tmp
+hin_o -r vcenter.tmp -p ~/.helm -u -v 1.4.1 -f player.values.yaml sei/player
+hin_o -r vcenter.tmp -p ~/.helm -u -v 1.4.1 -f caster.values.yaml sei/caster
+hin_o -r vcenter.tmp -p ~/.helm -u -v 1.4.0 -f alloy.values.yaml sei/alloy
+hin_o -r vcenter.tmp -p ~/.helm -u -v 1.4.0 -f steamfitter.values.yaml sei/steamfitter
+ rm -rf vcenter.tmp

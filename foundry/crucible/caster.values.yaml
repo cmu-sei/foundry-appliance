@@ -2,8 +2,13 @@ caster-api:
   kind: "StatefulSet"
   image:
     repository: cmusei/caster-api
-    tag: '3.0.3'
+    tag: '3.1.1'
     pullPolicy: IfNotPresent
+  command: [
+    'bash',
+    '-c',
+    'apt install curl -y && update-ca-certificates && /install-terraform.sh && dotnet Caster.Api.dll',
+  ]
   ingress:
     enabled: true
     annotations:
@@ -11,19 +16,19 @@ caster-api:
       nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
       nginx.ingress.kubernetes.io/use-regex: "true"
     hosts:
-      - host: foundry.local
+      - host: $DOMAIN
         paths:
           - path: /caster/(api|swagger|hubs)
             pathType: Prefix
     tls:
       - secretName: appliance-cert
         hosts:
-         - foundry.local
+         - $DOMAIN
 
   # Gets placed in /etc/gitconfig to allow immediate Gitlab access via access token
   # Replace TOKEN with an access token created in Gitlab, and update the Gitlab URL
-  gitconfig: '[url "http://git-access-token:wMa2RPQP_ZR3fxc5zQtv@gitlab.foundry.local"]
-        insteadOf = https://gitlab.foundry.local/'
+  gitconfig: '[url "http://git-access-token:wMa2RPQP_ZR3fxc5zQtv@gitlab.$DOMAIN"]
+        insteadOf = https://gitlab.$DOMAIN/'
   
   certificateMap: "appliance-root-ca"
 
@@ -52,7 +57,7 @@ caster-api:
     # https://docs.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.hostfiltering.hostfilteringoptions.allowedhosts?view=aspnetcore-3.1
     AllowedHosts: "*"
     Logging__LogLevel__Default: "debug"
-    CorsPolicy__Origins__0: "https://foundry.local"
+    CorsPolicy__Origins__0: "https://$DOMAIN"
     CorsPolicy__Origins__1: "http://localhost:4303"
     # CorsPolicy__AllowAnyOrigin: true
     CorsPolicy__AllowAnyMethod: true
@@ -61,22 +66,23 @@ caster-api:
     ConnectionStrings__PostgreSQL: "Server=postgresql.common.svc.cluster.local;Port=5432;Database=caster_db;Username=postgres;Password='foundry';SSL Mode=Prefer;Trust Server Certificate=true;"
 
     # OAuth2 Identity Client for Application
-    Authorization__Authority: https://foundry.local/identity
-    Authorization__AuthorizationUrl: https://foundry.local/identity/connect/authorize
-    Authorization__TokenUrl: https://foundry.local/identity/connect/token
+    Authorization__Authority: https://$DOMAIN/keycloak/$OAUTH_AUTHORITY_URL
+    Authorization__AuthorizationUrl: https://$DOMAIN/keycloak/$OAUTH_AUTHORIZATION_URL
+    Authorization__TokenUrl: https://$DOMAIN/keycloak/$OAUTH_TOKEN_URL
     Authorization__AuthorizationScope: "caster-api"
     Authorization__ClientId: caster-api
 
+
     # OAuth2 Identity Client /w Password
-    Client__TokenUrl: https://foundry.local/identity/connect/token
+    Client__TokenUrl: https://$DOMAIN/keycloak/$OAUTH_TOKEN_URL
     Client__ClientId: caster-admin
-    Client__UserName: "crucible-admin@foundry.local"
+    Client__UserName: "crucible-admin@$DOMAIN"
     Client__Password: "foundry"
     Client__Scope: "player-api vm-api"
 
     # Crucible Player URLs
-    Player__VmApiUrl: "https://foundry.local/vm"
-    Player__VmConsoleUrl: "https://foundry.local/console/vm/{id}/console"
+    Player__VmApiUrl: "https://$DOMAIN/vm"
+    Player__VmConsoleUrl: "https://$DOMAIN/console/vm/{id}/console"
 
     # Terraform Information
     # - DefaultVersion - The default version to be used.
@@ -84,7 +90,7 @@ caster-api:
     Terraform__BinaryPath: /terraform/binaries
     Terraform__RootWorkingDirectory: /terraform/root
     Terraform__DefaultVersion: "1.1.7"
-    Terraform__GitlabApiUrl: "http://gitlab-webservice.crucible.svc.cluster.local:8080/api/v4/"
+    Terraform__GitlabApiUrl: "https://gitlab.$DOMAIN/api/v4/"
     # Gitlab token and group ID are dynamically updated with setup-gitlab script.
     Terraform__GitlabToken: "wMa2RPQP_ZR3fxc5zQtv"
     Terraform__GitlabGroupId: "2"
@@ -94,14 +100,19 @@ caster-api:
     FileVersions__DaysToSaveDailyUntaggedVersions: 31
 
     # Basic seed data to jumpstart deployement
-    SeedData__Users__0__id: "dee684c5-2eaf-401a-915b-d3d4320fe5d5"
-    SeedData__Users__0__name:  "administrator@foundry.local"
+    #SeedData__Users__0__id: "dee684c5-2eaf-401a-915b-d3d4320fe5d5"
+    #keycloak
+    SeedData__Users__0__id: "$OAUTH_ADMIN_GUID"
+    SeedData__Users__0__name:  "administrator@$DOMAIN"
 
-    SeedData__Users__1__id:  "3b680d97-6d0b-44c9-8cc7-fd10ea79c2a6"
-    SeedData__Users__1__name:  "crucible-admin@foundry.local"
-    SeedData__UserPermissions__0__UserId:  "dee684c5-2eaf-401a-915b-d3d4320fe5d5"
+    #SeedData__Users__1__id:  "3b680d97-6d0b-44c9-8cc7-fd10ea79c2a6"
+    SeedData__Users__1__id:  "$OAUTH_CRUCIBLE_ADMIN_GUID"
+    SeedData__Users__1__name:  "crucible-admin@$DOMAIN"
+    #SeedData__UserPermissions__0__UserId:  "dee684c5-2eaf-401a-915b-d3d4320fe5d5"
+    #keycloak
+    SeedData__UserPermissions__0__UserId:  "$OAUTH_ADMIN_GUID"
     SeedData__UserPermissions__0__PermissionId:  "00000000-0000-0000-0000-000000000001"
-    SeedData__UserPermissions__1__UserId:  "3b680d97-6d0b-44c9-8cc7-fd10ea79c2a6"
+    SeedData__UserPermissions__1__UserId:  "$OAUTH_CRUCIBLE_ADMIN_GUID"
     SeedData__UserPermissions__1__PermissionId:  "00000000-0000-0000-0000-000000000001"
 
 caster-ui:
@@ -117,14 +128,14 @@ caster-ui:
       nginx.ingress.kubernetes.io/proxy-send-timeout: '86400'
       nginx.ingress.kubernetes.io/use-regex: "true"
     hosts:
-      - host: foundry.local
+      - host: $DOMAIN
         paths:
           - path: "/caster(/|$)(.*)"
             pathType: Prefix
     tls:
       - secretName: appliance-cert
         hosts:
-         - foundry.local
+         - $DOMAIN
  
   env: 
     ## basehref is path to the app
@@ -134,16 +145,16 @@ caster-ui:
   # These values correspond to an OpenID connect client
   settings: |-
     {
-      "ApiUrl": "https://foundry.local/caster",
+      "ApiUrl": "https://$DOMAIN/caster",
       "OIDCSettings": {
-        "authority": "https://foundry.local/identity/",
+        "authority": "https://$DOMAIN/keycloak/$OAUTH_AUTHORITY_URL",
         "client_id": "caster-ui",
-        "redirect_uri": "https://foundry.local/caster/auth-callback",
-        "post_logout_redirect_uri": "https://foundry.local/caster",
+        "redirect_uri": "https://$DOMAIN/caster/auth-callback",
+        "post_logout_redirect_uri": "https://$DOMAIN/caster",
         "response_type": "code",
         "scope": "openid profile email caster-api",
         "automaticSilentRenew": true,
-        "silent_redirect_uri": "https://foundry.local/caster/auth-callback-silent"
+        "silent_redirect_uri": "https://$DOMAIN/caster/auth-callback-silent"
       },
       "UseLocalAuthStorage": true
     }

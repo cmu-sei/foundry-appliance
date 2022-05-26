@@ -12,10 +12,10 @@
 cd "$(dirname "${BASH_SOURCE[0]}")"
 source ~/scripts/utils
 MKDOCS_DIR=~/mkdocs
+import_vars ../../appliance-vars
 
 # Add Helm repos and update
 if [[ $(is_online) == true ]]; then
-  mkdir -p ../helm
   helm repo add bitnami https://charts.bitnami.com/bitnami
   helm repo add runix https://helm.runix.net/
   helm repo add nicholaswilde https://nicholaswilde.github.io/helm-charts/
@@ -26,6 +26,7 @@ if [[ $(is_online) == true ]]; then
   helm repo add sei https://helm.cyberforce.site/charts
   helm repo add stackstorm https://helm.stackstorm.com/
   helm repo add gitlab https://charts.gitlab.io
+  helm repo add codecentric https://codecentric.github.io/helm-charts    
   helm repo update
 fi
 
@@ -44,10 +45,10 @@ kubectl create configmap appliance-root-ca --from-file=root-ca.crt=../certs/root
 hin_o -r ../../appliance-vars -u -p ~/.helm -f nfs-server-provisioner.values.yaml kvaps/nfs-server-provisioner
 
 # Install ingress-nginx
-hin_o -r ../../appliance-vars -u -p ~/.helm -w -f ingress-nginx.values.yaml ingress-nginx/ingress-nginx 
+hin_o -r ../../appliance-vars -u -p ~/.helm -w -v 4.0.19 -f ingress-nginx.values.yaml ingress-nginx/ingress-nginx 
 
 # Install PostgreSQL
-hin_o -r ../../appliance-vars -u -p ~/.helm -w -f postgresql.values.yaml bitnami/postgresql
+hin_o -r ../../appliance-vars -u -p ~/.helm -w -v 11.1.28 -f postgresql.values.yaml bitnami/postgresql
 
 # Install pgAdmin4
 kubectl create secret generic pgpassfile --from-literal=pgpassfile=postgresql:5432:\*:postgres:foundry --dry-run=client -o yaml | kubectl apply -f -
@@ -66,17 +67,23 @@ cp ../certs/root-ca.pem ../../mkdocs/docs/root-ca.crt
 # Install Gitea
 git config --global init.defaultBranch main
 kubectl exec postgresql-0 -- psql 'postgresql://postgres:foundry@localhost' -c 'CREATE DATABASE gitea;' || true
-hin_o -r ../../appliance-vars -u -p ~/.helm -w -f gitea.values.yaml gitea/gitea
-timeout 5m bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' https://foundry.local/gitea)" != "200" ]]; do sleep 5; done' || false
+hin_o -r ../../appliance-vars -u -p ~/.helm -w -v 5.0.7 -f gitea.values.yaml gitea/gitea
+echo "Waiting for gitea to become available"
+timeout 5m bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' https://$DOMAIN/gitea)" != "200" ]]; do sleep 5; done' || false
 ./setup-gitea
 
-# Foundry Stack install
+#Foundry Stack install
+if [ $OAUTH_PROVIDER = keycloak ]; then 
+ kubectl create configmap keycloak-realm --from-file=realm.json=realm.json --dry-run=client -o yaml | kubectl apply -f -
+ hin_o -u -r ../../appliance-vars -p ~/.helm -v 18.0.0 -f keycloak.values.yaml codecentric/keycloak
+elif [ $OAUTH_PROVIDER = identity ]; then 
+ hin_o -r ../../appliance-vars -u -v 0.2.0 -p ~/.helm -f identity.values.yaml sei/identity
+fi
 
-hin_o -r ../../appliance-vars -u -v 0.2.0 -p ~/.helm -f identity.values.yaml sei/identity
 hin_o -r ../../appliance-vars -u -p ~/.helm -f mkdocs-material.values.yaml sei/mkdocs-material
 
 # setup repo and push mkdocs
 git -C $MKDOCS_DIR init || true
 git -C $MKDOCS_DIR add -A || true
 git -C $MKDOCS_DIR commit -m "Initial commit" || true
-git -C $MKDOCS_DIR push -u https://administrator:foundry@foundry.local/gitea/foundry/mkdocs.git --all || true
+git -C $MKDOCS_DIR push -u https://administrator:foundry@$DOMAIN/gitea/foundry/mkdocs.git --all || true

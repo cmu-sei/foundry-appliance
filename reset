@@ -10,6 +10,7 @@ helm delete identity || true
 helm delete kubernetes-dashboard || true 
 helm delete mkdocs-material || true
 helm delete pgadmin4 || true
+helm delete keycloak || true
 #Remove Crucible apps
 kubectl config set-context --current --namespace=crucible
 helm delete alloy || true 
@@ -38,6 +39,7 @@ sleep 20
 echo " Cleaning up volumes, configmaps, secrets and jobs from all namespaces"
 kubectl config set-context --current --namespace=common
 kubectl delete pvc --all
+#kubectl delete pvc -l name!=data-keycloak-postgresql-0 --all
 kubectl delete configmap --all
 kubectl delete secret --all
 kubectl delete job --all
@@ -53,5 +55,10 @@ kubectl delete pvc --all
 kubectl delete configmap --all
 kubectl delete secret --all
 kubectl delete job --all
+
+echo "Cleaning up namespaces"
+kubectl delete namespace crucible
+#kubectl delete namespace common
+kubectl delete namespace topomojo
 
 

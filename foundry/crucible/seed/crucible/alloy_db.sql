@@ -165,7 +165,7 @@ COPY public."__EFMigrationsHistory" ("MigrationId", "ProductVersion") FROM stdin
 --
 
 COPY public.event_templates (id, date_created, date_modified, created_by, modified_by, view_id, directory_id, scenario_template_id, name, description, duration_hours, is_published, use_dynamic_host) FROM stdin;
-146db1ed-b018-4b34-b10e-663253746342	2021-12-01 18:11:56.887181	2021-12-01 18:12:23.621909	dee684c5-2eaf-401a-915b-d3d4320fe5d5	dee684c5-2eaf-401a-915b-d3d4320fe5d5	5ecdbed4-8513-4729-b17b-21c930be9ae9	4f45e422-088e-42a0-bbfa-3b9dfc1cc98e	\N	Example Event	Example Event	4	t	f
+146db1ed-b018-4b34-b10e-663253746342	2021-12-01 18:11:56.887181	2021-12-01 18:12:23.621909	$OAUTH_ADMIN_GUID	$OAUTH_ADMIN_GUID	5ecdbed4-8513-4729-b17b-21c930be9ae9	4f45e422-088e-42a0-bbfa-3b9dfc1cc98e	\N	Example Event	Example Event	4	t	f
 \.
 
 
@@ -182,8 +182,8 @@ COPY public.event_users (id, date_created, date_modified, created_by, modified_b
 --
 
 COPY public.events (id, date_created, date_modified, created_by, modified_by, user_id, username, event_template_id, view_id, workspace_id, run_id, scenario_id, name, description, status, launch_date, end_date, expiration_date, internal_status, status_date, failure_count, last_end_internal_status, last_end_status, last_launch_internal_status, last_launch_status, share_code) FROM stdin;
-94f50827-e0c9-4295-9278-70129a5d60c1	2021-12-01 18:49:29.888562	2021-12-01 18:51:00.345484	dee684c5-2eaf-401a-915b-d3d4320fe5d5	\N	dee684c5-2eaf-401a-915b-d3d4320fe5d5	Administrator	146db1ed-b018-4b34-b10e-663253746342	\N	\N	\N	\N	\N	\N	4	\N	\N	\N	34	2021-12-01 18:51:00.345302	1	0	0	2	1	\N
-d1b2d79f-9c38-4bb2-b0b3-e322238c793b	2021-12-01 19:35:16.069383	2021-12-01 19:46:16.725597	dee684c5-2eaf-401a-915b-d3d4320fe5d5	\N	dee684c5-2eaf-401a-915b-d3d4320fe5d5	Administrator	146db1ed-b018-4b34-b10e-663253746342	ddb5e19a-e5f7-4377-a702-4d926b6e47c9	ed449b98-bea6-48be-9375-8180b57e69e9	c027d522-e3e7-4938-a12e-944d925a0a36	\N	Example Event	Example Event	10	2021-12-01 19:37:21.043446	2021-12-01 19:44:46.418248	2021-12-01 23:37:21.043446	21	2021-12-01 19:46:16.725115	1	21	11	0	0	\N
+94f50827-e0c9-4295-9278-70129a5d60c1	2021-12-01 18:49:29.888562	2021-12-01 18:51:00.345484	$OAUTH_ADMIN_GUID	\N	$OAUTH_ADMIN_GUID	Administrator	146db1ed-b018-4b34-b10e-663253746342	\N	\N	\N	\N	\N	\N	4	\N	\N	\N	34	2021-12-01 18:51:00.345302	1	0	0	2	1	\N
+d1b2d79f-9c38-4bb2-b0b3-e322238c793b	2021-12-01 19:35:16.069383	2021-12-01 19:46:16.725597	$OAUTH_ADMIN_GUID	\N	$OAUTH_ADMIN_GUID	Administrator	146db1ed-b018-4b34-b10e-663253746342	ddb5e19a-e5f7-4377-a702-4d926b6e47c9	ed449b98-bea6-48be-9375-8180b57e69e9	c027d522-e3e7-4938-a12e-944d925a0a36	\N	Example Event	Example Event	10	2021-12-01 19:37:21.043446	2021-12-01 19:44:46.418248	2021-12-01 23:37:21.043446	21	2021-12-01 19:46:16.725115	1	21	11	0	0	\N
 \.
 
 

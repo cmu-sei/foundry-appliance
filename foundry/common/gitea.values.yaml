@@ -32,14 +32,14 @@ ingress:
     nginx.ingress.kubernetes.io/rewrite-target: /$2
     # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: foundry.local
+    - host: $DOMAIN
       paths:
         - path: "/gitea(/|$)(.*)"
           pathType: Prefix
   tls:
     - secretName: appliance-cert
       hosts:
-        - foundry.local
+        - $DOMAIN
 
 resources:
   # We usually recommend not to specify default resources and to leave this as a conscious
@@ -77,7 +77,7 @@ gitea:
   admin:
     username: administrator
     password: foundry
-    email: "administrator@foundry.local"
+    email: "administrator@$DOMAIN"
 
   ldap: []
     # - name: "LDAP 1"
@@ -97,8 +97,8 @@ gitea:
   config:
     APP_NAME: Foundry Gitea
     server:
-      DOMAIN: https://foundry.local/gitea/
-      ROOT_URL: https://foundry.local/gitea/
+      DOMAIN: https://$DOMAIN/gitea/
+      ROOT_URL: https://$DOMAIN/gitea/
     database:
       DB_TYPE: postgres
       HOST: postgresql:5432
