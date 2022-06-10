@@ -46,15 +46,16 @@ variable "vsphere_network" {
 
 locals {
   boot_command     = [
-    "<wait><enter><enter><f6><esc><wait> ",
-    "net.ifnames=0 biosdevname=0 autoinstall ds=nocloud-net;s=http://{{ .HTTPIP }}:{{ .HTTPPort }}/",
-    "<enter>",
-    "<wait10><wait10><wait10><wait10><wait10><wait10>"
+  "e<wait>",
+  "<down><down><down>",
+  "<end><bs><bs><bs><bs><wait>",
+  "autoinstall ds=nocloud-net\\;s=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ ---<wait>",
+  "<f10><wait>"
   ]
   cpus             = 2
   disk_size        = 30000
-  iso_url          = "https://releases.ubuntu.com/20.04/ubuntu-20.04.4-live-server-amd64.iso"
-  iso_checksum     = "sha256:28ccdb56450e643bad03bb7bcf7507ce3d8d90e8bf09e38f6bd9ac298a98eaad"
+  iso_url          = "https://releases.ubuntu.com/22.04/ubuntu-22.04-live-server-amd64.iso"
+  iso_checksum     = "sha256:84aeaf7823c8c61baa0ae862d0a06b03409394800000b3235854a6b38eb4856f"
   memory           = 4096
   shutdown_command = "echo '${var.ssh_password}'|sudo -S shutdown -P now"
 }

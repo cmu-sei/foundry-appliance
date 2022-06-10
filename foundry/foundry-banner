@@ -10,7 +10,7 @@ _______  _____   _____         _____ _______ __   _ _______ _______
 |     | |       |       |_____ __|__ |     | |  \_| |_____  |______
 
 
-Welcome to Foundry Appliance $(cat /etc/appliance_version)
+Welcome to Foundry Appliance $(cat /etc/appliance_version) ($(lsb_release -ds))
 
 Visit https://foundry.local to get started.
 EOF
