@@ -13,3 +13,6 @@ update-ca-certificates
 
 # Restart mDNS daemon to avoid conflict with other hosts
 systemctl restart avahi-daemon
+
+# Delete Ubuntu machine ID for proper DHCP operation on deploy
+echo -n > /etc/machine-id

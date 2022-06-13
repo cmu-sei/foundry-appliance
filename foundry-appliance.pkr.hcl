@@ -89,7 +89,6 @@ build {
 
   provisioner "shell" {
     execute_command   = "echo '${var.ssh_password}' | {{ .Vars }} sudo -E -S bash '{{ .Path }}'"
-    expect_disconnect = true
     environment_vars  = [
       "DEBIAN_FRONTEND=noninteractive",
       "APPLIANCE_VERSION=${var.appliance_version}",
