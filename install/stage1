@@ -17,7 +17,6 @@ swapoff -a
 sed -i -r 's/(\/swap\.img.*)/#\1/' /etc/fstab
 
 # Add new repositories and upgrade existing Ubuntu packages
-sudo add-apt-repository ppa:git-core/ppa -y
 curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
 echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
 curl https://baltocdn.com/helm/signing.asc | sudo apt-key add -
@@ -37,8 +36,6 @@ systemctl restart multipathd
 PRIMARY_INTERFACE=$(ip -o -4 route show to default | awk '{print $5}')
 mkdir /etc/dnsmasq.d
 cat <<EOF > /etc/dnsmasq.d/foundry.conf
-server=8.8.8.8
-no-resolv
 bind-interfaces
 listen-address=10.0.1.1
 interface-name=foundry.local,$PRIMARY_INTERFACE
