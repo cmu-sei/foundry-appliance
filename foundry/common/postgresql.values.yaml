@@ -201,18 +201,21 @@ audit:
 ##
 ldap:
   enabled: false
-  url: ""
   server: ""
   port: ""
   prefix: ""
   suffix: ""
-  baseDN: ""
-  bindDN: ""
-  bind_password: ""
-  search_attr: ""
-  search_filter: ""
+  basedn: ""
+  binddn: ""
+  bindpw: ""
+  searchAttribute: ""
+  searchFilter: ""
   scheme: ""
-  tls: ""
+  tls:
+    enabled: false
+  ## @param ldap.uri LDAP URL beginning in the form `ldap[s]://host[:port]/basedn`. If provided, all the other LDAP parameters will be ignored.
+  ## Ref: https://www.postgresql.org/docs/current/auth-ldap.html
+  uri: ""
 ## @param postgresqlDataDir PostgreSQL data dir folder
 ##
 postgresqlDataDir: /bitnami/postgresql/data
@@ -497,7 +500,7 @@ primary:
   ## @param primary.topologySpreadConstraints Topology Spread Constraints for pod assignment spread across your cluster among failure-domains. Evaluated as a template
   ## Ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/#spread-constraints-for-pods
   ##
-  topologySpreadConstraints: {}
+  topologySpreadConstraints: []
   ## @param primary.priorityClassName Priority Class to use for each pod (postgresql primary)
   ##
   priorityClassName: ""
@@ -801,7 +804,7 @@ readReplicas:
   ## @param readReplicas.topologySpreadConstraints Topology Spread Constraints for pod assignment spread across your cluster among failure-domains. Evaluated as a template
   ## Ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/#spread-constraints-for-pods
   ##
-  topologySpreadConstraints: {}
+  topologySpreadConstraints: []
   ## @param readReplicas.priorityClassName Priority Class to use for each pod (PostgreSQL read only)
   ##
   priorityClassName: ""
