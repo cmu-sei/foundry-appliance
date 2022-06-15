@@ -41,7 +41,7 @@ listen-address=10.0.1.1
 interface-name=foundry.local,$PRIMARY_INTERFACE
 EOF
 
-cat <<EOF > /etc/netplan/01-host-access.yaml
+cat <<EOF > /etc/netplan/01-loopback.yaml
 # Add loopback address for pods to use dnsmasq as upstream resolver
 network:
   version: 2
@@ -50,8 +50,11 @@ network:
       match:
         name: lo
       addresses:
+        - 127.0.0.1/8:
+            label: lo
         - 10.0.1.1/32:
             label: lo:host-access
+        - ::1/128
 EOF
 netplan apply
 
@@ -83,3 +86,20 @@ cp /home/foundry/$SSH_USERNAME/foundry-banner /etc/update-motd.d/05-foundry-bann
 rm /home/foundry/$SSH_USERNAME/foundry-banner
 sed -i "s/{version}/$APPLIANCE_VERSION/" ~/mkdocs/docs/index.md
 echo -e "Foundry Appliance $APPLIANCE_VERSION \\\n \l \n" > /etc/issue
+
+# Create systemd service to configure netplan primary interface
+mv /home/foundry/foundry/configure-nic /usr/local/bin
+cat <<EOF > /etc/systemd/system/configure-nic.service
+[Unit]
+Description=Configure Netplan primary Ethernet interface
+After=network.target
+Before=k3s.service
+
+[Service]
+Type=oneshot
+ExecStart=configure-nic
+
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl enable configure-nic
