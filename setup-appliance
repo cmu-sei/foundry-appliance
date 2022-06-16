@@ -4,7 +4,7 @@
 # Released under a BSD (SEI)-style license, please see LICENSE.md in the
 # project root or contact permission@sei.cmu.edu for full terms.
 #
-# Foundry Appliance Install - Stage 1
+# Foundry Appliance Setup
 #
 
 echo "$APPLIANCE_VERSION" > /etc/appliance_version
@@ -65,9 +65,9 @@ mkdir -p /etc/rancher/k3s
 echo "nameserver 10.0.1.1" >> /etc/rancher/k3s/resolv.conf
 curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.23.6+k3s1" INSTALL_K3S_EXEC="--disable traefik --disable servicelb --resolv-conf /etc/rancher/k3s/resolv.conf" sh -
 sudo -u $SSH_USERNAME mkdir ~/.kube
-cp /etc/rancher/k3s/k3s.yaml /home/$SSH_USERNAME/.kube/config
-sed -i 's/default/foundry/g' /home/$SSH_USERNAME/.kube/config
-chown $SSH_USERNAME:$SSH_USERNAME /home/$SSH_USERNAME/.kube/config
+cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
+sed -i 's/default/foundry/g' ~/.kube/config
+chown $SSH_USERNAME:$SSH_USERNAME ~/.kube/config
 
 # Install CFSSL for certificate generation
 curl -sLo /usr/local/bin/cfssl https://github.com/cloudflare/cfssl/releases/download/v1.6.1/cfssl_1.6.1_linux_amd64
@@ -82,8 +82,8 @@ sudo -u $SSH_USERNAME git clone https://github.com/jaggedmountain/k-alias.git
 chmod -x /etc/update-motd.d/00-header
 chmod -x /etc/update-motd.d/10-help-text
 sed -i -r 's/(ENABLED=)1/\10/' /etc/default/motd-news
-cp /home/foundry/$SSH_USERNAME/foundry-banner /etc/update-motd.d/05-foundry-banner
-rm /home/foundry/$SSH_USERNAME/foundry-banner
+cp ~/foundry/foundry-banner /etc/update-motd.d/05-foundry-banner
+rm ~/foundry/foundry-banner
 sed -i "s/{version}/$APPLIANCE_VERSION/" ~/mkdocs/docs/index.md
 echo -e "Foundry Appliance $APPLIANCE_VERSION \\\n \l \n" > /etc/issue
 
@@ -103,3 +103,19 @@ ExecStart=configure-nic
 WantedBy=multi-user.target
 EOF
 systemctl enable configure-nic
+
+# Generate SSH key
+sudo -u $SSH_USERNAME ssh-keygen -t rsa -f ~/.ssh/id_rsa -q -N ''
+
+# Generate CA and host certificates
+sudo -u $SSH_USERNAME ~/foundry/certs/generate-certs -loglevel 3
+
+# Add newly generated CA certificate to trusted roots
+cp ~/foundry/certs/root-ca.pem /usr/local/share/ca-certificates/foundry-appliance-root-ca.crt
+update-ca-certificates
+
+# Restart mDNS daemon to avoid conflict with other hosts
+systemctl restart avahi-daemon
+
+# Delete Ubuntu machine ID for proper DHCP operation on deploy
+echo -n > /etc/machine-id

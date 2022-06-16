@@ -94,16 +94,7 @@ build {
       "APPLIANCE_VERSION=${var.appliance_version}",
       "SSH_USERNAME=${var.ssh_username}",
     ]
-    script            = "install/stage1"
-  }
-
-  provisioner "shell" {
-    script = "install/stage2"
-  }
-
-  provisioner "shell" {
-    execute_command = "echo '${var.ssh_password}' | {{ .Vars }} sudo -E -S bash '{{ .Path }}'"
-    script          = "install/stage3"
+    script            = "setup-appliance"
   }
 
   provisioner "shell" {
