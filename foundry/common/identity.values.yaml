@@ -67,6 +67,7 @@ identity-api:
 #    Headers__Cors__AllowCredentials: true
     Headers__Forwarding__TargetHeaders: All
     Headers__Forwarding__KnownNetworks: "10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 ::ffff:a00:0/104 ::ffff:ac10:0/108 ::ffff:c0a8:0/112"
+    Headers__Security__ContentSecurity: "default-src 'self'; script-src 'self' 'unsafe-inline'; frame-ancestors 'self';"
 
   conf:
     issuers: ""
