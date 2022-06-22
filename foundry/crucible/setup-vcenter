@@ -89,6 +89,7 @@ echo "${MOID}"
 if [[ -n ${MOID} ]]; then
   sed -i "s/ VmTaskProcessing__ApiParameters__clusters:.*/ VmTaskProcessing__ApiParameters__clusters: ${MOID}/" "steamfitter.values.yaml"
   echo "vsphere cluster set"
+  helm delete steamfitter
 fi
 
 # Disable Caster Terraform install. 
