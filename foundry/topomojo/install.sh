@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash -xe
 #
 # Copyright 2022 Carnegie Mellon University.
 # Released under a BSD (SEI)-style license, please see LICENSE.md in the
@@ -10,48 +10,53 @@
 
 # Change to the current directory
 cd "$(dirname "${BASH_SOURCE[0]}")"
+source ../../scripts/utils
+import_vars ../../appliance-vars
 MKDOCS_DIR=~/mkdocs
 # Create topomojo namespace and switch to it
 kubectl apply -f namespace.yaml
 kubectl config set-context --current --namespace=topomojo
 
 # Add host certificate
-kubectl create secret tls appliance-cert --key ../certs/host-key.pem --cert <( cat ../certs/host.pem ../certs/int-ca.pem )
+kubectl create secret tls appliance-cert --key ../certs/host-key.pem --cert <( cat ../certs/host.pem ../certs/int-ca.pem ) --dry-run=client -o yaml | kubectl apply -f -
 
 # Add root CA to chart values
 ed -s gameboard.values.yaml <<< $'/cacert:/s/\"\"/|-/\n/cacert:/r !sed "s/^/    /" ../certs/root-ca.pem\nw'
 ed -s topomojo.values.yaml <<< $'/cacert.crt:/s/\"\"/|-/\n/cacert.crt:/r !sed "s/^/        /" ../certs/root-ca.pem\nw'
 
 # Install TopoMojo
-kubectl apply -f topomojo-pvc.yaml
-helm install --wait -f topomojo.values.yaml topomojo sei/topomojo
-kubectl apply -f console-ingress.yaml
-sleep 60
+envsubst < topomojo-pvc.yaml | kubectl apply -f -
+hin_o -r ../../appliance-vars -p ~/.helm -u  -f topomojo.values.yaml sei/topomojo
+#helm install --wait -f topomojo.values.yaml topomojo sei/topomojo
+envsubst "$(env | cut -d= -f1 | sed -e \'s/^/$/\')" < console-ingress.yaml | kubectl apply -f -
+#envsubst < console-ingress.yaml | kubectl apply -f -
+sleep 10
 
 # Add bot user to TopoMojo
 TOPOMOJO_ACCESS_TOKEN=$(curl --silent --request POST \
-  --url 'https://foundry.local/identity/connect/token' \
+  --url "https://$DOMAIN/$OAUTH_PROVIDER/$OAUTH_TOKEN_URL" \
   --data grant_type=password \
   --data client_id=bootstrap-client \
   --data client_secret=foundry \
-  --data username=administrator@foundry.local \
+  --data username=administrator@$DOMAIN \
   --data password=foundry | jq -r '.access_token')
 
 USER_ID=$(curl -X POST --silent \
-  --url "https://foundry.local/topomojo/api/user" \
+  --url "https://$DOMAIN/topomojo/api/user" \
   -H "Authorization: Bearer $TOPOMOJO_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{ "name": "bot-gameboard", "role": "user", "scope": "gameboard" }' | jq -r '.id')
 
 API_KEY=$(curl -X POST --silent \
-  --url "https://foundry.local/topomojo/api/apikey/$USER_ID" \
+  --url "https://$DOMAIN/topomojo/api/apikey/$USER_ID" \
   -H "Authorization: Bearer $TOPOMOJO_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d "{}" | jq -r '.value')
 
 # Install Gameboard
 sed -i -r "s/(Core__GameEngineClientSecret:).*/\1 $API_KEY/" gameboard.values.yaml
-helm install --wait -f gameboard.values.yaml gameboard sei/gameboard
+hin_o -r ../../appliance-vars -p ~/.helm -u -f gameboard.values.yaml sei/gameboard
+#helm install --wait -f gameboard.values.yaml gameboard sei/gameboard
 
 # Add administrator user to Gameboard
 timeout 5m bash -c 'until kubectl exec postgresql-0 -n common -- env PGPASSWORD=foundry psql -lqt -U postgres | cut -d \| -f 1 | grep -qw gameboard; do sleep 5; done' || false
@@ -62,4 +67,4 @@ kubectl exec postgresql-0 -n common -- psql 'postgresql://postgres:foundry@local
 sed -i '/topomojo.md/d' $MKDOCS_DIR/.gitignore
 git -C $MKDOCS_DIR add -A || true
 git -C $MKDOCS_DIR commit -m "Add Topomojo docs" || true
-git -C $MKDOCS_DIR push -u https://administrator:foundry@foundry.local/gitea/foundry/mkdocs.git --all || true
+git -C $MKDOCS_DIR push -u https://administrator:foundry@$DOMAIN/gitea/foundry/mkdocs.git --all || true

@@ -2,6 +2,11 @@
 DOMAIN=foundry.local
 DNS_01=
 
+[topomojo]
+# 'standalone' or 'vcsa'
+ESXI_HOSTNAME=esxi.foundry.local
+DATASTORE=datastore1
+
 [oAuth]
 # 'identity' or 'keycloak' (case-sensitive)
 OAUTH_PROVIDER=keycloak
@@ -20,9 +25,9 @@ OAUTH_TOKEN_URL=realms/crucible/protocol/openid-connect/token
 ############
 # Identity #
 ############
-# OAUTH_AUTHORITY_URL=
-# OAUTH_AUTHORIZATION_URL=connect/authorize
-# OAUTH_TOKEN_URL=connect/token
+#OAUTH_AUTHORITY_URL=
+#OAUTH_AUTHORIZATION_URL=connect/authorize
+#OAUTH_TOKEN_URL=connect/token
 
 # If you need to change these user guids you must change them in th realm.json file as well.
 OAUTH_ADMIN_GUID=d29518c4-f61c-4284-81c4-f2fbd79e6e9a

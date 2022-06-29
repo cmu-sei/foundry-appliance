@@ -47,7 +47,7 @@ gameboard-api:
       nginx.ingress.kubernetes.io/proxy-body-size: 10m
 
     hosts:
-      - host: foundry.local
+      - host: $DOMAIN
         paths:
           - path: /gameboard/api
             pathType: ImplementationSpecific
@@ -60,7 +60,7 @@ gameboard-api:
     tls:
       - secretName: appliance-cert
         hosts:
-          - foundry.local
+          - $DOMAIN
 
   # storage - either an existing pvc, the size for a new pvc, or emptyDir
   storage:
@@ -106,11 +106,11 @@ gameboard-api:
     Database__ConnectionString: "Server=postgresql.common.svc.cluster.local;Port=5432;Database=gameboard;Username=postgres;Password=foundry;SSL Mode=Prefer;Trust Server Certificate=true;"
     # Cache__SharedFolder: ""
     Oidc__Audience: gameboard-api
-    Oidc__Authority: https://foundry.local/identity
+    Oidc__Authority: https://$DOMAIN/$OAUTH_PROVIDER/$OUATH_AUTHORITY_URL
     OpenApi__Client__ClientId: gameboard-swagger
-    Core__GameEngineUrl: https://foundry.local/topomojo/
+    Core__GameEngineUrl: https://$DOMAIN/topomojo/
     Core__GameEngineClientName: bot-gameboard
-    Core__GameEngineClientSecret: ''
+    Core__GameEngineClientSecret: 'foundry'
     # Logging__Console__DisableColors: false
     # Logging__LogLevel__Default: Information
     # Headers__LogHeaders: false
@@ -177,14 +177,14 @@ gameboard-ui:
     enabled: true
     annotations: {}
     hosts:
-      - host: foundry.local
+      - host: $DOMAIN
         paths:
           - path: /gameboard
             pathType: ImplementationSpecific
     tls:
       - secretName: appliance-cert
         hosts:
-          - foundry.local
+          - $DOMAIN
 
   resources: {}
     # We usually recommend not to specify default resources and to leave this as a conscious
@@ -235,9 +235,9 @@ gameboard-ui:
       "mkshost": "",
       "oidc": {
         "client_id": "gameboard-client",
-        "authority": "https://foundry.local/identity",
-        "redirect_uri": "https://foundry.local/gameboard/oidc",
-        "silent_redirect_uri": "https://foundry.local/gameboard/oidc-silent.html",
+        "authority": "https://$DOMAIN/$$OAUTH_PROVIDER/$OAUTH_AUTHORITY_URL",
+        "redirect_uri": "https://$DOMAIN/gameboard/oidc",
+        "silent_redirect_uri": "https://$DOMAIN/gameboard/oidc-silent.html",
         "response_type": "code",
         "scope": "openid profile organization gameboard-api",
         "monitorSession": true,

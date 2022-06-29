@@ -58,7 +58,7 @@ network:
 EOF
 netplan apply
 
-apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass kubectl helm
+apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass kubectl helm postgresql-client
 
 # Install k3s
 mkdir -p /etc/rancher/k3s
@@ -119,3 +119,16 @@ systemctl restart avahi-daemon
 
 # Delete Ubuntu machine ID for proper DHCP operation on deploy
 echo -n > /etc/machine-id
+
+# Ensure scripts are executable
+chmod +x ~/foundry/install.sh
+chmod +x ~/foundry/common/install.sh
+chmod +x ~/foundry/common/setup-gitea
+chmod +x ~/foundry/crucible/install.sh
+chmod +x ~/foundry/crucible/setup-vcenter
+chmod +x ~/foundry/crucible/setup-gitlab
+chmod +x ~/foundry/crucible/import-content
+chmod +x ~/foundry/topomojo/import-content
+chmod +x ~/foundry/topomojo/install.sh
+chmod +x ~/foundry/topomojo/setup-esxi
+

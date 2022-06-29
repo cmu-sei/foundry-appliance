@@ -7,14 +7,16 @@
 # Import lab/challenge content into the appliance
 #
 # import-content <json path>
-
-DATASTORE=datastore1
+source ../../scripts/utils
+import_vars ../../appliance-vars
+DATASTORE=${DATASTORE:-datastore1}
+ESXI_HOSTNAME=${ESXI_HOSTNAME:-esx.$DOMAIN}
 TOPOMOJO_ACCESS_TOKEN=$(curl --silent --request POST \
-  --url 'https://foundry.local/identity/connect/token' \
+  --url 'https://$DOMAIN/$OAUTH_PROVIDER/$OAUTH_TOKEN_URL' \
   --data grant_type=password \
   --data client_id=bootstrap-client \
   --data client_secret=foundry \
-  --data username=administrator@foundry.local \
+  --data username=administrator@$DOMAIN \
   --data password=foundry | jq -r '.access_token')
 
 # Test if import file exists
@@ -29,9 +31,9 @@ workspace_name="$(jq -r '.Workspace.Name' $1)"
 read -s -p "ESXi root password: " esxi_pass; echo
 
 # Create tmp directory on datastore
-sshpass -p $esxi_pass ssh root@esxi.foundry.local "mkdir /vmfs/volumes/$DATASTORE/tmp"
+sshpass -p $esxi_pass ssh root@$ESXI_HOSTNAME "mkdir /vmfs/volumes/$DATASTORE/tmp"
 
-workspace_id=$(curl -s -X GET "https://foundry.local/topomojo/api/workspaces" \
+workspace_id=$(curl -s -X GET "https://$DOMAIN/topomojo/api/workspaces" \
   -H "Authorization: Bearer $TOPOMOJO_ACCESS_TOKEN" \
   | jq -r -e --arg workspace_name "$workspace_name" '.[] | select(.name==$workspace_name) | .id')
 
@@ -41,7 +43,7 @@ if [[ -n $workspace_id ]]; then
 else
   # Add workspace via TopoMojo API
   workspace_id=$(curl -X POST --silent \
-    --url "https://foundry.local/topomojo/api/workspace" \
+    --url "https://$DOMAIN/topomojo/api/workspace" \
     -H "Authorization: Bearer $TOPOMOJO_ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
     --data-binary @- <<EOF | jq -r '.id'
@@ -59,7 +61,7 @@ for template in $(jq -c '.Templates[]' $1); do
   template_name=$(echo $template | jq -r '.Name')
   ova_url=$(echo $template | jq -r '.Detail.Disks[0].Path')
   ova_filename=$(echo $ova_url | sed 's/.*\///')
-  template_id=$(curl -s -X GET "https://foundry.local/topomojo/api/workspace/$workspace_id" \
+  template_id=$(curl -s -X GET "https://$DOMAIN/topomojo/api/workspace/$workspace_id" \
                      -H "Authorization: Bearer $TOPOMOJO_ACCESS_TOKEN" \
                      | jq --arg template_name "$template_name" \
                           '.templates[] | select(.name==$template_name) | .id')
@@ -68,17 +70,17 @@ for template in $(jq -c '.Templates[]' $1); do
     echo -e "Skipping $template_name: Template exists"
   else
     # Download OVA if it doesn't already exist in /tmp
-    if sshpass -p $esxi_pass ssh root@esxi.foundry.local "test ! -f /vmfs/volumes/$DATASTORE/tmp/$ova_filename"; then
+    if sshpass -p $esxi_pass ssh root@$ESXI_HOSTNAME "test ! -f /vmfs/volumes/$DATASTORE/tmp/$ova_filename"; then
       echo -e "Downloading $ova_filename"
-      wget -O- $ova_url | sshpass -p $esxi_pass ssh root@esxi.foundry.local "cat > /vmfs/volumes/$DATASTORE/tmp/$ova_filename"
+      wget -O- $ova_url | sshpass -p $esxi_pass ssh root@$ESXI_HOSTNAME "cat > /vmfs/volumes/$DATASTORE/tmp/$ova_filename"
     else
       echo -e "Skipping $ova_filename: File exists"
     fi
 
-    vmdk_file=$(sshpass -p $esxi_pass ssh root@esxi.foundry.local "tar -tf /vmfs/volumes/$DATASTORE/tmp/$ova_filename | grep .vmdk")
+    vmdk_file=$(sshpass -p $esxi_pass ssh root@$ESXI_HOSTNAME "tar -tf /vmfs/volumes/$DATASTORE/tmp/$ova_filename | grep .vmdk")
 
-    if sshpass -p $esxi_pass ssh root@esxi.foundry.local "test ! -f /vmfs/volumes/$DATASTORE/$workspace_id/$vmdk_file"; then
-      sshpass -p $esxi_pass ssh root@esxi.foundry.local << EOF
+    if sshpass -p $esxi_pass ssh root@$ESXI_HOSTNAME "test ! -f /vmfs/volumes/$DATASTORE/$workspace_id/$vmdk_file"; then
+      sshpass -p $esxi_pass ssh root@$ESXI_HOSTNAME << EOF
         cd /vmfs/volumes/$DATASTORE/tmp
         tar -xvf /vmfs/volumes/$DATASTORE/tmp/$ova_filename $vmdk_file
         mkdir ../topomojo/$workspace_id
@@ -95,7 +97,7 @@ EOF
     detail_tostring=$(jq '.Detail' <<< "$template" | jq -sR '.')
 
     template_id=$(curl -X POST --silent \
-      --url "https://foundry.local/topomojo/api/template-detail" \
+      --url "https://$DOMAIN/topomojo/api/template-detail" \
       -H "Authorization: Bearer $TOPOMOJO_ACCESS_TOKEN" \
       -H "Content-Type: application/json" \
       --data-binary @- <<EOF | jq -r '.id'
@@ -112,7 +114,7 @@ EOF
 )
 
     # Move template from stock area to workspace
-    kubectl exec --stdin --tty postgresql-postgresql-0 \
+    kubectl -n common exec --stdin --tty postgresql-0 \
       -- env PGPASSWORD=foundry psql -U postgres -d topomojo \
       -c "update \"Templates\" set \"WorkspaceId\" = '$workspace_id' where \"Id\" = '$template_id';"
   fi

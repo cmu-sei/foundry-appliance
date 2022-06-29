@@ -46,7 +46,7 @@ topomojo-api:
     annotations:
       nginx.ingress.kubernetes.io/proxy-body-size: 6g
     hosts:
-      - host: foundry.local
+      - host: $DOMAIN
         paths:
           - path: /topomojo/api
             pathType: ImplementationSpecific
@@ -57,7 +57,7 @@ topomojo-api:
     tls:
       - secretName: appliance-cert
         hosts:
-          - foundry.local
+          - $DOMAIN
 
   # storage - either an existing pvc, the size for a new pvc, or emptyDir
   storage:
@@ -110,19 +110,22 @@ topomojo-api:
     PathBase: "/topomojo"
     Database__Provider: PostgreSQL
     Database__ConnectionString: Server=postgresql.common.svc.cluster.local;Port=5432;Database=topomojo;Username=postgres;Password=foundry;SSL Mode=Prefer;Trust Server Certificate=true;
-    Database__AdminId: dee684c5-2eaf-401a-915b-d3d4320fe5d5
+    Database__AdminId: $OAUTH_ADMIN_GUID
     Database__AdminName: Administrator
     Cache__SharedFolder: ""
+    Oidc__Authority: "https://$DOMAIN/$OAUTH_PROVIDER/$OAUTH_AUTHORITY_URL"
     OpenApi__Client__ClientId: topomojo-swagger
+    OpenApi__Client__AuthorizationUrl: https://$DOMAIN/$OAUTH_PROVIDER/$OAUTH_AUTHORIZATION_URL
+    OpenApi__Client__TokenUrl: https://$DOMAIN/$OAUTH_PROVIDER/$OAUTH_TOKEN_URL
     FileUpload__IsoRoot: /mnt/tm
     FileUpload__TopoRoot: /mnt/tm
     FileUpload__DocRoot: /mnt/tm/_docs
     # FileUpload__MaxFileBytes: 0
-    Oidc__Authority: https://foundry.local/identity
+    
     ApiKeyClients__0__Id: gameengine
     ApiKeyClients__0__Key: foundry
     ApiKeyClients__0__Scope: gameboard
-    Core__ConsoleHost: foundry.local/console
+    Core__ConsoleHost: $DOMAIN/console
     Pod__Url: ""
     Pod__User: root
     Pod__Password: VMware1!
@@ -131,7 +134,7 @@ topomojo-api:
     Pod__VmStore: "[datastore1] vm/"
     Pod__IsoStore: "[iso]"
     Pod__DiskStore: "[datastore1] topomojo/"
-    Pod__ConsoleUrl: foundry.local/console
+    Pod__ConsoleUrl: $DOMAIN/console
     Pod__Vlan__Reservations__0__Id: 0
     Pod__Vlan__Reservations__0__Name: bridge-net
     Pod__KeepAliveMinutes: 30
@@ -139,7 +142,7 @@ topomojo-api:
     # Logging__Console__DisableColors: false
     # Logging__LogLevel__Default: Information
     # Headers__LogHeaders: false
-    Headers__Cors__Origins__0: https://foundry.local
+    Headers__Cors__Origins__0: https://$DOMAIN
     # Headers__Cors__Methods__[0]: ""
     # Headers__Cors__Headers__[0]: ""
     # Headers__Cors__AllowAnyOrigin: false
@@ -204,14 +207,14 @@ topomojo-ui:
       nginx.ingress.kubernetes.io/proxy-body-size: 6g
       # kubernetes.io/tls-acme: "true"
     hosts:
-      - host: foundry.local
+      - host: $DOMAIN
         paths:
           - path: /topomojo
             pathType: ImplementationSpecific
     tls:
       - secretName: appliance-cert
         hosts:
-          - foundry.local
+          - $DOMAIN
 
   resources: {}
     # We usually recommend not to specify default resources and to leave this as a conscious
@@ -261,11 +264,11 @@ topomojo-ui:
       "apphost": "",
       "mkshost": "",
       "oidc": {
-        "authority": "https://foundry.local/identity",
+        "authority": "https://$DOMAIN/$OAUTH_PROVIDER/$OAUTH_AUTHORITY_URL",
         "client_id": "topomojo-client",
-        "redirect_uri": "https://foundry.local/topomojo/oidc",
-        "silent_redirect_uri": "https://foundry.local/topomojo/oidc-silent.html",
-        "post_logout_redirect_uri": "https://foundry.local/topomojo",
+        "redirect_uri": "https://$DOMAIN/topomojo/oidc",
+        "silent_redirect_uri": "https://$DOMAIN/topomojo/oidc-silent.html",
+        "post_logout_redirect_uri": "https://$DOMAIN/topomojo",
         "response_type": "code",
         "scope": "openid profile topomojo-api",
         "automaticSilentRenew": false,
