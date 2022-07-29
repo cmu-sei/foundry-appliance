@@ -62,6 +62,9 @@ alloy-api:
     ClientSettings__urls__casterApi: https://$DOMAIN/caster/api
     ClientSettings__urls__steamfitterApi: https://$DOMAIN/steamfitter/api
 
+    # DotNet
+    DOTNET_USE_POLLING_FILE_WATCHER: true
+
 alloy-ui:
   image:
     repository: cmusei/alloy-ui

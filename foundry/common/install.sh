@@ -75,7 +75,11 @@ timeout 5m bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' https:/
 #Foundry Stack install
 if [ $OAUTH_PROVIDER = keycloak ]; then 
  kubectl create configmap keycloak-realm --from-file=realm.json=realm.json --dry-run=client -o yaml | kubectl apply -f -
- hin_o -u -r ../../appliance-vars -p ~/.helm -v 18.0.0 -f keycloak.values.yaml codecentric/keycloak
+ kubectl create configmap keycloak-dod-certs --from-file=issuers-dod-sei.crt=../certs/issuers-dod-sei.crt --dry-run=client -o yaml | kubectl apply -f -
+ kubectl create secret generic keycloak-dod-certs --from-file=ca.crt=../certs/issuers-dod-sei.crt --dry-run=client -o yaml | kubectl apply -f -
+ replace_vars ./keycloak.values.yaml
+ helm upgrade --install --version 18.0.0 -f keycloak.values.yaml keycloak codecentric/keycloak
+ # hin_o -u -r ../../appliance-vars -p ~/.helm -v 18.0.0 -f keycloak.values.yaml codecentric/keycloak
 elif [ $OAUTH_PROVIDER = identity ]; then 
  hin_o -r ../../appliance-vars -u -v 0.2.0 -p ~/.helm -f identity.values.yaml sei/identity
 fi

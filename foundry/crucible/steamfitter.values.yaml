@@ -71,6 +71,9 @@ steamfitter-api:
     # SeedData__UserPermissions__1__UserId: ""
     # SeedData__UserPermissions__1__PermissionId: ""
 
+    # DotNet
+    DOTNET_USE_POLLING_FILE_WATCHER: true
+
 steamfitter-ui:
   image:
     repository: cmusei/steamfitter-ui

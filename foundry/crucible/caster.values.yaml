@@ -115,6 +115,9 @@ caster-api:
     SeedData__UserPermissions__1__UserId:  "$OAUTH_CRUCIBLE_ADMIN_GUID"
     SeedData__UserPermissions__1__PermissionId:  "00000000-0000-0000-0000-000000000001"
 
+    # DotNet
+    DOTNET_USE_POLLING_FILE_WATCHER: true
+
 caster-ui:
   image:
     repository: cmusei/caster-ui

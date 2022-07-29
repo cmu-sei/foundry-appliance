@@ -22,7 +22,6 @@ gitlab_user="administrator@${DOMAIN}"
 gitlab_password="foundry"
 api_url="$gitlab_host/api/v4"
 
-
 # add gitlab to hosts file
 echo "foundry" | sudo -S bash -c "sed -i /gitlab.$DOMAIN/d /etc/hosts" 
 echo "foundry" | sudo -S bash -c "source ../../scripts/utils; add_host_entry $(ip route get 1 | awk '{print $(NF-2);exit}') gitlab.$DOMAIN"
@@ -42,6 +41,22 @@ EOF
   fi
 done
 kubectl exec -n common postgresql-0 -- psql 'postgresql://postgres:foundry@localhost' -c "CREATE DATABASE gitlab_db;" || true
+
+# Regenerate gitlab secret for keycloak
+if [ $OAUTH_PROVIDER = keycloak ]; then 
+  export KEYCLOAK_ACCESS_TOKEN=$(curl --silent --header 'Content-Type: application/x-www-form-urlencoded' \
+    --request POST "https://$DOMAIN/keycloak/realms/crucible/protocol/openid-connect/token" \
+    -d 'grant_type=password&client_id=admin-cli&username=administrator&password=foundry' | jq -r '.access_token')
+
+  export KEYCLOAK_CLIENT_ID=$(curl --silent \
+    --header "Authorization: bearer $KEYCLOAK_ACCESS_TOKEN" \
+    --request GET "https://$DOMAIN/keycloak/admin/realms/crucible/clients?clientId=gitlab" | jq -r '[.[]|select(.clientId=="gitlab")][0].id')
+
+  export GITLAB_SECRET=$(curl --silent \
+  --header "Authorization: bearer $KEYCLOAK_ACCESS_TOKEN" \
+  --request POST "https://$DOMAIN/keycloak/admin/realms/crucible/clients/$KEYCLOAK_CLIENT_ID/client-secret" | jq -r '.value')
+fi
+
 envsubst < gitlab.secrets.yaml | kubectl apply -f - 
 hin_o -r ../../appliance-vars -u -p ../helm --version 5.7.1 -f gitlab-min.values.yaml gitlab/gitlab
 #helm upgrade --install --version 5.7.1 -f gitlab-min.values.yaml gitlab gitlab/gitlab

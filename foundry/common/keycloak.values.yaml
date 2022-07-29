@@ -111,6 +111,8 @@ extraEnv: |
     value: "foundry"
   - name: KEYCLOAK_IMPORT
     value: /config/realm.json
+  - name: X509_CA_BUNDLE
+    value: /etc/x509/ssl/issuers-dod-sei.crt
   # - name: KEYCLOAK_LOGLEVEL
   #   value: DEBUG
   # - name: WILDFLY_LOGLEVEL
@@ -210,6 +212,9 @@ startupScripts:
   contextPath.cli: |
     embed-server --server-config=standalone-ha.xml --std-out=echo
     batch
+    
+    /subsystem=keycloak-server/spi=x509cert-lookup/provider=nginx/:add(properties={sslClientCert => "ssl-client-cert", sslCertChainPrefix => "USELESS", certificateChainLength => "2"},enabled=true)
+    /subsystem=keycloak-server/spi=x509cert-lookup/:write-attribute(name=default-provider, value=nginx)
     {{- if ne .Values.contextPath "auth" }}
     /subsystem=keycloak-server/:write-attribute(name=web-context,value={{ if eq .Values.contextPath "" }}/{{ else }}{{ .Values.contextPath }}{{ end }})
     {{- if eq .Values.contextPath "" }}
@@ -231,11 +236,20 @@ extraVolumes: |
       items:
       - key: "realm.json"
         path: "realm.json"
+  - name: dod-certs
+    configMap:
+      name: keycloak-dod-certs
+      items: 
+      - key: "issuers-dod-sei.crt"
+        path: "issuers-dod-sei.crt"
 
 # Add additional volumes mounts, e. g. for custom themes
 extraVolumeMounts: |
   - name: config
     mountPath: /config
+    readOnly: true
+  - name: dod-certs
+    mountPath: /etc/x509/ssl
     readOnly: true
 
 # Add additional ports, e. g. for admin console or exposing JGroups ports
@@ -313,6 +327,11 @@ ingress:
     nginx.ingress.kubernetes.io/proxy-buffer-size: 128k
     nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /$1$2$3
+    nginx.ingress.kubernetes.io/auth-tls-verify-client: "optional"
+    nginx.ingress.kubernetes.io/auth-tls-secret: "common/keycloak-dod-certs"
+    nginx.ingress.kubernetes.io/auth-tls-verify-depth: "2"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header ssl-client-cert $ssl_client_escaped_cert;
     
 
   # Additional Ingress labels

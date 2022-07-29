@@ -84,6 +84,9 @@ player-api:
     # TODO - Document Seed Data
     SeedData__SystemAdminIds__0: "dee684c5-2eaf-401a-915b-d3d4320fe5d5"
     SeedData__SystemAdminIds__1: "32c11441-7eec-47eb-a915-607c4f2529f4"
+
+    # DotNet
+    DOTNET_USE_POLLING_FILE_WATCHER: true
     
 player-ui:
   # Docker image release version
@@ -280,6 +283,9 @@ vm-api:
     RewriteHost__RewriteHost: false
     RewriteHost__RewriteHostUrl: "$DOMAIN/vm/connect"
     RewriteHost__RewriteHostQueryParam: "vmhost"
+
+    # DotNet
+    DOTNET_USE_POLLING_FILE_WATCHER: true
 
 vm-ui:
 
