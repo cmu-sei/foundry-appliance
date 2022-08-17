@@ -19,8 +19,8 @@ kubectl config set-context --current --namespace=topomojo
 kubectl create secret tls appliance-cert --key ../certs/host-key.pem --cert <( cat ../certs/host.pem ../certs/int-ca.pem )
 
 # Add root CA to chart values
-ed -s gameboard.values.yaml <<< $'/cacert:/s/\"\"/|-/\n/cacert:/r !sed "s/^/    /" ../certs/root-ca.pem\nw'
-ed -s topomojo.values.yaml <<< $'/cacert.crt:/s/\"\"/|-/\n/cacert.crt:/r !sed "s/^/        /" ../certs/root-ca.pem\nw'
+cat ../certs/root-ca.pem | sed 's/^/    /' | sed -i -re 's/(cacert:).*/\1 |-/' -e '/cacert:/ r /dev/stdin' gameboard.values.yaml
+cat ../certs/root-ca.pem | sed 's/^/        /' | sed -i -re 's/(cacert.crt:).*/\1 |-/' -e '/cacert.crt:/ r /dev/stdin' topomojo.values.yaml
 
 # Install TopoMojo
 kubectl apply -f topomojo-pvc.yaml
