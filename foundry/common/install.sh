@@ -44,7 +44,7 @@ helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
 helm install -f kubernetes-dashboard.values.yaml kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard
 
 # Add root CA to chart values
-ed -s mkdocs-material.values.yaml <<< $'/cacert:/s/\"\"/|-/\n/cacert:/r !sed "s/^/  /" ../certs/root-ca.pem\nw'
+cat ../certs/root-ca.pem | sed 's/^/  /' | sed -i -re 's/(cacert:).*/\1 |-/' -e '/cacert:/ r /dev/stdin' mkdocs-material.values.yaml
 cp ../certs/root-ca.pem ../../mkdocs/docs/root-ca.crt
 
 # Install Gitea
