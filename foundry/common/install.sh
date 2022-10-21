@@ -24,7 +24,7 @@ helm install -f nfs-server-provisioner.values.yaml nfs-server-provisioner kvaps/
 
 # Install ingress-nginx
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-helm install ingress-nginx ingress-nginx/ingress-nginx --values ingress-nginx.values.yaml
+helm install --wait ingress-nginx ingress-nginx/ingress-nginx --values ingress-nginx.values.yaml
 
 # Install PostgreSQL
 helm repo add bitnami https://charts.bitnami.com/bitnami
