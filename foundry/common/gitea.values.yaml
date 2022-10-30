@@ -231,7 +231,11 @@ extraContainerVolumeMounts:
     readOnly: true
 
 ## @param extraInitVolumeMounts Mounts that are only mapped into the init-containers. Can be used for additional preconfiguration.
-extraInitVolumeMounts: []
+extraInitVolumeMounts:
+  - name: appliance-cert-vol
+    mountPath: /etc/ssl/certs/appliance-ca.crt
+    subPath: tls.crt
+    readOnly: true
 
 ## @depracated The extraVolumeMounts variable has been split two:
 ## - extraContainerVolumeMounts
@@ -311,13 +315,13 @@ gitea:
 
   # Either specify inline `key` and `secret` or refer to them via `existingSecret`
   ## @param gitea.oauth OAuth configuration
-  oauth: []
-    # - name: 'OAuth 1'
-    #   provider:
+  oauth:
+    - name: Foundry
+      provider: openidConnect
+      autoDiscoverUrl: https://foundry.local/identity/.well-known/openid-configuration
+      existingSecret: gitea-oauth-client
     #   key:
     #   secret:
-    #   existingSecret:
-    #   autoDiscoverUrl:
     #   useCustomUrls:
     #   customAuthUrl:
     #   customTokenUrl:
@@ -341,6 +345,11 @@ gitea:
       PASSWORD_COMPLEXITY: "off"
     repository:
       DEFAULT_BRANCH: main
+    oauth2_client:
+      OPENID_CONNECT_SCOPES: profile email
+      ENABLE_AUTO_REGISTRATION: true
+      USERNAME: userid
+      ACCOUNT_LINKING: auto
 
   ## @param gitea.additionalConfigSources Additional configuration from secret or configmap
   additionalConfigSources: []

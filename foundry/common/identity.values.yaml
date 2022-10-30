@@ -150,6 +150,20 @@ identity-api:
               { "Type": "RedirectUri", "Value": "https://foundry.local/topomojo/api/oauth2-redirect.html" },
               { "Type": "PostLogoutRedirectUri", "Value": "https://foundry.local/topomojo/api" }
             ]
+          },
+          {
+            "Name": "gitea-client",
+            "DisplayName": "Gitea",
+            "Enabled": true,
+            "SeedFlags" : "AllowRememberConsent",
+            "SeedGrant": "authorization_code",
+            "SeedScopes": "openid profile",
+            "SeedSecret": "<GITEA_OAUTH_CLIENT_SECRET>",
+            "Urls": [
+              { "Type": "ClientUri", "Value": "https://foundry.local/gitea" },
+              { "Type": "RedirectUri", "Value": "https://foundry.local/gitea/user/oauth2/foundry/callback" },
+              { "Type": "PostLogoutRedirectUri", "Value": "https://foundry.local/gitea" }
+            ]
           }
         ]
       }
