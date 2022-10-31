@@ -282,11 +282,10 @@ gitea:
   ## @param gitea.admin.password Password for the Gitea admin user
   ## @param gitea.admin.email Email for the Gitea admin user
   admin:
-    #existingSecret: gitea-admin-secret
-    existingSecret:
-    username: administrator
-    password: foundry
+    existingSecret: gitea-admin-creds
     email: "administrator@foundry.local"
+    # username:
+    # password:
 
   ## @param gitea.metrics.enabled Enable Gitea metrics
   ## @param gitea.metrics.serviceMonitor.enabled Enable Gitea metrics service monitor

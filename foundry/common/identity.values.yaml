@@ -157,7 +157,7 @@ identity-api:
             "Enabled": true,
             "SeedFlags" : "AllowRememberConsent",
             "SeedGrant": "authorization_code",
-            "SeedScopes": "openid profile",
+            "SeedScopes": "openid profile email",
             "SeedSecret": "<GITEA_OAUTH_CLIENT_SECRET>",
             "Urls": [
               { "Type": "ClientUri", "Value": "https://foundry.local/gitea" },

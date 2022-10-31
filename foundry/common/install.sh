@@ -9,6 +9,7 @@
 ############################
 
 GITEA_OAUTH_CLIENT_SECRET=$(openssl rand -hex 16)
+GITEA_ADMIN_PASSWORD=$(pwgen 12)
 
 # Change to the current directory
 cd "$(dirname "${BASH_SOURCE[0]}")"
@@ -59,6 +60,7 @@ git config --global init.defaultBranch main
 helm repo add gitea https://dl.gitea.io/charts/
 kubectl exec postgresql-0 -- psql 'postgresql://postgres:foundry@localhost' -c 'CREATE DATABASE gitea;'
 kubectl create secret generic gitea-oauth-client --from-literal=key=gitea-client --from-literal=secret=$GITEA_OAUTH_CLIENT_SECRET
+kubectl create secret generic gitea-admin-creds --from-literal=username=administrator --from-literal=password=$GITEA_ADMIN_PASSWORD
 helm install -f gitea.values.yaml gitea gitea/gitea
 timeout 5m bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' https://foundry.local/gitea)" != "200" ]]; do sleep 5; done' || false
 ./setup-gitea
