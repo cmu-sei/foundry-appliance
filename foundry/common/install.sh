@@ -8,6 +8,9 @@
 #   Common Stack Install   #
 ############################
 
+GITEA_OAUTH_CLIENT_SECRET=$(openssl rand -hex 16)
+GITEA_ADMIN_PASSWORD=$(pwgen 12)
+
 # Change to the current directory
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
@@ -24,7 +27,7 @@ helm install -f nfs-server-provisioner.values.yaml nfs-server-provisioner kvaps/
 
 # Install ingress-nginx
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-helm install ingress-nginx ingress-nginx/ingress-nginx --values ingress-nginx.values.yaml
+helm install --wait ingress-nginx ingress-nginx/ingress-nginx --values ingress-nginx.values.yaml
 
 # Install PostgreSQL
 helm repo add bitnami https://charts.bitnami.com/bitnami
@@ -47,15 +50,20 @@ helm install -f kubernetes-dashboard.values.yaml kubernetes-dashboard kubernetes
 cat ../certs/root-ca.pem | sed 's/^/  /' | sed -i -re 's/(cacert:).*/\1 |-/' -e '/cacert:/ r /dev/stdin' mkdocs-material.values.yaml
 cp ../certs/root-ca.pem ../../mkdocs/docs/root-ca.crt
 
+# Install Identity
+sed -i -r "s/<GITEA_OAUTH_CLIENT_SECRET>/$GITEA_OAUTH_CLIENT_SECRET/" identity.values.yaml
+helm repo add sei https://helm.cyberforce.site/charts
+helm install --wait -f identity.values.yaml identity sei/identity
+
 # Install Gitea
 git config --global init.defaultBranch main
 helm repo add gitea https://dl.gitea.io/charts/
 kubectl exec postgresql-0 -- psql 'postgresql://postgres:foundry@localhost' -c 'CREATE DATABASE gitea;'
+kubectl create secret generic gitea-oauth-client --from-literal=key=gitea-client --from-literal=secret=$GITEA_OAUTH_CLIENT_SECRET
+kubectl create secret generic gitea-admin-creds --from-literal=username=administrator --from-literal=password=$GITEA_ADMIN_PASSWORD
 helm install -f gitea.values.yaml gitea gitea/gitea
 timeout 5m bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' https://foundry.local/gitea)" != "200" ]]; do sleep 5; done' || false
 ./setup-gitea
 
-# Foundry Stack install
-helm repo add sei https://helm.cyberforce.site/charts
-helm install -f identity.values.yaml identity sei/identity
+# Install Material for MkDocs
 helm install -f mkdocs-material.values.yaml mkdocs-material sei/mkdocs-material

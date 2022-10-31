@@ -58,7 +58,7 @@ network:
 EOF
 netplan apply
 
-apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass kubectl helm
+apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass kubectl helm pwgen
 
 # Install k3s
 mkdir -p /etc/rancher/k3s
