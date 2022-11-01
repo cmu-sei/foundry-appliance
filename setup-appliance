@@ -63,15 +63,15 @@ apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass kubectl helm pwgen
 # Install k3s
 mkdir -p /etc/rancher/k3s
 echo "nameserver 10.0.1.1" >> /etc/rancher/k3s/resolv.conf
-curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.23.6+k3s1" INSTALL_K3S_EXEC="--disable traefik --disable servicelb --resolv-conf /etc/rancher/k3s/resolv.conf" sh -
+curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.25.3+k3s1" INSTALL_K3S_EXEC="--disable traefik --disable servicelb --resolv-conf /etc/rancher/k3s/resolv.conf" sh -
 sudo -u $SSH_USERNAME mkdir ~/.kube
 cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
 sed -i 's/default/foundry/g' ~/.kube/config
 chown $SSH_USERNAME:$SSH_USERNAME ~/.kube/config
 
 # Install CFSSL for certificate generation
-curl -sLo /usr/local/bin/cfssl https://github.com/cloudflare/cfssl/releases/download/v1.6.1/cfssl_1.6.1_linux_amd64
-curl -sLo /usr/local/bin/cfssljson https://github.com/cloudflare/cfssl/releases/download/v1.6.1/cfssljson_1.6.1_linux_amd64
+curl -sLo /usr/local/bin/cfssl https://github.com/cloudflare/cfssl/releases/download/v1.6.3/cfssl_1.6.3_linux_amd64
+curl -sLo /usr/local/bin/cfssljson https://github.com/cloudflare/cfssl/releases/download/v1.6.3/cfssljson_1.6.3_linux_amd64
 chmod +x /usr/local/bin/cfssl*
 
 # Install k-alias Kubernetes helper scripts
