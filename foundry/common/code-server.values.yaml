@@ -3,10 +3,10 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 image:
-  repository: ghcr.io/linuxserver/code-server
+  repository: linuxserver/code-server
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "v3.9.1-ls73"
+  tag: "4.8.1"
 secret:
 # PASSWORD: password
   SUDO_PASSWORD: foundry
