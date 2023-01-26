@@ -21,9 +21,10 @@ jobs:
         path: ~/.cache/packer
         key: ${{ runner.os }}-packer
 
-    - name: Install Dependencies
+    - name: Install/upgrade dependencies
       run: |
         brew install xmlstarlet
+        brew upgrade virtualbox
 
     - name: Build VirtualBox OVF image
       uses: nick-invision/retry@v2
