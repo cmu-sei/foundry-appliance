@@ -15,10 +15,9 @@ ESXI_USER=root
 ESXI_HOSTNAME=esxi.foundry.local
 ESXI_CERTDIR=/etc/vmware/ssl
 RUI_CRT=$(cat ../certs/host.pem ../certs/int-ca.pem)
-RUI_KEY=$(<../certs/host-key.pem)
+RUI_KEY=$(<certs/host-key.pem)
 APPLIANCE_IP=$(ip route get 1 | sed -n 's/^.*src \([0-9.]*\) .*$/\1/p')
-TOPOMOJO_NAMESPACE=topomojo
-TOPOMOJO_NFS_PV=$(kubectl get pvc topomojo-nfs -n $TOPOMOJO_NAMESPACE --output=jsonpath='{.spec.volumeName}')
+TOPOMOJO_NFS_PV=$(kubectl get pvc topomojo-nfs -n foundry --output=jsonpath='{.spec.volumeName}')
 TOPOMOJO_STOCK_PATH=/vmfs/volumes/datastore1/topomojo/00000000-0000-0000-0000-000000000000
 TOPOMOJO_ACCESS_TOKEN=$(curl --silent --request POST \
                              --url 'https://foundry.local/identity/connect/token' \
@@ -96,8 +95,8 @@ EOF
 fi
 
 # Configure topomojo-api
-sed -i -r "s/(Pod__Url:).*/\1 https:\/\/$ESXI_HOSTNAME/" topomojo.values.yaml 
-helm upgrade --install --wait -n $TOPOMOJO_NAMESPACE -f topomojo.values.yaml topomojo sei/topomojo
-kubectl rollout restart -n $TOPOMOJO_NAMESPACE deployment.apps/topomojo-topomojo-api
+sed -i -r "s/(Pod__Url:).*/\1 https:\/\/$ESXI_HOSTNAME/" ~/foundry/topomojo.values.yaml
+helm upgrade --install --wait -n foundry -f ~/foundry/topomojo.values.yaml topomojo sei/topomojo
+kubectl rollout restart -n foundry deployment.apps/topomojo-topomojo-api
 
 echo -e "\nESXi setup completed for $ESXI_HOSTNAME\n"

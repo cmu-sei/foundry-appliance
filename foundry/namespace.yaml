@@ -1,6 +1,6 @@
 kind: Namespace
 apiVersion: v1
 metadata:
-  name: common
+  name: foundry
   labels:
-    name: common
+    name: foundry
