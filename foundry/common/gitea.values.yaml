@@ -31,7 +31,7 @@ image:
   registry: ""
   repository: gitea/gitea
   # Overrides the image tag whose default is the chart appVersion.
-  tag: 1.17.3
+  tag: 1.17.4
   pullPolicy: Always
   rootless: false # only possible when running 1.14 or later
 

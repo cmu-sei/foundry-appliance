@@ -22,8 +22,10 @@ jobs:
         key: ${{ runner.os }}-packer
 
     - name: Install Dependencies
-      run: |
-        brew install xmlstarlet
+      run: brew install xmlstarlet
+
+    - name: Remove network config for VirtualBox 6 compatibility
+      run: sed -i '' '/localhostreachable/d' foundry-appliance.pkr.hcl
 
     - name: Build VirtualBox OVF image
       uses: nick-invision/retry@v2
