@@ -1,15 +1,15 @@
-gameboard-api:
-  # Default values for gametracker-api.
+topomojo-api:
+  # Default values for topomojo-api.
   # This is a YAML-formatted file.
   # Declare variables to be passed into your templates.
 
   replicaCount: 1
 
   image:
-    repository: cmusei/gameboard-api
+    repository: cmusei/topomojo-api
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "3.7.1"
+    tag: "2.1.5"
 
   imagePullSecrets: []
   nameOverride: ""
@@ -44,18 +44,15 @@ gameboard-api:
   ingress:
     enabled: true
     annotations:
-      nginx.ingress.kubernetes.io/proxy-body-size: 10m
-
+      nginx.ingress.kubernetes.io/proxy-body-size: 6g
     hosts:
       - host: foundry.local
         paths:
-          - path: /gameboard/api
+          - path: /topomojo/api
             pathType: ImplementationSpecific
-          - path: /gameboard/hub
+          - path: /topomojo/hub
             pathType: ImplementationSpecific
-          - path: /gameboard/img
-            pathType: ImplementationSpecific
-          - path: /gameboard/doc
+          - path: /topomojo/docs
             pathType: ImplementationSpecific
     tls:
       - secretName: appliance-cert
@@ -64,10 +61,10 @@ gameboard-api:
 
   # storage - either an existing pvc, the size for a new pvc, or emptyDir
   storage:
-    existing: ""
-    size: "1Gi"
+    existing: topomojo-nfs
+    size: ""
     mode: ReadWriteOnce
-    class: local-path
+    class: nfs
 
   resources: {}
     # We usually recommend not to specify default resources and to leave this as a conscious
@@ -94,27 +91,55 @@ gameboard-api:
 
   affinity: {}
 
-  # cacert - add custom CA certificate
-  cacert: ""
+  ## customStart overrides the default start process.  Files are mounted in `/start`
+  customStart:
+    command: ['/bin/sh']
+    args: ['/start/start.sh']
+    binaryFiles: {}
+    files:
+      start.sh: |
+        #!/bin/sh
+        cp /start/*.crt /usr/local/share/ca-certificates && update-ca-certificates
+        cd /app && dotnet TopoMojo.Api.dll
+      cacert.crt: ""
 
   # Config app settings with environment vars.
   # Those most likely needing values are listed. For others,
-  # see https://github.com/cmu-sei/gametracker/blob/master/src/gametracker/appsettings.conf
+  # see https://github.com/cmu-sei/TopoMojo/blob/main/src/TopoMojo.Api/appsettings.conf
   env:
-    PathBase: "/gameboard"
+    PathBase: "/topomojo"
     Database__Provider: PostgreSQL
-    Database__ConnectionString: "Server=postgresql.common.svc.cluster.local;Port=5432;Database=gameboard;Username=postgres;Password=foundry;SSL Mode=Prefer;Trust Server Certificate=true;"
-    # Cache__SharedFolder: ""
-    Oidc__Audience: gameboard-api
+    Database__ConnectionString: Server=postgresql;Port=5432;Database=topomojo;Username=postgres;Password=foundry;SSL Mode=Prefer;Trust Server Certificate=true;
+    Database__AdminId: dee684c5-2eaf-401a-915b-d3d4320fe5d5
+    Database__AdminName: Administrator
+    Cache__SharedFolder: ""
+    OpenApi__Client__ClientId: topomojo-swagger
+    FileUpload__IsoRoot: /mnt/tm
+    FileUpload__TopoRoot: /mnt/tm
+    FileUpload__DocRoot: /mnt/tm/_docs
+    # FileUpload__MaxFileBytes: 0
     Oidc__Authority: https://foundry.local/identity
-    OpenApi__Client__ClientId: gameboard-swagger
-    Core__GameEngineUrl: https://foundry.local/topomojo/
-    Core__GameEngineClientName: bot-gameboard
-    Core__GameEngineClientSecret: ""
+    ApiKeyClients__0__Id: gameengine
+    ApiKeyClients__0__Key: foundry
+    ApiKeyClients__0__Scope: gameboard
+    Core__ConsoleHost: foundry.local/console
+    Pod__Url: ""
+    Pod__User: root
+    Pod__Password: VMware1!
+    Pod__PoolPath: ""
+    Pod__Uplink: vSwitch0
+    Pod__VmStore: "[datastore1] vm/"
+    Pod__IsoStore: "[iso]"
+    Pod__DiskStore: "[datastore1] topomojo/"
+    Pod__ConsoleUrl: foundry.local/console
+    Pod__Vlan__Reservations__0__Id: 0
+    Pod__Vlan__Reservations__0__Name: bridge-net
+    Pod__KeepAliveMinutes: 30
+    # Pod__ExcludeNetworkMask: topomojo
     # Logging__Console__DisableColors: false
     # Logging__LogLevel__Default: Information
     # Headers__LogHeaders: false
-    # Headers__Cors__Origins__[0]: ""
+    Headers__Cors__Origins__0: https://foundry.local
     # Headers__Cors__Methods__[0]: ""
     # Headers__Cors__Headers__[0]: ""
     # Headers__Cors__AllowAnyOrigin: false
@@ -122,7 +147,7 @@ gameboard-api:
     # Headers__Cors__AllowAnyHeader: false
     # Headers__Cors__AllowCredentials: false
     # Headers__Forwarding__ForwardLimit: 1
-    # Headers__Forwarding__TargetHeaders: None
+    Headers__Forwarding__TargetHeaders: All
     # Headers__Forwarding__KnownNetworks: 10.0.0.0/8 172.16.0.0/12 192.168.0.0/24 ::ffff:a00:0/104 ::ffff:b00a:0/108 ::ffff:c0d0:0/120
     # Headers__Forwarding__KnownProxies: ::1
     # Headers__Security__ContentSecurity: default-src 'self' 'unsafe-inline'; img-src data: 'self'
@@ -130,18 +155,18 @@ gameboard-api:
     # Headers__Security__XFrame: SAMEORIGIN
 
 
-gameboard-ui:
-  # Default values for gametracker-ui.
+topomojo-ui:
+  # Default values for topomojo-ui.
   # This is a YAML-formatted file.
   # Declare variables to be passed into your templates.
 
   replicaCount: 1
 
   image:
-    repository: cmusei/gameboard-ui
+    repository: cmusei/topomojo-ui
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "3.7.1"
+    tag: "2.1.4"
 
   imagePullSecrets: []
   nameOverride: ""
@@ -175,11 +200,13 @@ gameboard-ui:
 
   ingress:
     enabled: true
-    annotations: {}
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: 6g
+      # kubernetes.io/tls-acme: "true"
     hosts:
       - host: foundry.local
         paths:
-          - path: /gameboard
+          - path: /topomojo
             pathType: ImplementationSpecific
     tls:
       - secretName: appliance-cert
@@ -195,8 +222,8 @@ gameboard-ui:
     #   cpu: 20m
     #   memory: 20Mi
     # requests:
-    #   cpu: 10m
-    #   memory: 10Mi
+    #   cpu: 20m
+    #   memory: 20Mi
 
   autoscaling:
     enabled: false
@@ -212,7 +239,7 @@ gameboard-ui:
   affinity: {}
 
   ## basehref is path to the app
-  basehref: /gameboard
+  basehref: "/topomojo"
 
   ## openGraph is string of html head metadata (single line!)
   # openGraph: >-
@@ -230,21 +257,23 @@ gameboard-ui:
   ## settings is stringified json that gets included as assets/settings.json
   settings: |
     {
-      "appname": "Gameboard",
+      "appname": "TopoMojo",
       "apphost": "",
       "mkshost": "",
       "oidc": {
-        "client_id": "gameboard-client",
         "authority": "https://foundry.local/identity",
-        "redirect_uri": "https://foundry.local/gameboard/oidc",
-        "silent_redirect_uri": "https://foundry.local/gameboard/oidc-silent.html",
+        "client_id": "topomojo-client",
+        "redirect_uri": "https://foundry.local/topomojo/oidc",
+        "silent_redirect_uri": "https://foundry.local/topomojo/oidc-silent.html",
+        "post_logout_redirect_uri": "https://foundry.local/topomojo",
         "response_type": "code",
-        "scope": "openid profile organization gameboard-api",
-        "monitorSession": true,
-        "automaticSilentRenew": true,
+        "scope": "openid profile topomojo-api",
+        "automaticSilentRenew": false,
+        "includeIdTokenInSilentRenew": false,
+        "filterProtocolClaims": true,
         "loadUserInfo": true,
-        "checkSessionInterval": 30000,
-        "useLocalStorage": true,
-        "accessTokenExpiringNotificationTime": 120
+        "accessTokenExpiringNotificationTime": 120,
+        "monitorSession": false,
+        "useLocalStorage": false
       }
     }
