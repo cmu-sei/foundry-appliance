@@ -1,0 +1,73 @@
+#!/bin/bash -e
+#
+# Copyright 2022 Carnegie Mellon University.
+# Released under a BSD (SEI)-style license, please see LICENSE.md in the
+# project root or contact permission@sei.cmu.edu for full terms.
+#
+# Install window manager, VS Code, and other development tools
+
+USER_SESSION_PATH=/var/lib/AccountsService/users/foundry
+
+if [[ $UID == 0 ]]; then
+    echo "Please run this script without sudo:"
+    echo "$1 $2"
+    exit 1
+fi
+
+echo
+echo "Installing XFCE window manager, VS Code, and other development tools..."
+echo
+
+# Install repositories
+wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+sudo install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
+sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
+rm -f packages.microsoft.gpg
+sudo apt-get update
+
+# Install XCFE window manager
+sudo apt-get install -y task-xfce-desktop open-vm-tools-desktop
+
+# Remove light-locker as workaround for lock screen input issue:
+# https://bugs.launchpad.net/ubuntu/+source/xfce4-screensaver/+bug/1875025
+sudo apt-get purge -y light-locker
+sudo apt-get autoremove -y
+
+# Fix "Failed to start session" during XFCE login:
+# https://askubuntu.com/a/1414650
+if [ -e $USER_SESSION_PATH ]; then
+    sudo sed -i -r "s/(Session=).*/\1xfce/g" $USER_SESSION_PATH
+else
+    sudo bash -c "cat > $USER_SESSION_PATH <<EOF
+[User]
+Session=xfce
+XSession=xfce
+Icon=/home/foundry/.face
+SystemAccount=false
+EOF"
+fi
+
+# Install Tailscale for remote access
+curl -fsSL https://tailscale.com/install.sh | sh
+
+# Install VS Code
+sudo apt-get install -y code
+code --install-extension Angular.ng-template
+code --install-extension GitHub.vscode-pull-request-github
+code --install-extension ms-kubernetes-tools.vscode-kubernetes-tools
+code --install-extension ms-dotnettools.csharp
+
+if [[ "$1" == "--vim" ]]; then
+  code --install-extension vscodevim.vim
+  echo
+  echo "--vim option enabled. Prepare to dominate."
+else
+  echo
+  echo "It's never too late to learn. https://vim-adventures.com/"
+  echo
+  echo "Run '$0 --vim' when you're ready for prime time."
+fi
+
+echo
+echo "Dev mode enabled. Reboot to start the XFCE window manager."
+echo
