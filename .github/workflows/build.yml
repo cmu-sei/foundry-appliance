@@ -21,10 +21,11 @@ jobs:
         path: ~/.cache/packer
         key: ${{ runner.os }}-packer
 
-    - name: Install/upgrade dependencies
-      run: |
-        brew install xmlstarlet
-        brew upgrade virtualbox
+    - name: Install Dependencies
+      run: brew install xmlstarlet
+
+    - name: Remove network config for VirtualBox 6 compatibility
+      run: sed -i '' '/localhostreachable/d' foundry-appliance.pkr.hcl
 
     - name: Build VirtualBox OVF image
       uses: nick-invision/retry@v2
