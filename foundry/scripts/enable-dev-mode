@@ -33,6 +33,10 @@ sudo apt-get install -y task-xfce-desktop open-vm-tools-desktop
 sudo apt-get purge -y light-locker
 sudo apt-get autoremove -y
 
+# Disable screensaver and lock screen
+xfconf-query -c xfce4-screensaver -np /saver/enabled -t bool -s false
+xfconf-query -c xfce4-screensaver -np /lock/enabled -t bool -s false
+
 # Fix "Failed to start session" during XFCE login:
 # https://askubuntu.com/a/1414650
 if [ -e $USER_SESSION_PATH ]; then
