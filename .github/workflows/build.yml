@@ -32,7 +32,7 @@ jobs:
       env:
         GITHUB_PULL_REQUEST: ${{ github.event.number }}
       with:
-        timeout_minutes: 40
+        timeout_minutes: 45
         max_attempts: 5
         command: ./build-appliance virtualbox
 
