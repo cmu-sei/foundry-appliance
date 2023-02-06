@@ -28,11 +28,11 @@ jobs:
       run: sed -i '' '/localhostreachable/d' foundry-appliance.pkr.hcl
 
     - name: Build VirtualBox OVF image
-      uses: nick-invision/retry@v2
+      uses: nick-fields/retry@v2
       env:
         GITHUB_PULL_REQUEST: ${{ github.event.number }}
       with:
-        timeout_minutes: 45
+        timeout_minutes: 40
         max_attempts: 5
         command: ./build-appliance virtualbox
 
