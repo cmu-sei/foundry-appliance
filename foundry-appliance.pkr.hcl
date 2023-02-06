@@ -14,7 +14,7 @@ source "virtualbox-iso" "foundry-appliance" {
   rtc_time_base        = "UTC"
   shutdown_command     = "${local.shutdown_command}"
   ssh_password         = "${var.ssh_password}"
-  ssh_timeout          = "10m"
+  ssh_timeout          = "15m"
   ssh_username         = "${var.ssh_username}"
   vboxmanage           = [
                            ["modifyvm", "{{.Name}}", "--nat-localhostreachable1", "on"],
@@ -37,7 +37,7 @@ source "vmware-iso" "foundry-appliance" {
   output_directory     = "output-vmware"
   shutdown_command     = "${local.shutdown_command}"
   ssh_password         = "${var.ssh_password}"
-  ssh_timeout          = "10m"
+  ssh_timeout          = "15m"
   ssh_username         = "${var.ssh_username}"
   version              = "14"
   vm_name              = "foundry-appliance-${var.appliance_version}"
@@ -62,7 +62,7 @@ source "vsphere-iso" "foundry-appliance" {
   RAM              = "${local.memory}"
   shutdown_command = "${local.shutdown_command}"
   ssh_password     = "${var.ssh_password}"
-  ssh_timeout      = "10m"
+  ssh_timeout      = "15m"
   ssh_username     = "${var.ssh_username}"
   storage {
     disk_size             = "${local.disk_size}"
