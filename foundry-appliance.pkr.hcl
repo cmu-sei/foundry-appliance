@@ -17,6 +17,7 @@ source "virtualbox-iso" "foundry-appliance" {
   ssh_timeout          = "15m"
   ssh_username         = "${var.ssh_username}"
   vboxmanage           = [
+                           ["modifyvm", "{{.Name}}", "--vram", "${local.video_memory}"],
                            ["modifyvm", "{{.Name}}", "--nat-localhostreachable1", "on"],
   ]
   vm_name              = "foundry-appliance-${var.appliance_version}"
@@ -70,6 +71,7 @@ source "vsphere-iso" "foundry-appliance" {
   }
   username       = "${var.vsphere_username}"
   vcenter_server = "${var.vcenter_server}"
+  video_ram      = "${local.video_memory}"
   vm_name        = "foundry-appliance-${var.appliance_version}"
 }
 

@@ -58,7 +58,15 @@ network:
 EOF
 netplan apply
 
-apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass kubectl helm pwgen
+apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass kubectl helm pwgen build-essential
+
+# Install VirtualBox Guest Additions
+if [ -f "~/VBoxGuestAdditions.iso" ]; then
+    mount -o loop ~/VBoxGuestAdditions.iso /mnt
+    /mnt/VBoxLinuxAdditions.run
+    umount /mnt
+    rm ~/VBoxGuestAdditions.iso
+fi
 
 # Install k3s
 mkdir -p /etc/rancher/k3s

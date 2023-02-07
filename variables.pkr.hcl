@@ -58,4 +58,4 @@ locals {
   iso_checksum     = "sha256:10f19c5b2b8d6db711582e0e27f5116296c34fe4b313ba45f9b201a5007056cb"
   memory           = 4096
   shutdown_command = "echo '${var.ssh_password}'|sudo -S shutdown -P now"
-}
+  video_memory     = 32
