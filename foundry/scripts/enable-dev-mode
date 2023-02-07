@@ -54,6 +54,10 @@ fi
 # Install Tailscale for remote access
 curl -fsSL https://tailscale.com/install.sh | sh
 
+# Enable external PostgreSQL access
+sed -i -r "s/#(5432:)/\1/" ~/foundry/ingress-nginx.values.yaml
+helm upgrade -n foundry -f ~/foundry/ingress-nginx.values.yaml ingress-nginx ingress-nginx/ingress-nginx
+
 # Install VS Code
 sudo apt-get install -y code
 code --install-extension Angular.ng-template
