@@ -59,3 +59,4 @@ locals {
   memory           = 4096
   shutdown_command = "echo '${var.ssh_password}'|sudo -S shutdown -P now"
   video_memory     = 32
+}
