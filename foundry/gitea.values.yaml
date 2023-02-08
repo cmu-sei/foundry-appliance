@@ -31,7 +31,7 @@ image:
   registry: ""
   repository: gitea/gitea
   # Overrides the image tag whose default is the chart appVersion.
-  tag: 1.17.4
+  tag: 1.18.3
   pullPolicy: Always
   rootless: false # only possible when running 1.14 or later
 
@@ -333,6 +333,7 @@ gitea:
     server:
       DOMAIN: https://foundry.local/gitea/
       ROOT_URL: https://foundry.local/gitea/
+      DISABLE_SSH: true
     database:
       DB_TYPE: postgres
       HOST: postgresql:5432
