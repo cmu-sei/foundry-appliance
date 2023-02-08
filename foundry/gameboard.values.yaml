@@ -141,7 +141,7 @@ gameboard-ui:
     repository: cmusei/gameboard-ui
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "3.7.1"
+    tag: "3.7.2"
 
   imagePullSecrets: []
   nameOverride: ""

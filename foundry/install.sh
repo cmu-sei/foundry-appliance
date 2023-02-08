@@ -39,8 +39,8 @@ kubectl create secret generic pgpassfile --from-literal=pgpassfile=postgresql:54
 helm install -f pgadmin4.values.yaml pgadmin4 runix/pgadmin4
 
 # Install code-server (browser-based VS Code)
-helm repo add nicholaswilde https://nicholaswilde.github.io/helm-charts/
-helm install -f code-server.values.yaml code-server nicholaswilde/code-server
+helm repo add sei https://helm.cyberforce.site/charts
+helm install -f code-server.values.yaml code-server sei/code-server
 
 # Kubernetes Dashboard
 helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
@@ -52,7 +52,6 @@ cp certs/root-ca.pem ../mkdocs/docs/root-ca.crt
 
 # Install Identity
 sed -i -r "s/<GITEA_OAUTH_CLIENT_SECRET>/$GITEA_OAUTH_CLIENT_SECRET/" identity.values.yaml
-helm repo add sei https://helm.cyberforce.site/charts
 helm install --wait -f identity.values.yaml identity sei/identity
 
 # Install Gitea
