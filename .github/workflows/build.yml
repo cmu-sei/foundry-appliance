@@ -13,10 +13,10 @@ jobs:
     runs-on: macos-12
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Packer cache
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: ~/.cache/packer
         key: ${{ runner.os }}-packer
@@ -28,13 +28,13 @@ jobs:
       run: sed -i '' '/localhostreachable/d' foundry-appliance.pkr.hcl
 
     - name: Build VirtualBox OVF image
-      uses: nick-invision/retry@v2
+      uses: nick-fields/retry@v2
       env:
         GITHUB_PULL_REQUEST: ${{ github.event.number }}
       with:
         timeout_minutes: 40
         max_attempts: 5
-        command: ./build-appliance virtualbox
+        command: ./build-appliance virtualbox -force
 
     - name: Get build_name from OVF file
       run: echo "build_name=$(sh -c "find . -name '*.ovf' | xargs basename -s '.ovf'")" >> $GITHUB_ENV

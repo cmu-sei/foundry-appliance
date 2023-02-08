@@ -205,10 +205,10 @@ controller:
 
   # -- The update strategy to apply to the Deployment or DaemonSet
   ##
-  updateStrategy: {}
+  updateStrategy:
   #  rollingUpdate:
   #    maxUnavailable: 1
-  #  type: RollingUpdate
+    type: Recreate
 
   # -- `minReadySeconds` to avoid killing pods before we are ready
   ##
@@ -907,6 +907,7 @@ imagePullSecrets: []
 ##
 tcp:
   2049: "common/nfs-server-provisioner:2049"
+  #5432: "common/postgresql:5432"
 
 # -- UDP service key:value pairs
 ## Ref: https://github.com/kubernetes/ingress-nginx/blob/main/docs/user-guide/exposing-tcp-udp-services.md

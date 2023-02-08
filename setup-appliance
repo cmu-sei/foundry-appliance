@@ -19,8 +19,8 @@ sed -i -r 's/(\/swap\.img.*)/#\1/' /etc/fstab
 # Add new repositories and upgrade existing Ubuntu packages
 curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
 echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
-curl https://baltocdn.com/helm/signing.asc | sudo apt-key add -
-echo "deb https://baltocdn.com/helm/stable/debian/ all main" | tee /etc/apt/sources.list.d/helm-stable-debian.list
+curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /etc/apt/keyrings/helm.gpg > /dev/null
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | tee /etc/apt/sources.list.d/helm-stable-debian.list
 apt-get update
 apt-get full-upgrade -y
 
@@ -58,7 +58,15 @@ network:
 EOF
 netplan apply
 
-apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass kubectl helm pwgen
+apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass kubectl helm pwgen build-essential
+
+# Install VirtualBox Guest Additions
+if [ -f "~/VBoxGuestAdditions.iso" ]; then
+    mount -o loop ~/VBoxGuestAdditions.iso /mnt
+    /mnt/VBoxLinuxAdditions.run
+    umount /mnt
+    rm ~/VBoxGuestAdditions.iso
+fi
 
 # Install k3s
 mkdir -p /etc/rancher/k3s
