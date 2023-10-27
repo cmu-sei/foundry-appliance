@@ -23,28 +23,28 @@ kubectl create secret tls appliance-cert --key certs/host-key.pem --cert <( cat 
 
 # Install NFS server
 helm repo add kvaps https://kvaps.github.io/charts
-helm install -f nfs-server-provisioner.values.yaml nfs-server-provisioner kvaps/nfs-server-provisioner
+helm install -f nfs-server-provisioner.values.yaml nfs-server-provisioner kvaps/nfs-server-provisioner --version 1.4.0
 
 # Install ingress-nginx
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-helm install --wait ingress-nginx ingress-nginx/ingress-nginx --values ingress-nginx.values.yaml
+helm install --wait ingress-nginx ingress-nginx/ingress-nginx --values ingress-nginx.values.yaml --version 4.4.2
 
 # Install PostgreSQL
 helm repo add bitnami https://charts.bitnami.com/bitnami
-helm install --wait -f postgresql.values.yaml postgresql bitnami/postgresql
+helm install --wait -f postgresql.values.yaml postgresql bitnami/postgresql --version 12.1.14
 
 # Install pgAdmin4
 helm repo add runix https://helm.runix.net/
 kubectl create secret generic pgpassfile --from-literal=pgpassfile=postgresql:5432:\*:postgres:foundry
-helm install -f pgadmin4.values.yaml pgadmin4 runix/pgadmin4
+helm install -f pgadmin4.values.yaml pgadmin4 runix/pgadmin4 --version 1.14.3
 
 # Install code-server (browser-based VS Code)
 helm repo add sei https://helm.cmusei.dev/charts
-helm install -f code-server.values.yaml code-server sei/code-server
+helm install -f code-server.values.yaml code-server sei/code-server --version 3.4.1
 
 # Kubernetes Dashboard
 helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
-helm install -f kubernetes-dashboard.values.yaml kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard
+helm install -f kubernetes-dashboard.values.yaml kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard --version 6.0.0
 
 # Add root CA to chart values
 cat certs/root-ca.pem | sed 's/^/  /' | sed -i -re 's/(cacert:).*/\1 |-/' -e '/cacert:/ r /dev/stdin' mkdocs-material.values.yaml
@@ -52,7 +52,7 @@ cp certs/root-ca.pem ../mkdocs/docs/root-ca.crt
 
 # Install Identity
 sed -i -r "s/<GITEA_OAUTH_CLIENT_SECRET>/$GITEA_OAUTH_CLIENT_SECRET/" identity.values.yaml
-helm install --wait -f identity.values.yaml identity sei/identity
+helm install --wait -f identity.values.yaml identity sei/identity --version 0.2.2
 
 # Install Gitea
 git config --global init.defaultBranch main
@@ -60,12 +60,12 @@ helm repo add gitea https://dl.gitea.io/charts/
 kubectl exec postgresql-0 -- psql 'postgresql://postgres:foundry@localhost' -c 'CREATE DATABASE gitea;'
 kubectl create secret generic gitea-oauth-client --from-literal=key=gitea-client --from-literal=secret=$GITEA_OAUTH_CLIENT_SECRET
 kubectl create secret generic gitea-admin-creds --from-literal=username=administrator --from-literal=password=$GITEA_ADMIN_PASSWORD
-helm install -f gitea.values.yaml gitea gitea/gitea
+helm install -f gitea.values.yaml gitea gitea/gitea --version 7.0.2
 timeout 5m bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' https://foundry.local/gitea)" != "200" ]]; do sleep 5; done' || false
 ./scripts/setup-gitea
 
 # Install Material for MkDocs
-helm install -f mkdocs-material.values.yaml mkdocs-material sei/mkdocs-material
+helm install -f mkdocs-material.values.yaml mkdocs-material sei/mkdocs-material --version 0.1.0
 
 # Add root CA to chart values
 cat certs/root-ca.pem | sed 's/^/    /' | sed -i -re 's/(cacert:).*/\1 |-/' -e '/cacert:/ r /dev/stdin' gameboard.values.yaml
@@ -73,7 +73,7 @@ cat certs/root-ca.pem | sed 's/^/        /' | sed -i -re 's/(cacert.crt:).*/\1 |
 
 # Install TopoMojo
 kubectl apply -f topomojo-pvc.yaml
-helm install --wait -f topomojo.values.yaml topomojo sei/topomojo
+helm install --wait -f topomojo.values.yaml topomojo sei/topomojo --version 0.3.8
 kubectl apply -f console-ingress.yaml
 sleep 60
 
@@ -100,7 +100,7 @@ API_KEY=$(curl -X POST --silent \
 
 # Install Gameboard
 sed -i -r "s/(Core__GameEngineClientSecret:).*/\1 $API_KEY/" gameboard.values.yaml
-helm install --wait -f gameboard.values.yaml gameboard sei/gameboard
+helm install --wait -f gameboard.values.yaml gameboard sei/gameboard --version 0.4.4
 
 # Add administrator user to Gameboard
 timeout 5m bash -c 'until kubectl exec postgresql-0 -n foundry -- env PGPASSWORD=foundry psql -lqt -U postgres | cut -d \| -f 1 | grep -qw gameboard; do sleep 5; done' || false
