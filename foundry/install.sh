@@ -39,7 +39,7 @@ kubectl create secret generic pgpassfile --from-literal=pgpassfile=postgresql:54
 helm install -f pgadmin4.values.yaml pgadmin4 runix/pgadmin4
 
 # Install code-server (browser-based VS Code)
-helm repo add sei https://helm.cyberforce.site/charts
+helm repo add sei https://helm.cmusei.dev/charts
 helm install -f code-server.values.yaml code-server sei/code-server
 
 # Kubernetes Dashboard
