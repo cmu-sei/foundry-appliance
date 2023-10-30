@@ -8,7 +8,7 @@ image:
   registry: docker.io
   repository: dpage/pgadmin4
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "6.8"
+  tag: "7.8"
   pullPolicy: IfNotPresent
 
 ## Deployment annotations
@@ -48,6 +48,10 @@ serviceAccount:
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
   name: ""
+  # Opt out of API credential automounting.
+  # If you don't want the kubelet to automatically mount a ServiceAccount's API credentials,
+  # you can opt out of the default behavior
+  automountServiceAccountToken: false
 
 ## Strategy used to replace old Pods by new ones
 ## Ref: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
@@ -66,6 +70,10 @@ serverDefinitions:
   ## If true, server definitions will be created
   ##
   enabled: true
+
+  ## The resource type to use for deploying server definitions.
+  ## Can either be ConfigMap or Secret
+  resourceType: ConfigMap
 
   servers:
     foundry:
@@ -224,6 +232,10 @@ VolumePermissions:
   ##
   enabled: false
 
+## @param extraDeploy list of extra manifests to deploy
+##
+extraDeploy: []
+
 ## Additional InitContainers to initialize the pod
 ##
 extraInitContainers: |
@@ -290,6 +302,10 @@ podAnnotations: {}
 podLabels: {}
   # key1: value1
   # key2: value2
+
+# -- The name of the Namespace to deploy
+# If not set, `.Release.Namespace` is used
+namespace: null
 
 init:
   ## Init container resources

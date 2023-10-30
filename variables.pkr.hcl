@@ -54,9 +54,9 @@ locals {
   ]
   cpus             = 2
   disk_size        = 40000
-  iso_url          = "https://releases.ubuntu.com/22.04.2/ubuntu-22.04.2-live-server-amd64.iso"
-  iso_checksum     = "sha256:5e38b55d57d94ff029719342357325ed3bda38fa80054f9330dc789cd2d43931"
-  memory           = 4096
+  iso_url          = "https://releases.ubuntu.com/jammy/ubuntu-22.04.3-live-server-amd64.iso"
+  iso_checksum     = "sha256:a4acfda10b18da50e2ec50ccaf860d7f20b389df8765611142305c0e911d16fd"
+  memory           = 8192
   shutdown_command = "echo '${var.ssh_password}'|sudo -S shutdown -P now"
   video_memory     = 32
 }
