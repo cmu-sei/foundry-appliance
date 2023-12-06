@@ -112,7 +112,7 @@ EOF
 )
 
     # Move template from stock area to workspace
-    kubectl exec --stdin --tty postgresql-postgresql-0 \
+    kubectl exec --stdin --tty postgresql-0 \
       -- env PGPASSWORD=foundry psql -U postgres -d topomojo \
       -c "update \"Templates\" set \"WorkspaceId\" = '$workspace_id' where \"Id\" = '$template_id';"
   fi

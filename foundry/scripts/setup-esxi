@@ -14,9 +14,9 @@ HOSTS_FILE=/etc/hosts
 ESXI_USER=root
 ESXI_HOSTNAME=esxi.foundry.local
 ESXI_CERTDIR=/etc/vmware/ssl
-RUI_CRT=$(cat ../certs/host.pem ../certs/int-ca.pem)
-RUI_KEY=$(<certs/host-key.pem)
-APPLIANCE_IP=$(ip route get 1 | sed -n 's/^.*src \([0-9.]*\) .*$/\1/p')
+RUI_CRT=$(cat /home/foundry/foundry/certs/host.pem /home/foundry/foundry/certs/int-ca.pem)
+RUI_KEY=$(</home/foundry/foundry/certs/host-key.pem)
+APPLIANCE_IP=$(ip route get 1 | awk '{print $7; exit}')
 TOPOMOJO_NFS_PV=$(kubectl get pvc topomojo-nfs -n foundry --output=jsonpath='{.spec.volumeName}')
 TOPOMOJO_STOCK_PATH=/vmfs/volumes/datastore1/topomojo/00000000-0000-0000-0000-000000000000
 TOPOMOJO_ACCESS_TOKEN=$(curl --silent --request POST \
