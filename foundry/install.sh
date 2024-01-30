@@ -36,7 +36,7 @@ helm install --wait -f postgresql.values.yaml postgresql bitnami/postgresql --ve
 # Install pgAdmin4
 helm repo add runix https://helm.runix.net/
 kubectl create secret generic pgpassfile --from-literal=pgpassfile=postgresql:5432:\*:postgres:foundry
-helm install -f pgadmin4.values.yaml pgadmin4 runix/pgadmin4 --version 1.18.2
+helm install -f pgadmin4.values.yaml pgadmin4 runix/pgadmin4 --version 1.9.10
 
 # Install code-server (browser-based VS Code)
 helm repo add sei https://helm.cmusei.dev/charts
