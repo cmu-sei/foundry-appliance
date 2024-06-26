@@ -9,7 +9,7 @@ topomojo-api:
     repository: cmusei/topomojo-api
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "2.2.5"
+    tag: "2.2.6"
 
   imagePullSecrets: []
   nameOverride: ""
