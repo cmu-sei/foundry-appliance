@@ -9,7 +9,7 @@ gameboard-api:
     repository: cmusei/gameboard-api
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "3.11.5"
+    tag: "3.19.5"
 
   imagePullSecrets: []
   nameOverride: ""
@@ -141,7 +141,7 @@ gameboard-ui:
     repository: cmusei/gameboard-ui
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "3.11.4"
+    tag: "3.19.5"
 
   imagePullSecrets: []
   nameOverride: ""

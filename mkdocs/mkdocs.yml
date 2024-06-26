@@ -32,14 +32,14 @@ theme:
 repo_url: https://github.com/cmu-sei/foundry-appliance
 repo_name: cmu-sei/foundry-appliance
 edit_uri: ""
-copyright: Copyright &copy; 2023 Carnegie Mellon University
+copyright: Copyright &copy; 2024 Carnegie Mellon University
 extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/cmu-sei
     - icon: fontawesome/brands/docker
       link: https://hub.docker.com/u/cmusei
-    - icon: fontawesome/brands/twitter
-      link: https://twitter.com/sei_cmu
+    - icon: fontawesome/brands/x-twitter
+      link: https://x.com/sei_cmu
     - icon: fontawesome/brands/linkedin
       link: https://www.linkedin.com/company/software-engineering-institute/
