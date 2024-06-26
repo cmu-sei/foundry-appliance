@@ -1,3 +1,20 @@
+packer {
+  required_plugins {
+    vmware = {
+      version = "~> 1"
+      source = "github.com/hashicorp/vmware"
+    }
+    vsphere = {
+      version = "~> 1"
+      source  = "github.com/hashicorp/vsphere"
+    }
+    virtualbox = {
+      version = "~> 1"
+      source  = "github.com/hashicorp/virtualbox"
+    }
+  }
+}
+
 source "virtualbox-iso" "foundry-appliance" {
   boot_command         = "${local.boot_command}"
   boot_wait            = "5s"
