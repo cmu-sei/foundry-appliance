@@ -2,5 +2,4 @@
 .vscode/
 packer_cache/
 output-*/
-vsphere-vars.json
-vsphere.auto.pkrvars.hcl
+*.pkrvars.hcl

@@ -9,3 +9,5 @@ autoinstall:
     password: '$6$afOovK8m0QFt$WXfiPN3SCDetMwzHtZaMFjooafE3X55Mo.R34.za8u0YRm/dnJm4JmzBV9kWQl5w4YFsjwuRpwznmGmKYaUdq/'
   ssh:
     install-server: true
+  packages:
+    - qemu-guest-agent

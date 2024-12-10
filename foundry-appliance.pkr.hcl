@@ -1,102 +1,109 @@
+# Plugins - install with `packer init foundry-appliance.pkr.hcl`
 packer {
   required_plugins {
-    vmware = {
-      version = "~> 1"
-      source = "github.com/hashicorp/vmware"
-    }
-    vsphere = {
-      version = "~> 1"
-      source  = "github.com/hashicorp/vsphere"
-    }
     virtualbox = {
       version = "~> 1"
       source  = "github.com/hashicorp/virtualbox"
     }
+    proxmox = {
+      version = "~> 1"
+      source  = "github.com/hashicorp/proxmox"
+    }
   }
 }
 
+# Variables - override in foundry.auto.pkrvars.hcl
+variable "appliance_version" { default = "" }
+variable "ssh_username" { default = "foundry" }
+variable "ssh_password" { default = "foundry" }
+variable "proxmox_url" { default = "" }
+variable "proxmox_username" { default = "root@pam" }
+variable "proxmox_password" {
+  default   = ""
+  sensitive = true
+}
+variable "proxmox_node" { default = "pve.lan" }
+
+locals {
+  boot_command = [
+    "e<wait>",
+    "<down><down><down>",
+    "<end><bs><bs><bs><bs><wait>",
+    "autoinstall ds=nocloud-net\\;s=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ ---<wait>",
+    "<f10><wait>"
+  ]
+  cpus                 = 2
+  disk_size_virtualbox = "40000"
+  disk_size_proxmox    = "40G"
+  iso_url              = "https://releases.ubuntu.com/jammy/ubuntu-22.04.5-live-server-amd64.iso"
+  iso_file_proxmox     = "local:iso/ubuntu-22.04.5-live-server-amd64.iso"
+  iso_checksum         = "sha256:9bc6028870aef3f74f4e16b900008179e78b130e6b0b9a140635434a46aa98b0"
+  memory               = 8192
+  ssh_timeout          = "30m"
+}
+
 source "virtualbox-iso" "foundry-appliance" {
-  boot_command         = "${local.boot_command}"
+  boot_command         = local.boot_command
   boot_wait            = "5s"
-  cpus                 = "${local.cpus}"
-  disk_size            = "${local.disk_size}"
+  cpus                 = local.cpus
+  disk_size            = local.disk_size_virtualbox
   gfx_controller       = "vmsvga"
   guest_os_type        = "Ubuntu_64"
   hard_drive_interface = "scsi"
   http_directory       = "http"
-  iso_checksum         = "${local.iso_checksum}"
-  iso_url              = "${local.iso_url}"
-  memory               = "${local.memory}"
+  iso_checksum         = local.iso_checksum
+  iso_url              = local.iso_url
+  memory               = local.memory
   output_directory     = "output-virtualbox"
   rtc_time_base        = "UTC"
-  shutdown_command     = "${local.shutdown_command}"
-  ssh_password         = "${var.ssh_password}"
-  ssh_timeout          = "60m"
-  ssh_username         = "${var.ssh_username}"
-  vboxmanage           = [
-                           ["modifyvm", "{{.Name}}", "--vram", "${local.video_memory}"],
-                           ["modifyvm", "{{.Name}}", "--nat-localhostreachable1", "on"],
+  shutdown_command     = "echo '${var.ssh_password}'|sudo -S shutdown -P now"
+  ssh_password         = var.ssh_password
+  ssh_timeout          = local.ssh_timeout
+  ssh_username         = var.ssh_username
+  vboxmanage = [
+    ["modifyvm", "{{.Name}}", "--vram", "${local.video_memory}"],
+    ["modifyvm", "{{.Name}}", "--nat-localhostreachable1", "on"],
   ]
-  vm_name              = "foundry-appliance-${var.appliance_version}"
+  vm_name = "foundry-appliance-${var.appliance_version}"
 }
 
-source "vmware-iso" "foundry-appliance" {
-  boot_command         = "${local.boot_command}"
-  boot_wait            = "5s"
-  cpus                 = "${local.cpus}"
-  disk_size            = "${local.disk_size}"
-  guest_os_type        = "ubuntu-64"
-  http_directory       = "http"
-  iso_checksum         = "${local.iso_checksum}"
-  iso_url              = "${local.iso_url}"
-  memory               = "${local.memory}"
-  network              = "nat"
-  network_adapter_type = "vmxnet3"
-  output_directory     = "output-vmware"
-  shutdown_command     = "${local.shutdown_command}"
-  ssh_password         = "${var.ssh_password}"
-  ssh_timeout          = "60m"
-  ssh_username         = "${var.ssh_username}"
-  version              = "14"
-  vm_name              = "foundry-appliance-${var.appliance_version}"
-}
-
-source "vsphere-iso" "foundry-appliance" {
-  boot_command        = "${local.boot_command}"
-  boot_wait           = "5s"
-  cluster             = "${var.vsphere_cluster}"
-  CPUs                = "${local.cpus}"
-  datastore           = "${var.vsphere_datastore}"
-  guest_os_type       = "ubuntu64Guest"
-  http_directory      = "http"
-  insecure_connection = true
-  iso_checksum        = "${local.iso_checksum}"
-  iso_url             = "${local.iso_url}"
+source "proxmox-iso" "foundry-appliance" {
+  boot_command = local.boot_command
+  boot_iso {
+    type         = "scsi"
+    iso_file     = local.iso_file_proxmox
+    iso_checksum = local.iso_checksum
+    unmount      = true
+  }
+  boot_wait = "5s"
+  cores     = local.cpus
+  disks {
+    disk_size    = local.disk_size_proxmox
+    storage_pool = "local-lvm"
+    type         = "scsi"
+    format       = "raw"
+  }
+  http_directory           = "http"
+  insecure_skip_tls_verify = true
+  memory                   = local.memory
   network_adapters {
-    network      = "${var.vsphere_network}"
-    network_card = "vmxnet3"
+    bridge = "vmbr0"
+    model  = "virtio"
   }
-  password         = "${var.vsphere_password}"
-  RAM              = "${local.memory}"
-  shutdown_command = "${local.shutdown_command}"
-  ssh_password     = "${var.ssh_password}"
-  ssh_timeout      = "60m"
-  ssh_username     = "${var.ssh_username}"
-  storage {
-    disk_size             = "${local.disk_size}"
-    disk_thin_provisioned = true
-  }
-  username       = "${var.vsphere_username}"
-  vcenter_server = "${var.vcenter_server}"
-  video_ram      = "${local.video_memory}"
-  vm_name        = "foundry-appliance-${var.appliance_version}"
+  node         = var.proxmox_node
+  os           = "l26"
+  password     = var.proxmox_password
+  proxmox_url  = var.proxmox_url
+  ssh_password = var.ssh_password
+  ssh_timeout  = local.ssh_timeout
+  ssh_username = var.ssh_username
+  username     = var.proxmox_username
 }
 
 build {
   sources = [
     "source.virtualbox-iso.foundry-appliance",
-    "source.vmware-iso.foundry-appliance",
-    "source.vsphere-iso.foundry-appliance"
+    "source.proxmox-iso.foundry-appliance"
   ]
 
   provisioner "file" {
@@ -110,13 +117,13 @@ build {
   }
 
   provisioner "shell" {
-    execute_command   = "echo '${var.ssh_password}' | {{ .Vars }} sudo -E -S bash '{{ .Path }}'"
-    environment_vars  = [
+    execute_command = "echo '${var.ssh_password}' | {{ .Vars }} sudo -E -S bash '{{ .Path }}'"
+    environment_vars = [
       "DEBIAN_FRONTEND=noninteractive",
       "APPLIANCE_VERSION=${var.appliance_version}",
       "SSH_USERNAME=${var.ssh_username}",
     ]
-    script            = "setup-appliance"
+    script = "setup-appliance"
   }
 
   provisioner "shell" {
