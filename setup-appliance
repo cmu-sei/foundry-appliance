@@ -7,7 +7,7 @@
 # Foundry Appliance Setup
 #
 
-echo "$APPLIANCE_VERSION" > /etc/appliance_version
+echo "$APPLIANCE_VERSION" >/etc/appliance_version
 
 # Expand LVM volume to use full drive capacity
 ~/foundry/scripts/expand-volume
@@ -20,11 +20,11 @@ sed -i -r 's/(\/swap\.img.*)/#\1/' /etc/fstab
 ## Add Kubernetes Apt Repo
 apt-get update
 apt-get install -y apt-transport-https ca-certificates curl
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
 ## Add Helm Apt Repo
-curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
+curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg >/dev/null
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
 
 ## Update and Upgrade
@@ -32,7 +32,7 @@ apt-get update
 apt-get full-upgrade -y
 
 # Stop multipathd errors in syslog
-cat <<EOF >> /etc/multipath.conf
+cat <<EOF >>/etc/multipath.conf
 blacklist {
     devnode "sda$"
 }
@@ -42,13 +42,13 @@ systemctl restart multipathd
 # Add dnsmasq resolver and other required packages
 PRIMARY_INTERFACE=$(ip -o -4 route show to default | awk '{print $5}')
 mkdir /etc/dnsmasq.d
-cat <<EOF > /etc/dnsmasq.d/foundry.conf
+cat <<EOF >/etc/dnsmasq.d/foundry.conf
 bind-interfaces
 listen-address=10.0.1.1
 interface-name=foundry.local,$PRIMARY_INTERFACE
 EOF
 
-cat <<EOF > /etc/netplan/01-loopback.yaml
+cat <<EOF >/etc/netplan/01-loopback.yaml
 # Add loopback address for pods to use dnsmasq as upstream resolver
 network:
   version: 2
@@ -69,24 +69,24 @@ apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass kubectl helm pwgen
 
 # Install VirtualBox Guest Additions
 if [ -f ~/VBoxGuestAdditions.iso ]; then
-    mount -o loop ~/VBoxGuestAdditions.iso /mnt
-    /mnt/VBoxLinuxAdditions.run
-    umount /mnt
-    rm ~/VBoxGuestAdditions.iso
+  mount -o loop ~/VBoxGuestAdditions.iso /mnt
+  /mnt/VBoxLinuxAdditions.run
+  umount /mnt
+  rm ~/VBoxGuestAdditions.iso
 fi
 
 # Install k3s
 mkdir -p /etc/rancher/k3s
-echo "nameserver 10.0.1.1" >> /etc/rancher/k3s/resolv.conf
-curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.28.10+k3s1" INSTALL_K3S_EXEC="--disable traefik --resolv-conf /etc/rancher/k3s/resolv.conf" sh -
+echo "nameserver 10.0.1.1" >>/etc/rancher/k3s/resolv.conf
+curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.32.1+k3s1" INSTALL_K3S_EXEC="--disable traefik --resolv-conf /etc/rancher/k3s/resolv.conf" sh -
 sudo -u $SSH_USERNAME mkdir ~/.kube
 cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
 sed -i 's/default/foundry/g' ~/.kube/config
 chown $SSH_USERNAME:$SSH_USERNAME ~/.kube/config
 
 # Install CFSSL for certificate generation
-curl -sLo /usr/local/bin/cfssl https://github.com/cloudflare/cfssl/releases/download/v1.6.3/cfssl_1.6.3_linux_amd64
-curl -sLo /usr/local/bin/cfssljson https://github.com/cloudflare/cfssl/releases/download/v1.6.3/cfssljson_1.6.3_linux_amd64
+curl -sLo /usr/local/bin/cfssl https://github.com/cloudflare/cfssl/releases/download/v1.6.5/cfssl_1.6.5_linux_amd64
+curl -sLo /usr/local/bin/cfssljson https://github.com/cloudflare/cfssl/releases/download/v1.6.5/cfssljson_1.6.5_linux_amd64
 chmod +x /usr/local/bin/cfssl*
 
 # Install k-alias Kubernetes helper scripts
@@ -100,11 +100,11 @@ sed -i -r 's/(ENABLED=)1/\10/' /etc/default/motd-news
 cp ~/foundry/scripts/display-banner /etc/update-motd.d/05-display-banner
 rm ~/foundry/scripts/display-banner
 sed -i "s/{version}/$APPLIANCE_VERSION/" ~/mkdocs/docs/index.md
-echo -e "Foundry Appliance $APPLIANCE_VERSION \\\n \l \n" > /etc/issue
+echo -e "Foundry Appliance $APPLIANCE_VERSION \\\n \l \n" >/etc/issue
 
 # Create systemd service to configure netplan primary interface
 mv /home/foundry/foundry/scripts/configure-nic /usr/local/bin
-cat <<EOF > /etc/systemd/system/configure-nic.service
+cat <<EOF >/etc/systemd/system/configure-nic.service
 [Unit]
 Description=Configure Netplan primary Ethernet interface
 After=network.target
@@ -133,4 +133,4 @@ update-ca-certificates
 systemctl restart avahi-daemon
 
 # Delete Ubuntu machine ID for proper DHCP operation on deploy
-echo -n > /etc/machine-id
+echo -n >/etc/machine-id
