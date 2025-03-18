@@ -61,10 +61,6 @@ source "virtualbox-iso" "foundry-appliance" {
   ssh_password         = var.ssh_password
   ssh_timeout          = local.ssh_timeout
   ssh_username         = var.ssh_username
-  vboxmanage = [
-    ["modifyvm", "{{.Name}}", "--vram", "${local.video_memory}"],
-    ["modifyvm", "{{.Name}}", "--nat-localhostreachable1", "on"],
-  ]
   vm_name = "foundry-appliance-${var.appliance_version}"
 }
 
