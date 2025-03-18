@@ -32,13 +32,9 @@ jobs:
       run: packer init foundry-appliance.pkr.hcl
 
     - name: Build VirtualBox OVF image
-      uses: nick-fields/retry@v2
       env:
         GITHUB_PULL_REQUEST: ${{ github.event.number }}
-      with:
-        timeout_minutes: 40
-        max_attempts: 5
-        command: ./build-appliance virtualbox -force
+      run: ./build-appliance virtualbox -force
 
     - name: Get build_name from OVF file
       run: echo "build_name=$(sh -c "find . -name '*.ovf' | xargs basename -s '.ovf'")" >> $GITHUB_ENV
