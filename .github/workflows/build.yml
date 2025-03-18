@@ -34,8 +34,7 @@ jobs:
     - name: Build VirtualBox OVF image
       env:
         GITHUB_PULL_REQUEST: ${{ github.event.number }}
-        USER: $LOGNAME
-      run: ./build-appliance virtualbox -force
+      run: sudo ./build-appliance virtualbox -force
 
     - name: Get build_name from OVF file
       run: echo "build_name=$(sh -c "find . -name '*.ovf' | xargs basename -s '.ovf'")" >> $GITHUB_ENV
