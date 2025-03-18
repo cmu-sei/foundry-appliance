@@ -37,7 +37,7 @@ jobs:
         GITHUB_PULL_REQUEST: ${{ github.event.number }}
       run: |
         sudo -E ./build-appliance virtualbox -var "virtualbox_headless=true" -force
-        chown -R $USER: ./output-virtualbox
+        sudo chown -R $USER: ./output-virtualbox
 
     - name: Get build_name from OVF file
       run: echo "build_name=$(sh -c "find . -name '*.ovf' | xargs basename -s '.ovf'")" >> $GITHUB_ENV
