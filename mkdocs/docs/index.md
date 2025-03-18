@@ -35,10 +35,8 @@ The following third-party applications are loaded on this appliance:
 
 | location | description |
 | -------- | ----------- |
-| [/dashboard](/dashboard)| _Kubernetes Dashboard_ provides details regarding the container deployment for the appliance. |
 | [/gitea](/gitea)| _Gitea_ provides a user interface for editing the web content on the appliance (including this page).|
 | [/pgadmin](/pgadmin)| _pgAdmin_ provides a GUI for managing the PostgreSQL databases for each app. |
-| [/vscode](/vscode)| _code-server_ runs a browser version of [Visual Studio Code](https://code.visualstudio.com) to configure the appliance.
 
 ## Demo challenge
 

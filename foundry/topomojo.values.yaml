@@ -9,7 +9,7 @@ topomojo-api:
     repository: cmusei/topomojo-api
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "2.2.6"
+    tag: "2.3.5"
 
   imagePullSecrets: []
   nameOverride: ""
@@ -94,13 +94,12 @@ topomojo-api:
   ## customStart overrides the default start process.  Files are mounted in `/start`
   customStart:
     command: ['/bin/sh']
-    args: ['/start/start.sh']
+    args: ['/home/app/start/start.sh']
     binaryFiles: {}
     files:
       start.sh: |
         #!/bin/sh
-        cp /start/*.crt /usr/local/share/ca-certificates && update-ca-certificates
-        cd /app && dotnet TopoMojo.Api.dll
+        cd /home/app && SSL_CERT_FILE=/home/app/start/cacert.crt dotnet TopoMojo.Api.dll
       cacert.crt: ""
 
   # Config app settings with environment vars.
@@ -166,7 +165,7 @@ topomojo-ui:
     repository: cmusei/topomojo-ui
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "2.2.4"
+    tag: "2.3.2"
 
   imagePullSecrets: []
   nameOverride: ""
