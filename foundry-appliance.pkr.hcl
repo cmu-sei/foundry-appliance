@@ -23,6 +23,10 @@ variable "proxmox_password" {
   default   = ""
   sensitive = true
 }
+variable "virtualbox_headless" {
+  type    = bool
+  default = false
+}
 
 locals {
   boot_command = [
@@ -51,6 +55,7 @@ source "virtualbox-iso" "foundry-appliance" {
   gfx_controller       = "vmsvga"
   guest_os_type        = "Ubuntu_64"
   hard_drive_interface = "scsi"
+  headless             = var.virtualbox_headless
   http_directory       = "http"
   iso_checksum         = local.iso_checksum
   iso_url              = local.iso_url
