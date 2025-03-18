@@ -43,18 +43,18 @@ jobs:
 
     - name: Improve OVF VMware compatibility
       run: |
-        xml ed --inplace \
+        sudo xml ed --inplace \
                -N ns='http://schemas.dmtf.org/ovf/envelope/1' \
                -N vssd="http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_VirtualSystemSettingData" \
                -u "//ns:System/vssd:VirtualSystemType" \
                -v "vmx-13" \
                ${{ env.build_name }}.ovf
-        xml ed --inplace \
+        sudo xml ed --inplace \
                -N ns='http://schemas.dmtf.org/ovf/envelope/1' \
                -N rasd='http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_ResourceAllocationSettingData' \
                -d "//ns:Item[rasd:ResourceSubType[contains(text(), 'PIIX4')]]" \
                ${{ env.build_name }}.ovf
-        xml ed --inplace \
+        sudo xml ed --inplace \
                -N ns='http://schemas.dmtf.org/ovf/envelope/1' \
                -d "//ns:StorageController[@type='PIIX4']" \
                ${{ env.build_name }}.ovf
