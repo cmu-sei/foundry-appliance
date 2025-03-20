@@ -32,20 +32,17 @@ To build the appliance, you will need:
 - [Packer](https://www.packer.io/) 1.7+
 - A compatible hypervisor:
     - [VirtualBox](https://www.virtualbox.org/) (`virtualbox`)
-    - [Fusion](https://www.vmware.com/products/fusion.html)/[Workstation](https://www.vmware.com/products/workstation-pro.html) (`vmware`)
-    - [ESXi](https://www.vmware.com/products/vsphere-hypervisor.html) (`vsphere`)
+    - [Proxmox Virtual Environment](https://www.proxmox.com/en/products/proxmox-virtual-environment/overview) (`proxmox`)
 
-### ESXi Build (optional)
+### Proxmox Build (optional)
 
-To build the appliance using an ESXi server, create a file named `vsphere.auto.pkrvars.hcl` in this directory and add these settings:
+To build the appliance using Proxmox, create a file named `proxmox.auto.pkrvars.hcl` in this directory and add these settings:
 
 ```
-vcenter_server    = "<vCenter or ESXi FQDN>"
-vsphere_username  = "administrator@vsphere.local"
-vsphere_password  = "<password>"
-vsphere_cluster   = "<cluster>"    # vCenter only
-vsphere_datastore = "<datastore>"
-vsphere_network   = "<portgroup>"  # internet access required
+proxmox_url      = "https://<proxmox.fqdn>:8006/api2/json" # replace with your PVE server
+proxmox_user     = "root@pam"
+proxmox_password = "<password>"
+proxmox_node     = "pve.lan" # replace with the Proxmox node name that should build the appliance
 ```
 
 ### Build Command
@@ -56,16 +53,16 @@ Run the following command, where `<hypervisor>` is a comma-delimited list of tar
 ./build-appliance <hypervisor>
 ```
 
-For example, to build the appliance with Fusion or Workstation, run this command:
+For example, to build the appliance with VirtualBox, run this command:
 
 ```
-./build-appliance vmware
+./build-appliance virtualbox
 ```
 
-To add VirtualBox to the previous build, run this command:
+To add Proxmox to the previous build, run this command:
 
 ```
-./build-appliance vmware,virtualbox
+./build-appliance virtualbox,proxmox
 ```
 
 [Packer `build` options](https://www.packer.io/docs/commands/build) can be appended to the end of the command. For example, this will save partial builds and automatically overwrite the previous build (useful for debugging):
