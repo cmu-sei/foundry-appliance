@@ -1,0 +1,47 @@
+#!/bin/bash -e
+
+# W.I.P Keycloak Setup Script for the Foundry Appliance
+
+# Configuration parameters
+export KEYCLOAK_SERVER_URL="https://foundry.local/auth"
+export REALM_NAME="foundry"
+export KEYCLOAK_ADMIN_USER="foundry"
+export KEYCLOAK_ADMIN_PASSWORD="foundry"
+
+# Wait until Keycloak is available
+echo "Waiting for Keycloak to be available at ${KEYCLOAK_SERVER_URL}..."
+
+until [[ "$(curl -k -s -o /dev/null -w '%{http_code}' "${KEYCLOAK_SERVER_URL}")" == "303" ]]; do
+    echo "Keycloak not available yet, sleeping 5 seconds..."
+    sleep 5
+done
+
+echo "Keycloak is available. Continuing configuration."
+
+
+# Get the access token
+TOKEN=$(curl -k -s -X POST "${KEYCLOAK_SERVER_URL}/realms/master/protocol/openid-connect/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=${KEYCLOAK_ADMIN_USER}" \
+  -d "password=${KEYCLOAK_ADMIN_PASSWORD}" \
+  -d 'grant_type=password' \
+  -d 'client_id=admin-cli' | jq -r '.access_token')
+
+# Create Foundry realm if needed.
+REALM_EXISTS=$(curl -k -s -o /dev/null -w "%{http_code}" -X GET \
+  "${KEYCLOAK_SERVER_URL}/admin/realms/${REALM_NAME}" \
+  -H "Authorization: Bearer $TOKEN")
+
+if [ "$REALM_EXISTS" == "404" ]; then
+  echo "Realm '${REALM_NAME}' does not exist. Creating..."
+  curl -k -s -X POST "${KEYCLOAK_SERVER_URL}/admin/realms" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $TOKEN" \
+    -d '{
+      "realm": "'"${REALM_NAME}"'",
+      "enabled": true
+    }'
+  echo "Realm '${REALM_NAME}' created."
+else
+  echo "Realm '${REALM_NAME}' already exists or could not be verified."
+fi

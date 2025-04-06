@@ -1,0 +1,25 @@
+replicaCount: 1
+
+auth:
+  adminUser: foundry
+  adminPassword: foundry
+postgresql:
+  enabled: false
+externalDatabase:
+  host: postgresql
+  port: 5432
+  user: postgres
+  database: keycloak
+  password: foundry
+ingress:
+  enabled: true
+  hostname: foundry.local
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+  path: /auth
+  tls: true
+  extraTls:
+    - hosts:
+        - foundry.local
+      secretName: appliance-cert
+httpRelativePath: /auth/
