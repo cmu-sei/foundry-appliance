@@ -216,7 +216,30 @@ for CLIENT_JSON in \
       "consent.required": "true",
       "post.logout.redirect.uris": "https://foundry.local/gameboard/api"
     }
-  }'
+  }' \
+  '{
+    "clientId": "gitea-client",
+    "name": "Gitea",
+    "enabled": true,
+    "protocol": "openid-connect",
+    "publicClient": false,
+    "secret": "<GITEA_OAUTH_CLIENT_SECRET>",
+    "standardFlowEnabled": true,
+    "directAccessGrantsEnabled": false,
+    "implicitFlowEnabled": false,
+    "redirectUris": [
+      "https://foundry.local/gitea/user/oauth2/Foundry/callback"
+    ],
+    "baseUrl": "https://foundry.local/gitea",
+    "defaultClientScopes": [
+      "openid",
+      "profile",
+      "email"
+    ],
+    "attributes": {
+      "post.logout.redirect.uris": "https://foundry.local/gitea",
+      "oauth2.device.authorization.grant.enabled": "false"
+    }'
 
 do
   CLIENT_ID=$(echo "$CLIENT_JSON" | jq -r .clientId)
