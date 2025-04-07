@@ -31,14 +31,6 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.
 apt-get update
 apt-get full-upgrade -y
 
-# Stop multipathd errors in syslog
-cat <<EOF >>/etc/multipath.conf
-blacklist {
-    devnode "sda$"
-}
-EOF
-systemctl restart multipathd
-
 # Add dnsmasq resolver and other required packages
 PRIMARY_INTERFACE=$(ip -o -4 route show to default | awk '{print $5}')
 mkdir /etc/dnsmasq.d
@@ -65,7 +57,9 @@ network:
 EOF
 netplan apply
 
-apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass kubectl helm pwgen build-essential
+# Install Ansible PPA and apt packages
+sudo add-apt-repository --yes --update ppa:ansible/ansible
+apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass kubectl helm pwgen build-essential ansible
 
 # Install VirtualBox Guest Additions
 if [ -f ~/VBoxGuestAdditions.iso ]; then
