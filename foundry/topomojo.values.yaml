@@ -9,7 +9,7 @@ topomojo-api:
     repository: cmusei/topomojo-api
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "2.2.6"
+    tag: "2.3.5"
 
   imagePullSecrets: []
   nameOverride: ""
@@ -94,33 +94,13 @@ topomojo-api:
   ## customStart overrides the default start process.  Files are mounted in `/start`
   customStart:
     command: ['/bin/sh']
-    args: ['/start/start.sh']
+    args: ['/home/app/start/start.sh']
     binaryFiles: {}
     files:
       start.sh: |
         #!/bin/sh
-        cp /start/*.crt /usr/local/share/ca-certificates && update-ca-certificates
-        cd /app && dotnet TopoMojo.Api.dll
-      cacert.crt: |-
-        -----BEGIN CERTIFICATE-----
-        MIIDGDCCAgCgAwIBAgIUPYBsBgw88zL5RLoDjsoUm3pX/sEwDQYJKoZIhvcNAQEL
-        BQAwJDEiMCAGA1UEAxMZRm91bmRyeSBBcHBsaWFuY2UgUm9vdCBDQTAeFw0yNDA2
-        MjYxNzAyMDBaFw0yOTA2MjUxNzAyMDBaMCQxIjAgBgNVBAMTGUZvdW5kcnkgQXBw
-        bGlhbmNlIFJvb3QgQ0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDM
-        WdOArl1E7giXWb54ueVZCkDIvr7lHC948ZksiH45quX3U7/OycP++4RVAmvyehpK
-        /MXhaGg+LlKawWt5savtdXOQVJlUX9UJ1UswbWv4Y6iPftFmQbWg6jkmlhoSYnCb
-        ylqz+bw4NamhpnAdIZsWj00eeRRfHRPhfPzdUMutl0PGAnZ/u4QkD4ZjOgkS34hu
-        0KzUZONHiNVg/zQM6D/HZVTdgcjL4kybiBXFOP3wOC1Ry9nTh2UcgqPVU31Yy+Om
-        Dz634eelcjpKme0e35lTBpgOc1/wzdpydKnnedu4xBLFwHtRXX9zYfc8pxplzJxd
-        GMxfYVGOF+aJ5NxLAlvPAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwIBBjAPBgNVHRMB
-        Af8EBTADAQH/MB0GA1UdDgQWBBTV/h1uLxIiXoPJlAtoIRqHlABLbDANBgkqhkiG
-        9w0BAQsFAAOCAQEAmh+uTnnXTCezud15T693XZnOP87GcrGCYE+8I0QJZMEznmNu
-        q5pDsd8VjaYyrnW2ChbK+O+SrC8jeMySRQkaZrt9IUDryiltcwHSmAITvg5CdwC1
-        y6mFNDoyyyhW1jK21W473DWZCaSyshw6t6ZMt3XJeLLSp1plv+Ouuo+fGRsGei2Z
-        m1bhwPNUiNyOU87JfAecG4DerN8pKE6+xV9mDZaIPMKB8JPL6igP0gVP6wy1ODFp
-        t4fCgmKIaac2Rd4oDDCcxMsjylKMdMC5cvnLcFWNVXGMxHIgtGg3hKGVGoc7ek4h
-        VwmwFbLL4uG4oKpsgWRzXuwwhB3EvIRJhBrqwQ==
-        -----END CERTIFICATE-----
+        cd /home/app && SSL_CERT_FILE=/home/app/start/cacert.crt dotnet TopoMojo.Api.dll
+      cacert.crt: ""
 
   # Config app settings with environment vars.
   # Those most likely needing values are listed. For others,
@@ -185,7 +165,7 @@ topomojo-ui:
     repository: cmusei/topomojo-ui
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "2.2.4"
+    tag: "2.3.2"
 
   imagePullSecrets: []
   nameOverride: ""
