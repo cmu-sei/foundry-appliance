@@ -9,7 +9,7 @@ gameboard-api:
     repository: cmusei/gameboard-api
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "3.25.3"
+    tag: "3.19.5"
 
   imagePullSecrets: []
   nameOverride: ""
@@ -95,7 +95,26 @@ gameboard-api:
   affinity: {}
 
   # cacert - add custom CA certificate
-  cacert: ""
+  cacert: |-
+    -----BEGIN CERTIFICATE-----
+    MIIDGDCCAgCgAwIBAgIUPYBsBgw88zL5RLoDjsoUm3pX/sEwDQYJKoZIhvcNAQEL
+    BQAwJDEiMCAGA1UEAxMZRm91bmRyeSBBcHBsaWFuY2UgUm9vdCBDQTAeFw0yNDA2
+    MjYxNzAyMDBaFw0yOTA2MjUxNzAyMDBaMCQxIjAgBgNVBAMTGUZvdW5kcnkgQXBw
+    bGlhbmNlIFJvb3QgQ0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDM
+    WdOArl1E7giXWb54ueVZCkDIvr7lHC948ZksiH45quX3U7/OycP++4RVAmvyehpK
+    /MXhaGg+LlKawWt5savtdXOQVJlUX9UJ1UswbWv4Y6iPftFmQbWg6jkmlhoSYnCb
+    ylqz+bw4NamhpnAdIZsWj00eeRRfHRPhfPzdUMutl0PGAnZ/u4QkD4ZjOgkS34hu
+    0KzUZONHiNVg/zQM6D/HZVTdgcjL4kybiBXFOP3wOC1Ry9nTh2UcgqPVU31Yy+Om
+    Dz634eelcjpKme0e35lTBpgOc1/wzdpydKnnedu4xBLFwHtRXX9zYfc8pxplzJxd
+    GMxfYVGOF+aJ5NxLAlvPAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwIBBjAPBgNVHRMB
+    Af8EBTADAQH/MB0GA1UdDgQWBBTV/h1uLxIiXoPJlAtoIRqHlABLbDANBgkqhkiG
+    9w0BAQsFAAOCAQEAmh+uTnnXTCezud15T693XZnOP87GcrGCYE+8I0QJZMEznmNu
+    q5pDsd8VjaYyrnW2ChbK+O+SrC8jeMySRQkaZrt9IUDryiltcwHSmAITvg5CdwC1
+    y6mFNDoyyyhW1jK21W473DWZCaSyshw6t6ZMt3XJeLLSp1plv+Ouuo+fGRsGei2Z
+    m1bhwPNUiNyOU87JfAecG4DerN8pKE6+xV9mDZaIPMKB8JPL6igP0gVP6wy1ODFp
+    t4fCgmKIaac2Rd4oDDCcxMsjylKMdMC5cvnLcFWNVXGMxHIgtGg3hKGVGoc7ek4h
+    VwmwFbLL4uG4oKpsgWRzXuwwhB3EvIRJhBrqwQ==
+    -----END CERTIFICATE-----
 
   # Config app settings with environment vars.
   # Those most likely needing values are listed. For others,
@@ -106,17 +125,17 @@ gameboard-api:
     Database__ConnectionString: "Server=postgresql;Port=5432;Database=gameboard;Username=postgres;Password=foundry;SSL Mode=Prefer;Trust Server Certificate=true;"
     # Cache__SharedFolder: ""
     Oidc__Audience: gameboard-api
-    Oidc__Authority: https://foundry.local/identity
+    Oidc__Authority: https://foundry.local/auth/realms/foundry
     OpenApi__Client__ClientId: gameboard-swagger
     Core__GameEngineUrl: https://foundry.local/topomojo/
     Core__GameEngineClientName: bot-gameboard
-    Core__GameEngineClientSecret: ""
+    Core__GameEngineClientSecret: heW4pABh2s_ts0jjVfZL6K3e63dos3ss
     # Logging__Console__DisableColors: false
     # Logging__LogLevel__Default: Information
     # Headers__LogHeaders: false
     # Headers__Cors__Origins__[0]: ""
     # Headers__Cors__Methods__[0]: ""
-    # Headers__Cors__Headers__[0]: ""
+    # Headers__Cors__Heade  rs__[0]: ""
     # Headers__Cors__AllowAnyOrigin: false
     # Headers__Cors__AllowAnyMethod: false
     # Headers__Cors__AllowAnyHeader: false
@@ -141,7 +160,7 @@ gameboard-ui:
     repository: cmusei/gameboard-ui
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "3.25.1"
+    tag: "3.19.5"
 
   imagePullSecrets: []
   nameOverride: ""
@@ -235,7 +254,7 @@ gameboard-ui:
       "mkshost": "",
       "oidc": {
         "client_id": "gameboard-client",
-        "authority": "https://foundry.local/identity",
+        "authority": "https://foundry.local/auth/realms/foundry",
         "redirect_uri": "https://foundry.local/gameboard/oidc",
         "silent_redirect_uri": "https://foundry.local/gameboard/oidc-silent.html",
         "response_type": "code",
