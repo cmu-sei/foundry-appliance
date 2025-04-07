@@ -123,6 +123,22 @@ ensure_client_scope_with_mappers "gameboard-api" "gameboard-api" "Gameboard API"
 # Create clients
 for CLIENT_JSON in \
   '{
+    "clientId": "bootstrap-client",
+    "name": "Bootstrap",
+    "enabled": true,
+    "protocol": "openid-connect",
+    "publicClient": false,
+    "secret": "foundry",
+    "standardFlowEnabled": false,
+    "directAccessGrantsEnabled": true,
+    "serviceAccountsEnabled": false,
+    "defaultClientScopes": [
+      "openid",
+      "profile",
+      "topomojo-api"
+    ]
+  }' \
+  '{
     "clientId": "topomojo-client",
     "name": "TopoMojo",
     "enabled": true,
@@ -223,7 +239,7 @@ for CLIENT_JSON in \
     "enabled": true,
     "protocol": "openid-connect",
     "publicClient": false,
-    "secret": "<GITEA_OAUTH_CLIENT_SECRET>",
+    "secret": "a92de95c865db308dfa5b7a098f45a7f",
     "standardFlowEnabled": true,
     "directAccessGrantsEnabled": false,
     "implicitFlowEnabled": false,
@@ -239,7 +255,8 @@ for CLIENT_JSON in \
     "attributes": {
       "post.logout.redirect.uris": "https://foundry.local/gitea",
       "oauth2.device.authorization.grant.enabled": "false"
-    }'
+    }
+  }'
 
 do
   CLIENT_ID=$(echo "$CLIENT_JSON" | jq -r .clientId)
