@@ -45,28 +45,28 @@ proxmox_password = "<password>"
 proxmox_node     = "pve.lan" # replace with the Proxmox node name that should build the appliance
 ```
 
-### Build Command
+### Build Script
 
 Run the following command, where `<hypervisor>` is a comma-delimited list of target hypervisors:
 
 ```
-./build-appliance <hypervisor>
+./build-appliance.sh <hypervisor>
 ```
 
 For example, to build the appliance with VirtualBox, run this command:
 
 ```
-./build-appliance virtualbox
+./build-appliance.sh virtualbox
 ```
 
 To add Proxmox to the previous build, run this command:
 
 ```
-./build-appliance virtualbox,proxmox
+./build-appliance.sh virtualbox,proxmox
 ```
 
 [Packer `build` options](https://www.packer.io/docs/commands/build) can be appended to the end of the command. For example, this will save partial builds and automatically overwrite the previous build (useful for debugging):
 
 ```
-./build-appliance <hypervisor> -on-error=abort -force
+./build-appliance.sh <hypervisor> -on-error=abort -force
 ```

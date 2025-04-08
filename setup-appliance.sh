@@ -10,7 +10,7 @@
 echo "$APPLIANCE_VERSION" >/etc/appliance_version
 
 # Expand LVM volume to use full drive capacity
-~/foundry/scripts/expand-volume
+~/foundry/scripts/expand-volume.sh
 
 # Disable swap for Kubernetes
 swapoff -a
@@ -92,13 +92,13 @@ sudo -u $SSH_USERNAME git clone https://github.com/jaggedmountain/k-alias.git
 chmod -x /etc/update-motd.d/00-header
 chmod -x /etc/update-motd.d/10-help-text
 sed -i -r 's/(ENABLED=)1/\10/' /etc/default/motd-news
-cp ~/foundry/scripts/display-banner /etc/update-motd.d/05-display-banner
-rm ~/foundry/scripts/display-banner
+cp ~/foundry/scripts/display-banner.sh /etc/update-motd.d/05-display-banner
+rm ~/foundry/scripts/display-banner.sh
 sed -i "s/{version}/$APPLIANCE_VERSION/" ~/mkdocs/docs/index.md
 echo -e "Foundry Appliance $APPLIANCE_VERSION \\\n \l \n" >/etc/issue
 
 # Create systemd service to configure netplan primary interface
-mv /home/foundry/foundry/scripts/configure-nic /usr/local/bin
+mv /home/foundry/foundry/scripts/configure-nic.sh /usr/local/bin/configure-nic
 cat <<EOF >/etc/systemd/system/configure-nic.service
 [Unit]
 Description=Configure Netplan primary Ethernet interface
@@ -118,7 +118,7 @@ systemctl enable configure-nic
 sudo -u $SSH_USERNAME ssh-keygen -t rsa -f ~/.ssh/id_rsa -q -N ''
 
 # Generate CA and host certificates
-sudo -u $SSH_USERNAME ~/foundry/certs/generate-certs -loglevel 3
+sudo -u $SSH_USERNAME ~/foundry/certs/generate-certs.sh -loglevel 3
 
 # Add newly generated CA certificate to trusted roots
 cp ~/foundry/certs/root-ca.pem /usr/local/share/ca-certificates/foundry-appliance-root-ca.crt

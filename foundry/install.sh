@@ -55,7 +55,7 @@ kubectl create secret generic gitea-oauth-client --from-literal=key=gitea-client
 kubectl create secret generic gitea-admin-secret --from-literal=username=administrator --from-literal=password=$GITEA_ADMIN_PASSWORD
 helm install -f gitea.values.yaml gitea gitea/gitea --version 11.0.1
 timeout 5m bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' https://foundry.local/gitea)" != "200" ]]; do sleep 5; done' || false
-./scripts/setup-gitea
+./scripts/setup-gitea.sh
 
 # Install Material for MkDocs
 helm install -f mkdocs-material.values.yaml mkdocs-material sei/mkdocs-material --version 0.1.0

@@ -128,7 +128,7 @@ build {
       "APPLIANCE_VERSION=${var.appliance_version}",
       "SSH_USERNAME=${var.ssh_username}",
     ]
-    script = "setup-appliance"
+    script = "setup-appliance.sh"
   }
 
   provisioner "shell" {
