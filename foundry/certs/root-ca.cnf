@@ -1,0 +1,13 @@
+[ req ]
+distinguished_name = req_dn
+prompt = no
+x509_extensions = ca_ext
+
+[ req_dn ]
+CN = Foundry Appliance Root CA
+O = Foundry Appliance Root CA
+
+[ ca_ext ]
+basicConstraints = critical, CA:true
+keyUsage = critical, keyCertSign
+subjectKeyIdentifier = hash

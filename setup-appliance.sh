@@ -79,11 +79,6 @@ cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
 sed -i 's/default/foundry/g' ~/.kube/config
 chown $SSH_USERNAME:$SSH_USERNAME ~/.kube/config
 
-# Install CFSSL for certificate generation
-curl -sLo /usr/local/bin/cfssl https://github.com/cloudflare/cfssl/releases/download/v1.6.5/cfssl_1.6.5_linux_amd64
-curl -sLo /usr/local/bin/cfssljson https://github.com/cloudflare/cfssl/releases/download/v1.6.5/cfssljson_1.6.5_linux_amd64
-chmod +x /usr/local/bin/cfssl*
-
 # Install k-alias Kubernetes helper scripts
 sudo -u $SSH_USERNAME git clone https://github.com/jaggedmountain/k-alias.git
 (cd /usr/local/bin && ln -s ~/k-alias/[h,k]* .)
