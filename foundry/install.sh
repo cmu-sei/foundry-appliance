@@ -44,7 +44,7 @@ cp certs/root-ca.pem ../mkdocs/docs/root-ca.crt
 
 # Install Keycloak
 kubectl exec postgresql-0 -- psql 'postgresql://postgres:foundry@localhost' -c 'CREATE DATABASE keycloak;'
-sed -i -r "s/<GITEA_OAUTH_CLIENT_SECRET>/$GITEA_OAUTH_CLIENT_SECRET/" scripts/setup-keycloak
+sed -i -r "s/<GITEA_OAUTH_CLIENT_SECRET>/$GITEA_OAUTH_CLIENT_SECRET/" scripts/setup-keycloak.sh
 helm install --wait -f keycloak.values.yaml keycloak bitnami/keycloak --version 24.4.13
 ./scripts/setup-keycloak.sh
 
