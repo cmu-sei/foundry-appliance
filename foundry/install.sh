@@ -42,27 +42,15 @@ helm install -f pgadmin4.values.yaml pgadmin4 runix/pgadmin4 --version 1.9.10
 cat certs/root-ca.pem | sed 's/^/  /' | sed -i -re 's/(cacert:).*/\1 |-/' -e '/cacert:/ r /dev/stdin' mkdocs-material.values.yaml
 cp certs/root-ca.pem ../mkdocs/docs/root-ca.crt
 
-# # Install Identity
-# helm repo add sei https://helm.cmusei.dev/charts
-# sed -i -r "s/<GITEA_OAUTH_CLIENT_SECRET>/$GITEA_OAUTH_CLIENT_SECRET/" identity.values.yaml
-# helm install --wait -f identity.values.yaml identity sei/identity --version 0.2.2
-
-# Install Keycloak
-kubectl exec postgresql-0 -- psql 'postgresql://postgres:foundry@localhost' -c 'CREATE DATABASE keycloak;'
-sed -i -r "s/<GITEA_OAUTH_CLIENT_SECRET>/$GITEA_OAUTH_CLIENT_SECRET/" scripts/setup-keycloak
-helm install --wait -f keycloak.values.yaml keycloak bitnami/keycloak --version 24.4.13
-./scripts/setup-keycloak
-
-
 # Install Gitea
 git config --global init.defaultBranch main
 helm repo add gitea https://dl.gitea.io/charts/
 kubectl exec postgresql-0 -- psql 'postgresql://postgres:foundry@localhost' -c 'CREATE DATABASE gitea;'
 kubectl create secret generic gitea-oauth-client --from-literal=key=gitea-client --from-literal=secret=$GITEA_OAUTH_CLIENT_SECRET
-kubectl create secret generic gitea-admin-creds --from-literal=username=administrator --from-literal=password=$GITEA_ADMIN_PASSWORD
-helm install -f gitea.values.yaml gitea gitea/gitea --version 7.0.2
+kubectl create secret generic gitea-admin-secret --from-literal=username=administrator --from-literal=password=$GITEA_ADMIN_PASSWORD
+helm install -f gitea.values.yaml gitea gitea/gitea --version 11.0.1
 timeout 5m bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' https://foundry.local/gitea)" != "200" ]]; do sleep 5; done' || false
-./scripts/setup-gitea
+./scripts/setup-gitea.sh
 
 # Install Material for MkDocs
 helm install -f mkdocs-material.values.yaml mkdocs-material sei/mkdocs-material --version 0.1.0
@@ -78,13 +66,13 @@ kubectl apply -f console-ingress.yaml
 sleep 60
 
 # Add bot user to TopoMojo
-TOPOMOJO_ACCESS_TOKEN=$(curl --silent --request POST \
-  --url 'https://foundry.local/identity/connect/token' \
-  --data grant_type=password \
-  --data client_id=bootstrap-client \
-  --data client_secret=foundry \
-  --data username=administrator@foundry.local \
-  --data password=foundry | jq -r '.access_token')
+TOPOMOJO_ACCESS_TOKEN=$(curl -k -s -X POST "https://foundry.local/auth/realms/master/protocol/openid-connect/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "client_id=topomojo-client" \
+  -d "grant_type=password" \
+  -d "username=administrator" \
+  -d "password=$(cat /tmp/foundry_admin_pw.txt)" \
+  -d "scope=openid" | jq -r '.access_token')
 
 USER_ID=$(curl -X POST --silent \
   --url "https://foundry.local/topomojo/api/user" \
@@ -98,14 +86,17 @@ API_KEY=$(curl -X POST --silent \
   -H "Content-Type: application/json" \
   -d "{}" | jq -r '.value')
 
+rm /tmp/foundry_admin_pw.txt
+
 # Install Gameboard
 sed -i -r "s/(Core__GameEngineClientSecret:).*/\1 $API_KEY/" gameboard.values.yaml
 helm install --wait -f gameboard.values.yaml gameboard sei/gameboard --version 0.4.7
 
 # Add administrator user to Gameboard
+ADMIN_ID=$(grep 'Database__AdminId:' topomojo.values.yaml | awk '{print $2}')
 timeout 5m bash -c 'until kubectl exec postgresql-0 -n foundry -- env PGPASSWORD=foundry psql -lqt -U postgres | cut -d \| -f 1 | grep -qw gameboard; do sleep 5; done' || false
 sleep 5
-kubectl exec postgresql-0 -n foundry -- psql 'postgresql://postgres:foundry@localhost/gameboard' -c "INSERT INTO \"Users\" (\"Id\",\"Name\",\"ApprovedName\",\"Role\") VALUES ('dee684c5-2eaf-401a-915b-d3d4320fe5d5', 'Administrator', 'Administrator', 63);"
+kubectl exec postgresql-0 -n foundry -- psql 'postgresql://postgres:foundry@localhost/gameboard' -c "INSERT INTO \"Users\" (\"Id\",\"Name\",\"ApprovedName\",\"Role\") VALUES ('$ADMIN_ID', 'Administrator', 'Administrator', 3);"
 
 # Create git repo to track changes
 git init

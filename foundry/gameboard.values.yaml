@@ -106,7 +106,7 @@ gameboard-api:
     Database__ConnectionString: "Server=postgresql;Port=5432;Database=gameboard;Username=postgres;Password=foundry;SSL Mode=Prefer;Trust Server Certificate=true;"
     # Cache__SharedFolder: ""
     Oidc__Audience: gameboard-api
-    Oidc__Authority: https://foundry.local/auth/realms/foundry
+    Oidc__Authority: https://foundry.local/auth/realms/master
     OpenApi__Client__ClientId: gameboard-swagger
     Core__GameEngineUrl: https://foundry.local/topomojo/
     Core__GameEngineClientName: bot-gameboard
@@ -235,7 +235,7 @@ gameboard-ui:
       "mkshost": "",
       "oidc": {
         "client_id": "gameboard-client",
-        "authority": "https://foundry.local/auth/realms/foundry",
+        "authority": "https://foundry.local/auth/realms/master",
         "redirect_uri": "https://foundry.local/gameboard/oidc",
         "silent_redirect_uri": "https://foundry.local/gameboard/oidc-silent.html",
         "response_type": "code",

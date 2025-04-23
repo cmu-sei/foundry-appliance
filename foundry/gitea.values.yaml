@@ -317,7 +317,7 @@ gitea:
   oauth:
     - name: Foundry
       provider: openidConnect
-      autoDiscoverUrl: https://foundry.local/auth/realms/foundry/.well-known/openid-configuration
+      autoDiscoverUrl: https://foundry.local/auth/realms/master/.well-known/openid-configuration
       existingSecret: gitea-oauth-client
     #   key:
     #   secret:

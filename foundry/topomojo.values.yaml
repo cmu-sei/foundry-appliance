@@ -109,7 +109,7 @@ topomojo-api:
     PathBase: "/topomojo"
     Database__Provider: PostgreSQL
     Database__ConnectionString: Server=postgresql;Port=5432;Database=topomojo;Username=postgres;Password=foundry;SSL Mode=Prefer;Trust Server Certificate=true;
-    Database__AdminId: dee684c5-2eaf-401a-915b-d3d4320fe5d5
+    Database__AdminId: <ADMIN_ID>
     Database__AdminName: Administrator
     Cache__SharedFolder: ""
     OpenApi__Client__ClientId: topomojo-swagger
@@ -117,7 +117,7 @@ topomojo-api:
     FileUpload__TopoRoot: /mnt/tm
     FileUpload__DocRoot: /mnt/tm/_docs
     # FileUpload__MaxFileBytes: 0
-    Oidc__Authority: https://foundry.local/auth/realms/foundry
+    Oidc__Authority: https://foundry.local/auth/realms/master
     ApiKeyClients__0__Id: gameengine
     ApiKeyClients__0__Key: foundry
     ApiKeyClients__0__Scope: gameboard
@@ -260,7 +260,7 @@ topomojo-ui:
       "apphost": "",
       "mkshost": "",
       "oidc": {
-        "authority": "https://foundry.local/auth/realms/foundry",
+        "authority": "https://foundry.local/auth/realms/master",
         "client_id": "topomojo-client",
         "redirect_uri": "https://foundry.local/topomojo/oidc",
         "silent_redirect_uri": "https://foundry.local/topomojo/oidc-silent.html",

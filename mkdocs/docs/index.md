@@ -15,8 +15,7 @@ To get started using the virtual appliance:
     |key|value|
     |-|-|
     |username|`administrator@foundry.local`|
-    |password|`foundry`|
-    |code|`123456`|
+    |password|`<ADMIN_PW>`|
 
 
 ## Foundry apps
@@ -25,7 +24,7 @@ The following Foundry applications are loaded on this appliance:
 
 | location | api | description |
 | -------- | --- | ----------- |
-| [/identity](/identity)|[api](/identity/api)| _Identity_ manages logins/credentials across all of the apps. It can integrate with any OAuth2/OIDC application.|
+| [/auth](/auth)|[api](https://www.keycloak.org/docs-api/latest/rest-api/index.html)| _Keycloak_ manages logins/credentials across all of the apps. It can integrate with any OAuth2/OIDC application.|
 | [/topomojo](/topomojo)|[api](/topomojo/api)| _TopoMojo_ allows users to build on-demand labs.|
 | [/gameboard](/gameboard)|[api](/gameboard/api)| _Gameboard_ provides a platform for cyber competition development and delivery.|
 

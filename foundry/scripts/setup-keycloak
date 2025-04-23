@@ -4,7 +4,7 @@
 
 # Configuration parameters
 export KEYCLOAK_SERVER_URL="https://foundry.local/auth"
-export REALM_NAME="foundry"
+export REALM_NAME="master"
 export KEYCLOAK_ADMIN_USER="foundry"
 export KEYCLOAK_ADMIN_PASSWORD="foundry"
 
@@ -25,25 +25,6 @@ TOKEN=$(curl -k -s -X POST "${KEYCLOAK_SERVER_URL}/realms/master/protocol/openid
   -d "password=${KEYCLOAK_ADMIN_PASSWORD}" \
   -d 'grant_type=password' \
   -d 'client_id=admin-cli' | jq -r '.access_token')
-
-# Create Foundry realm if needed.
-REALM_EXISTS=$(curl -k -s -o /dev/null -w "%{http_code}" -X GET \
-  "${KEYCLOAK_SERVER_URL}/admin/realms/${REALM_NAME}" \
-  -H "Authorization: Bearer $TOKEN")
-
-if [ "$REALM_EXISTS" == "404" ]; then
-  echo "Realm '${REALM_NAME}' does not exist. Creating..."
-  curl -k -s -X POST "${KEYCLOAK_SERVER_URL}/admin/realms" \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer $TOKEN" \
-    -d '{
-      "realm": "'"${REALM_NAME}"'",
-      "enabled": true
-    }'
-  echo "Realm '${REALM_NAME}' created."
-else
-  echo "Realm '${REALM_NAME}' already exists or could not be verified."
-fi
 
 # Function to check and create client scopes with audience and sub claim mappers
 ensure_client_scope_with_mappers() {
@@ -146,7 +127,7 @@ for CLIENT_JSON in \
     "publicClient": true,
     "standardFlowEnabled": true,
     "implicitFlowEnabled": false,
-    "directAccessGrantsEnabled": false,
+    "directAccessGrantsEnabled": true,
     "redirectUris": [
       "https://foundry.local/topomojo/oidc",
       "https://foundry.local/topomojo/oidc-silent.html"
@@ -267,8 +248,17 @@ do
     -d "$CLIENT_JSON"
 done
 
-# Create default Foundry user
+# Create default Administrator user
 echo "Creating default user 'administrator'..."
+
+# Password Gen
+ADMIN_PASSWORD=$(openssl rand -base64 16)
+
+kubectl create secret generic foundry-admin-secret \
+  --from-literal=admin-password="${ADMIN_PASSWORD}" \
+  --namespace=foundry
+
+echo "$ADMIN_PASSWORD" > /tmp/foundry_admin_pw.txt 
 curl -k -s -X POST "${KEYCLOAK_SERVER_URL}/admin/realms/${REALM_NAME}/users" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
@@ -277,12 +267,25 @@ curl -k -s -X POST "${KEYCLOAK_SERVER_URL}/admin/realms/${REALM_NAME}/users" \
     "email": "administrator@foundry.local",
     "enabled": true,
     "emailVerified": true,
-    "firstName": "foundry",
-    "lastName": "foundry"
+    "firstName": "Foundry",
+    "lastName": "Administrator"
   }'
 
-ADMIN_ID=$(curl -k -s "${KEYCLOAK_SERVER_URL}/admin/realms/${REALM_NAME}/users?username=administrator" \
+ADMIN_ID=$(curl -k -s -X GET "${KEYCLOAK_SERVER_URL}/admin/realms/${REALM_NAME}/users" \
   -H "Authorization: Bearer $TOKEN" | jq -r '.[0].id')
+CLIENT_ID=$(curl -k -s -X GET "${KEYCLOAK_SERVER_URL}/admin/realms/${REALM_NAME}/users/$ADMIN_ID/role-mappings/realm" \
+  -H "Authorization: Bearer $TOKEN" | jq -r '.[0].id')
+ADMIN_ROLE=$(curl -k -s -X GET "${KEYCLOAK_SERVER_URL}/admin/realms/${REALM_NAME}/roles/admin" \
+  -H "Authorization: Bearer $TOKEN")
+
+echo "Assigning 'realm-admin' role to 'administrator'..."
+curl -k -s -X POST "${KEYCLOAK_SERVER_URL}/admin/realms/${REALM_NAME}/users/${ADMIN_ID}/role-mappings/realm" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "[${ADMIN_ROLE}]"
+
+# Insert Admin GUID into TopoMojo chart
+sed -i -r "s/<ADMIN_ID>/$ADMIN_ID/" topomojo.values.yaml
 
 # Set the password
 curl -k -s -X PUT "${KEYCLOAK_SERVER_URL}/admin/realms/${REALM_NAME}/users/${ADMIN_ID}/reset-password" \
@@ -290,6 +293,27 @@ curl -k -s -X PUT "${KEYCLOAK_SERVER_URL}/admin/realms/${REALM_NAME}/users/${ADM
   -H "Content-Type: application/json" \
   -d '{
     "type": "password",
-    "value": "foundry",
+    "value": "'"${ADMIN_PASSWORD}"'",
     "temporary": false
   }'
+
+# Get new Administrator token for bootstrap user deletion
+ADMIN_TOKEN=$(curl -k -s -X POST "https://foundry.local/auth/realms/master/protocol/openid-connect/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "client_id=admin-cli" \
+  -d "grant_type=password" \
+  -d "username=administrator" \
+  -d "password=${ADMIN_PASSWORD}" \
+  -d "scope=openid" | jq -r '.access_token')
+USER_ID=$(curl -k -s -X GET "https://foundry.local/auth/admin/realms/master/users?username=foundry" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" | jq -r '.[0].id')
+curl -k -s -X DELETE "https://foundry.local/auth/admin/realms/master/users/${USER_ID}" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# Replace password in start page
+sed -i -r "s/<ADMIN_PW>/$ADMIN_PASSWORD/" ../mkdocs/docs/index.md
+
+cd ../mkdocs/
+git add docs/index.md
+git commit -m "Initial Keycloak Password"
+git push
