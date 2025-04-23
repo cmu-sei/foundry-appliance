@@ -42,6 +42,12 @@ helm install -f pgadmin4.values.yaml pgadmin4 runix/pgadmin4 --version 1.9.10
 cat certs/root-ca.pem | sed 's/^/  /' | sed -i -re 's/(cacert:).*/\1 |-/' -e '/cacert:/ r /dev/stdin' mkdocs-material.values.yaml
 cp certs/root-ca.pem ../mkdocs/docs/root-ca.crt
 
+# Install Keycloak
+kubectl exec postgresql-0 -- psql 'postgresql://postgres:foundry@localhost' -c 'CREATE DATABASE keycloak;'
+sed -i -r "s/<GITEA_OAUTH_CLIENT_SECRET>/$GITEA_OAUTH_CLIENT_SECRET/" scripts/setup-keycloak
+helm install --wait -f keycloak.values.yaml keycloak bitnami/keycloak --version 24.4.13
+./scripts/setup-keycloak
+
 # Install Gitea
 git config --global init.defaultBranch main
 helm repo add gitea https://dl.gitea.io/charts/
