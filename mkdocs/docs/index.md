@@ -37,15 +37,6 @@ The following third-party applications are loaded on this appliance:
 | [/gitea](/gitea)| _Gitea_ provides a user interface for editing the web content on the appliance (including this page).|
 | [/pgadmin](/pgadmin)| _pgAdmin_ provides a GUI for managing the PostgreSQL databases for each app. |
 
-## Demo challenge
-
-The appliance comes preloaded with a sample challenge from _President's Cup 2020_. Run the following commands to download the virtual machine images (~20 GB) to ESXi and load the challenge into TopoMojo.
-
-```
-cd ~/foundry/content
-./content-import pc2-d01.json
-```
-
 ## Under the hood
 
 For command line access to the appliance:

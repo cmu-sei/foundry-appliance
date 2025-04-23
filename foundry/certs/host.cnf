@@ -1,0 +1,19 @@
+[ req ]
+distinguished_name = req_dn
+prompt = no
+req_extensions = server_ext
+
+[ req_dn ]
+CN = Foundry Appliance Host
+C = US
+
+[ server_ext ]
+basicConstraints = CA:false
+keyUsage = critical, digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth, clientAuth
+subjectKeyIdentifier = hash
+subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1 = foundry.local
+DNS.2 = *.foundry.local

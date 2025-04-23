@@ -4,12 +4,15 @@
 # Released under a BSD (SEI)-style license, please see LICENSE.md in the
 # project root or contact permission@sei.cmu.edu for full terms.
 
-GITEA_ADMIN_PASSWORD=$(kubectl get secret gitea-admin-creds -o json | jq -r .data.password | base64 -d)
+GITEA_ADMIN_PASSWORD=$(kubectl get secret gitea-admin-secret -o json | jq -r .data.password | base64 -d)
 CURL_OPTS=( --silent --header "accept: application/json" --header "Content-Type: application/json" )
 USER_TOKEN=$( curl "${CURL_OPTS[@]}" \
                 --user administrator:$GITEA_ADMIN_PASSWORD \
                 --request POST "https://foundry.local/gitea/api/v1/users/administrator/tokens" \
-                --data "{ \"name\": \"appliance-setup\"}" | jq -r '.sha1'
+                --data '{
+                    "name": "appliance-setup",
+                    "scopes": ["write:organization"]
+                }' | jq -r '.sha1'
 )
 MKDOCS_DIR=~/mkdocs
 

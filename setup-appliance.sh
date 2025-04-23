@@ -10,7 +10,7 @@
 echo "$APPLIANCE_VERSION" >/etc/appliance_version
 
 # Expand LVM volume to use full drive capacity
-~/foundry/scripts/expand-volume
+~/foundry/scripts/expand-volume.sh
 
 # Disable swap for Kubernetes
 swapoff -a
@@ -21,23 +21,15 @@ sed -i -r 's/(\/swap\.img.*)/#\1/' /etc/fstab
 apt-get update
 apt-get install -y apt-transport-https ca-certificates curl
 curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
 
 ## Add Helm Apt Repo
-curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg >/dev/null
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | tee /usr/share/keyrings/helm.gpg >/dev/null
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | tee /etc/apt/sources.list.d/helm-stable-debian.list
 
 ## Update and Upgrade
 apt-get update
 apt-get full-upgrade -y
-
-# Stop multipathd errors in syslog
-cat <<EOF >>/etc/multipath.conf
-blacklist {
-    devnode "sda$"
-}
-EOF
-systemctl restart multipathd
 
 # Add dnsmasq resolver and other required packages
 PRIMARY_INTERFACE=$(ip -o -4 route show to default | awk '{print $5}')
@@ -63,9 +55,12 @@ network:
             label: lo:host-access
         - ::1/128
 EOF
+chmod 600 /etc/netplan/01-loopback.yaml
 netplan apply
 
-apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass kubectl helm pwgen build-essential
+# Install Ansible PPA and apt packages
+add-apt-repository --yes --update ppa:ansible/ansible
+apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass kubectl helm pwgen build-essential ansible
 
 # Install VirtualBox Guest Additions
 if [ -f ~/VBoxGuestAdditions.iso ]; then
@@ -84,11 +79,6 @@ cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
 sed -i 's/default/foundry/g' ~/.kube/config
 chown $SSH_USERNAME:$SSH_USERNAME ~/.kube/config
 
-# Install CFSSL for certificate generation
-curl -sLo /usr/local/bin/cfssl https://github.com/cloudflare/cfssl/releases/download/v1.6.5/cfssl_1.6.5_linux_amd64
-curl -sLo /usr/local/bin/cfssljson https://github.com/cloudflare/cfssl/releases/download/v1.6.5/cfssljson_1.6.5_linux_amd64
-chmod +x /usr/local/bin/cfssl*
-
 # Install k-alias Kubernetes helper scripts
 sudo -u $SSH_USERNAME git clone https://github.com/jaggedmountain/k-alias.git
 (cd /usr/local/bin && ln -s ~/k-alias/[h,k]* .)
@@ -97,13 +87,13 @@ sudo -u $SSH_USERNAME git clone https://github.com/jaggedmountain/k-alias.git
 chmod -x /etc/update-motd.d/00-header
 chmod -x /etc/update-motd.d/10-help-text
 sed -i -r 's/(ENABLED=)1/\10/' /etc/default/motd-news
-cp ~/foundry/scripts/display-banner /etc/update-motd.d/05-display-banner
-rm ~/foundry/scripts/display-banner
+cp ~/foundry/scripts/display-banner.sh /etc/update-motd.d/05-display-banner
+rm ~/foundry/scripts/display-banner.sh
 sed -i "s/{version}/$APPLIANCE_VERSION/" ~/mkdocs/docs/index.md
 echo -e "Foundry Appliance $APPLIANCE_VERSION \\\n \l \n" >/etc/issue
 
 # Create systemd service to configure netplan primary interface
-mv /home/foundry/foundry/scripts/configure-nic /usr/local/bin
+mv /home/foundry/foundry/scripts/configure-nic.sh /usr/local/bin/configure-nic
 cat <<EOF >/etc/systemd/system/configure-nic.service
 [Unit]
 Description=Configure Netplan primary Ethernet interface
@@ -123,7 +113,7 @@ systemctl enable configure-nic
 sudo -u $SSH_USERNAME ssh-keygen -t rsa -f ~/.ssh/id_rsa -q -N ''
 
 # Generate CA and host certificates
-sudo -u $SSH_USERNAME ~/foundry/certs/generate-certs -loglevel 3
+sudo -u $SSH_USERNAME ~/foundry/certs/generate-certs.sh -loglevel 3
 
 # Add newly generated CA certificate to trusted roots
 cp ~/foundry/certs/root-ca.pem /usr/local/share/ca-certificates/foundry-appliance-root-ca.crt

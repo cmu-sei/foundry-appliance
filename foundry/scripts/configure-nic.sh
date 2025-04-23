@@ -14,7 +14,7 @@ fi
 
 PRIMARY_ETH=$(find /sys/class/net/en* -type l -printf "%f\n" | head -n 1)
 DNSMASQ_CONF=/etc/dnsmasq.d/foundry.conf
-NETPLAN_CONF=/etc/netplan/00-installer-config.yaml
+NETPLAN_CONF=/etc/netplan/50-cloud-init.yaml
 FLAG=/etc/.configure-nic
 
 if [ ! -f "$FLAG" ]; then
