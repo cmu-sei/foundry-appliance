@@ -248,10 +248,18 @@ do
     -d "$CLIENT_JSON"
 done
 
-# Create default Administrator user
+# Create default Foundry user
 echo "Creating default user 'administrator'..."
 
-# Password Gen
+# Generate a new token incase the original expired
+TOKEN=$(curl -k -s -X POST "${KEYCLOAK_SERVER_URL}/realms/master/protocol/openid-connect/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=${KEYCLOAK_ADMIN_USER}" \
+  -d "password=${KEYCLOAK_ADMIN_PASSWORD}" \
+  -d 'grant_type=password' \
+  -d 'client_id=admin-cli' | jq -r '.access_token')
+
+# PW Gen
 ADMIN_PASSWORD=$(openssl rand -base64 16)
 
 kubectl create secret generic foundry-admin-secret \
