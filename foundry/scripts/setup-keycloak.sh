@@ -267,6 +267,8 @@ kubectl create secret generic foundry-admin-secret \
   --namespace=foundry
 
 echo "$ADMIN_PASSWORD" > /tmp/foundry_admin_pw.txt 
+
+echo "Creating Admin user"
 curl -k -s -X POST "${KEYCLOAK_SERVER_URL}/admin/realms/${REALM_NAME}/users" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
@@ -279,10 +281,13 @@ curl -k -s -X POST "${KEYCLOAK_SERVER_URL}/admin/realms/${REALM_NAME}/users" \
     "lastName": "Administrator"
   }'
 
+echo "getting admin user id"
 ADMIN_ID=$(curl -k -s -X GET "${KEYCLOAK_SERVER_URL}/admin/realms/${REALM_NAME}/users" \
   -H "Authorization: Bearer $TOKEN" | jq -r '.[0].id')
+echo "getting realm client id"
 CLIENT_ID=$(curl -k -s -X GET "${KEYCLOAK_SERVER_URL}/admin/realms/${REALM_NAME}/users/$ADMIN_ID/role-mappings/realm" \
   -H "Authorization: Bearer $TOKEN" | jq -r '.[0].id')
+echo "getting admin role"
 ADMIN_ROLE=$(curl -k -s -X GET "${KEYCLOAK_SERVER_URL}/admin/realms/${REALM_NAME}/roles/admin" \
   -H "Authorization: Bearer $TOKEN")
 
@@ -296,6 +301,7 @@ curl -k -s -X POST "${KEYCLOAK_SERVER_URL}/admin/realms/${REALM_NAME}/users/${AD
 sed -i -r "s/<ADMIN_ID>/$ADMIN_ID/" topomojo.values.yaml
 
 # Set the password
+echo "setting password..."
 curl -k -s -X PUT "${KEYCLOAK_SERVER_URL}/admin/realms/${REALM_NAME}/users/${ADMIN_ID}/reset-password" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
@@ -305,6 +311,7 @@ curl -k -s -X PUT "${KEYCLOAK_SERVER_URL}/admin/realms/${REALM_NAME}/users/${ADM
     "temporary": false
   }'
 
+echo "getting new admin token"
 # Get new Administrator token for bootstrap user deletion
 ADMIN_TOKEN=$(curl -k -s -X POST "https://foundry.local/auth/realms/master/protocol/openid-connect/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
@@ -313,8 +320,10 @@ ADMIN_TOKEN=$(curl -k -s -X POST "https://foundry.local/auth/realms/master/proto
   -d "username=administrator" \
   -d "password=${ADMIN_PASSWORD}" \
   -d "scope=openid" | jq -r '.access_token')
+echo "getting foundry user ID"
 USER_ID=$(curl -k -s -X GET "https://foundry.local/auth/admin/realms/master/users?username=foundry" \
   -H "Authorization: Bearer $ADMIN_TOKEN" | jq -r '.[0].id')
+echo "delete user"
 curl -k -s -X DELETE "https://foundry.local/auth/admin/realms/master/users/${USER_ID}" \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 
