@@ -311,7 +311,7 @@ curl -k -s -X DELETE "https://foundry.local/auth/admin/realms/master/users/${USE
   -H "Authorization: Bearer $ADMIN_TOKEN"
 
 # Replace password in start page
-sed -i -r "s/<ADMIN_PW>/$ADMIN_PASSWORD/" ../mkdocs/docs/index.md
+sed -i -r "s|<ADMIN_PW>|$ADMIN_PASSWORD|" ../mkdocs/docs/index.md
 
 cd ../mkdocs/
 git add docs/index.md
