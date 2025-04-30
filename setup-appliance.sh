@@ -59,8 +59,7 @@ chmod 600 /etc/netplan/01-loopback.yaml
 netplan apply
 
 # Install Ansible PPA and apt packages
-add-apt-repository --yes --update ppa:ansible/ansible
-apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass kubectl helm pwgen build-essential ansible
+apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass kubectl helm pwgen build-essential
 
 # Install VirtualBox Guest Additions
 if [ -f ~/VBoxGuestAdditions.iso ]; then
