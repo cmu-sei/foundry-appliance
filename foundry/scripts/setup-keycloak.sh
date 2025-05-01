@@ -266,7 +266,7 @@ kubectl create secret generic foundry-admin-secret \
   --from-literal=admin-password="${ADMIN_PASSWORD}" \
   --namespace=foundry
 
-echo "$ADMIN_PASSWORD" > /tmp/foundry_admin_pw.txt 
+echo "$ADMIN_PASSWORD" > /tmp/foundry_admin_pw.txt
 
 echo "Creating Admin user"
 curl -k -s -X POST "${KEYCLOAK_SERVER_URL}/admin/realms/${REALM_NAME}/users" \

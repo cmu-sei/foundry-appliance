@@ -1,6 +1,6 @@
 #!/bin/bash -e
 #
-# Copyright 2022 Carnegie Mellon University.
+# Copyright 2025 Carnegie Mellon University.
 # Released under a BSD (SEI)-style license, please see LICENSE.md in the
 # project root or contact permission@sei.cmu.edu for full terms.
 
@@ -59,6 +59,7 @@ timeout 5m bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' https:/
 ./scripts/setup-gitea.sh
 
 # Install Material for MkDocs
+helm repo add sei https://helm.cmusei.dev/charts
 helm install -f mkdocs-material.values.yaml mkdocs-material sei/mkdocs-material --version 0.1.0
 
 # Add root CA to chart values

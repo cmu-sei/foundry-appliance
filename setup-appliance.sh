@@ -1,6 +1,6 @@
 #!/bin/bash -e
 #
-# Copyright 2022 Carnegie Mellon University.
+# Copyright 2025 Carnegie Mellon University.
 # Released under a BSD (SEI)-style license, please see LICENSE.md in the
 # project root or contact permission@sei.cmu.edu for full terms.
 #
@@ -59,8 +59,7 @@ chmod 600 /etc/netplan/01-loopback.yaml
 netplan apply
 
 # Install Ansible PPA and apt packages
-add-apt-repository --yes --update ppa:ansible/ansible
-apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass kubectl helm pwgen build-essential ansible
+apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass kubectl helm pwgen build-essential
 
 # Install VirtualBox Guest Additions
 if [ -f ~/VBoxGuestAdditions.iso ]; then
