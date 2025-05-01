@@ -127,7 +127,7 @@ for CLIENT_JSON in \
     "publicClient": true,
     "standardFlowEnabled": true,
     "implicitFlowEnabled": false,
-    "directAccessGrantsEnabled": true,
+    "directAccessGrantsEnabled": false,
     "redirectUris": [
       "https://foundry.local/topomojo/oidc",
       "https://foundry.local/topomojo/oidc-silent.html"

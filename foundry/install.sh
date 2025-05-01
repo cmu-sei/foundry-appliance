@@ -74,9 +74,10 @@ sleep 60
 # Add bot user to TopoMojo
 TOPOMOJO_ACCESS_TOKEN=$(curl -k -s -X POST "https://foundry.local/auth/realms/master/protocol/openid-connect/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "client_id=topomojo-client" \
+  -d "client_id=bootstrap-client" \
   -d "grant_type=password" \
   -d "username=administrator" \
+  -d "client_secret=foundry" \
   -d "password=$(cat /tmp/foundry_admin_pw.txt)" \
   -d "scope=openid" | jq -r '.access_token')
 
