@@ -16,20 +16,22 @@ echo "$APPLIANCE_VERSION" >/etc/appliance_version
 swapoff -a
 sed -i -r 's/(\/swap\.img.*)/#\1/' /etc/fstab
 
-# Add new repositories and upgrade existing Ubuntu packages
-## Add Kubernetes Apt Repo
+# Add Kubernetes apt repo
 apt-get update
 apt-get install -y apt-transport-https
 curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
 
-## Add Helm Apt Repo
+# Add Helm apt repo
 curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | tee /usr/share/keyrings/helm.gpg >/dev/null
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | tee /etc/apt/sources.list.d/helm-stable-debian.list
 
-## Update and Upgrade
+# Upgrade existing packages to latest
 apt-get update
 apt-get full-upgrade -y
+
+# Add foundry.local to hosts file
+sed -i -r 's/(foundry)$/\1 foundry.local/' /etc/hosts
 
 # Add dnsmasq resolver and other required packages
 PRIMARY_INTERFACE=$(ip -o -4 route show to default | awk '{print $5}')
@@ -58,8 +60,8 @@ EOF
 chmod 600 /etc/netplan/01-loopback.yaml
 netplan apply
 
-# Install Ansible PPA and apt packages
-apt-get install -y dnsmasq avahi-daemon jq nfs-common sshpass kubectl helm pwgen build-essential
+# Install apt packages
+apt-get install -y dnsmasq avahi-daemon nfs-common sshpass kubectl helm pwgen build-essential
 
 # Install VirtualBox Guest Additions
 if [ -f ~/VBoxGuestAdditions.iso ]; then
