@@ -1,12 +1,21 @@
 #!/bin/bash -e
-
-# W.I.P Keycloak Setup Script for the Foundry Appliance
+#
+# Copyright 2025 Carnegie Mellon University.
+# Released under a BSD (SEI)-style license, please see LICENSE.md in the
+# project root or contact permission@sei.cmu.edu for full terms.
+#
+# Keycloak setup script
 
 # Configuration parameters
-export KEYCLOAK_SERVER_URL="https://foundry.local/auth"
-export REALM_NAME="master"
-export KEYCLOAK_ADMIN_USER="foundry"
-export KEYCLOAK_ADMIN_PASSWORD="foundry"
+KEYCLOAK_SERVER_URL="https://foundry.local/auth"
+REALM_NAME="master"
+KEYCLOAK_ADMIN_USER="foundry"
+KEYCLOAK_ADMIN_PASSWORD="foundry"
+CLIENTS_JSON_FILE="clients.json"
+CLIENT_SCOPE_TEMPLATE="client-scope-template.json"
+
+# Change to the current directory
+cd "$(dirname "${BASH_SOURCE[0]}")"
 
 # Wait until Keycloak is available
 echo "Waiting for Keycloak to be available at ${KEYCLOAK_SERVER_URL}..."
@@ -41,42 +50,14 @@ ensure_client_scope_with_mappers() {
   if [[ -z "$SCOPE_ID" ]]; then
     # Create the scope with mappers
     echo "Scope '$SCOPE_NAME' does not exist. Creating with audience and sub claim mappers..."
+
+    PAYLOAD=$(export SCOPE_NAME CLIENT_AUDIENCE DESCRIPTION; envsubst < "$CLIENT_SCOPE_TEMPLATE")
+
     curl -k -s -X POST "${KEYCLOAK_SERVER_URL}/admin/realms/${REALM_NAME}/client-scopes" \
       -H "Authorization: Bearer $TOKEN" \
       -H "Content-Type: application/json" \
-      -d '{
-        "name": "'"$SCOPE_NAME"'",
-        "description": "'"$DESCRIPTION"'",
-        "protocol": "openid-connect",
-        "attributes": {
-          "include.in.token.scope": "true",
-          "display.on.consent.screen": "true"
-        },
-        "protocolMappers": [
-          {
-            "name": "audiences",
-            "protocol": "openid-connect",
-            "protocolMapper": "oidc-audience-mapper",
-            "consentRequired": false,
-            "config": {
-              "included.client.audience": "'"$CLIENT_AUDIENCE"'",
-              "id.token.claim": "false",
-              "access.token.claim": "true"
-            }
-          },
-          {
-            "name": "subject",
-            "protocol": "openid-connect",
-            "protocolMapper": "oidc-sub-mapper",
-            "consentRequired": false,
-            "config": {
-              "access.token.claim": "true",
-              "id.token.claim": "true",
-              "userinfo.token.claim": "true"
-            }
-          }
-        ]
-      }'
+      -d "$PAYLOAD"
+
     # Refresh scope ID after creation
     SCOPE_ID=$(curl -k -s "${KEYCLOAK_SERVER_URL}/admin/realms/${REALM_NAME}/client-scopes" \
       -H "Authorization: Bearer $TOKEN" | jq -r --arg NAME "$SCOPE_NAME" '.[] | select(.name == $NAME) | .id')
@@ -101,145 +82,7 @@ ensure_client_scope_with_mappers() {
 ensure_client_scope_with_mappers "topomojo-api" "topomojo-api" "TopoMojo API"
 ensure_client_scope_with_mappers "gameboard-api" "gameboard-api" "Gameboard API"
 
-# Create clients
-for CLIENT_JSON in \
-  '{
-    "clientId": "bootstrap-client",
-    "name": "Bootstrap",
-    "enabled": true,
-    "protocol": "openid-connect",
-    "publicClient": false,
-    "secret": "foundry",
-    "standardFlowEnabled": false,
-    "directAccessGrantsEnabled": true,
-    "serviceAccountsEnabled": false,
-    "defaultClientScopes": [
-      "openid",
-      "profile",
-      "topomojo-api"
-    ]
-  }' \
-  '{
-    "clientId": "topomojo-client",
-    "name": "TopoMojo",
-    "enabled": true,
-    "protocol": "openid-connect",
-    "publicClient": true,
-    "standardFlowEnabled": true,
-    "implicitFlowEnabled": false,
-    "directAccessGrantsEnabled": false,
-    "redirectUris": [
-      "https://foundry.local/topomojo/oidc",
-      "https://foundry.local/topomojo/oidc-silent.html"
-    ],
-    "baseUrl": "https://foundry.local/topomojo",
-    "defaultClientScopes": [
-      "openid",
-      "profile",
-      "topomojo-api"
-    ],
-    "attributes": {
-      "pkce.code.challenge.method": "S256",
-      "post.logout.redirect.uris": "https://foundry.local/topomojo"
-    }
-  }' \
-  '{
-    "clientId": "topomojo-swagger",
-    "name": "TopoMojo Swagger",
-    "enabled": true,
-    "protocol": "openid-connect",
-    "publicClient": true,
-    "standardFlowEnabled": true,
-    "implicitFlowEnabled": false,
-    "directAccessGrantsEnabled": false,
-    "redirectUris": [
-      "https://foundry.local/topomojo/api/oauth2-redirect.html"
-    ],
-    "baseUrl": "https://foundry.local/topomojo/api",
-    "defaultClientScopes": [
-      "openid",
-      "profile",
-      "topomojo-api"
-    ],
-    "attributes": {
-      "consent.required": "true",
-      "post.logout.redirect.uris": "https://foundry.local/topomojo/api"
-    }
-  }' \
-  '{
-    "clientId": "gameboard-client",
-    "name": "Gameboard",
-    "enabled": true,
-    "protocol": "openid-connect",
-    "publicClient": true,
-    "standardFlowEnabled": true,
-    "implicitFlowEnabled": false,
-    "directAccessGrantsEnabled": false,
-    "redirectUris": [
-      "https://foundry.local/gameboard/oidc",
-      "https://foundry.local/gameboard/oidc-silent.html"
-    ],
-    "baseUrl": "https://foundry.local/gameboard",
-    "defaultClientScopes": [
-      "openid",
-      "profile",
-      "organization",
-      "gameboard-api"
-    ],
-    "attributes": {
-      "pkce.code.challenge.method": "S256",
-      "post.logout.redirect.uris": "https://foundry.local/gameboard"
-    }
-  }' \
-  '{
-    "clientId": "gameboard-swagger",
-    "name": "GameBoard Swagger",
-    "enabled": true,
-    "protocol": "openid-connect",
-    "publicClient": true,
-    "standardFlowEnabled": true,
-    "implicitFlowEnabled": false,
-    "directAccessGrantsEnabled": false,
-    "redirectUris": [
-      "https://foundry.local/gameboard/api/oauth2-redirect.html"
-    ],
-    "baseUrl": "https://foundry.local/gameboard/api",
-    "defaultClientScopes": [
-      "openid",
-      "profile",
-      "gameboard-api"
-    ],
-    "attributes": {
-      "consent.required": "true",
-      "post.logout.redirect.uris": "https://foundry.local/gameboard/api"
-    }
-  }' \
-  '{
-    "clientId": "gitea-client",
-    "name": "Gitea",
-    "enabled": true,
-    "protocol": "openid-connect",
-    "publicClient": false,
-    "secret": "a92de95c865db308dfa5b7a098f45a7f",
-    "standardFlowEnabled": true,
-    "directAccessGrantsEnabled": false,
-    "implicitFlowEnabled": false,
-    "redirectUris": [
-      "https://foundry.local/gitea/user/oauth2/Foundry/callback"
-    ],
-    "baseUrl": "https://foundry.local/gitea",
-    "defaultClientScopes": [
-      "openid",
-      "profile",
-      "email"
-    ],
-    "attributes": {
-      "post.logout.redirect.uris": "https://foundry.local/gitea",
-      "oauth2.device.authorization.grant.enabled": "false"
-    }
-  }'
-
-do
+jq -c '.[]' "$CLIENTS_JSON_FILE" | while read -r CLIENT_JSON; do
   CLIENT_ID=$(echo "$CLIENT_JSON" | jq -r .clientId)
   echo "Creating client: $CLIENT_ID"
   curl -k -X POST "${KEYCLOAK_SERVER_URL}/admin/realms/${REALM_NAME}/clients" \
@@ -298,7 +141,7 @@ curl -k -s -X POST "${KEYCLOAK_SERVER_URL}/admin/realms/${REALM_NAME}/users/${AD
   -d "[${ADMIN_ROLE}]"
 
 # Insert Admin GUID into TopoMojo chart
-sed -i -r "s/<ADMIN_ID>/$ADMIN_ID/" topomojo.values.yaml
+sed -i -r "s/<ADMIN_ID>/$ADMIN_ID/" ../topomojo.values.yaml
 
 # Set the password
 echo "setting password..."
@@ -328,4 +171,4 @@ curl -k -s -X DELETE "https://foundry.local/auth/admin/realms/master/users/${USE
   -H "Authorization: Bearer $ADMIN_TOKEN"
 
 # Replace password in start page
-sed -i -r "s|<ADMIN_PW>|$ADMIN_PASSWORD|" ../mkdocs/docs/index.md
+sed -i -r "s|<ADMIN_PW>|$ADMIN_PASSWORD|" ../../mkdocs/docs/index.md

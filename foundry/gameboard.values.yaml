@@ -242,9 +242,12 @@ gameboard-ui:
         "scope": "openid profile organization gameboard-api",
         "monitorSession": true,
         "automaticSilentRenew": true,
+        "includeIdTokenInSilentRenew": false,
+        "filterProtocolClaims": true,
         "loadUserInfo": true,
         "checkSessionInterval": 30000,
-        "useLocalStorage": true,
-        "accessTokenExpiringNotificationTime": 120
+        "accessTokenExpiringNotificationTime": 120,
+        "monitorSession": false,
+        "useLocalStorage": true
       }
     }

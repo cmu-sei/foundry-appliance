@@ -267,12 +267,12 @@ topomojo-ui:
         "post_logout_redirect_uri": "https://foundry.local/topomojo",
         "response_type": "code",
         "scope": "openid profile topomojo-api",
-        "automaticSilentRenew": false,
+        "automaticSilentRenew": true,
         "includeIdTokenInSilentRenew": false,
         "filterProtocolClaims": true,
         "loadUserInfo": true,
         "accessTokenExpiringNotificationTime": 120,
         "monitorSession": false,
-        "useLocalStorage": false
+        "useLocalStorage": true
       }
     }

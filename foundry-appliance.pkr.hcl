@@ -66,7 +66,7 @@ source "virtualbox-iso" "foundry-appliance" {
   ssh_password         = var.ssh_password
   ssh_timeout          = local.ssh_timeout
   ssh_username         = var.ssh_username
-  vm_name = "foundry-appliance-${var.appliance_version}"
+  vm_name              = "foundry-appliance-${var.appliance_version}"
 }
 
 source "proxmox-iso" "foundry-appliance" {
@@ -79,6 +79,7 @@ source "proxmox-iso" "foundry-appliance" {
   }
   boot_wait = local.boot_wait
   cores     = local.cpus
+  cpu_type  = "x86-64-v2-AES"
   disks {
     disk_size    = local.disk_size_proxmox
     storage_pool = "local-lvm"
