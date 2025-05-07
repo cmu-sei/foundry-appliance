@@ -1,0 +1,105 @@
+credentials:
+  postgresPassword: foundry
+
+nfs-server-provisioner:
+  persistence:
+    enabled: true
+
+ingress-nginx:
+  controller:
+    config:
+      hsts: "false"
+      annotations-risk-level: critical
+    allowSnippetAnnotations: true
+    ingressClassResource:
+      default: true
+    updateStrategy:
+      type: RollingUpdate
+  tcp:
+    2049: "foundry/nfs-server-provisioner:2049"
+    #5432: "foundry/postgresql:5432"
+
+postgresql:
+  auth:
+    existingSecret: foundry-credentials
+  primary:
+    persistence:
+      size: 1Gi
+    initdb:
+      scripts:
+        create-keycloak-db.sql: |
+          CREATE DATABASE keycloak;
+          GRANT ALL PRIVILEGES ON DATABASE keycloak TO postgres;
+
+pgadmin4:
+  serverDefinitions:
+    servers:
+        foundry:
+          Name: "foundry"
+          Group: "Servers"
+          Port: 5432
+          Username: "postgres"
+          Host: "postgresql"
+          PassFile: "../../pgpass.conf"
+          SSLMode: "prefer"
+          MaintenanceDB: "postgres"
+  ingress:
+    enabled: true
+    annotations:
+      nginx.ingress.kubernetes.io/configuration-snippet: |
+        proxy_set_header X-Script-Name /pgadmin;
+    hosts:
+      - host: foundry.local
+        paths:
+          - path: /pgadmin
+            pathType: Prefix
+    tls:
+      - secretName: appliance-cert
+        hosts:
+          - foundry.local
+  extraSecretMounts:
+    - name: pgpassfile
+      secret: pgpassfile
+      subPath: pgpassfile
+      mountPath: "/pgpass.conf"
+      readOnly: true
+  env:
+    email: administrator@foundry.local
+    password: foundry
+    variables:
+      - name: PGADMIN_DISABLE_POSTFIX
+        value: "true"
+      - name: PGADMIN_CONFIG_ALLOW_SPECIAL_EMAIL_DOMAINS
+        value: "['local']"
+  persistentVolume:
+    size: 1Gi
+  extraInitContainers: |
+    - name: add-folder-for-pgpass
+      image: "dpage/pgadmin4:latest"
+      command: ["/bin/mkdir", "-p", "/var/lib/pgadmin/storage/pgadmin"]
+      volumeMounts:
+        - name: pgadmin-data
+          mountPath: /var/lib/pgadmin
+      securityContext:
+        runAsUser: 5050
+
+keycloak:
+  auth:
+    adminUser: foundry
+    adminPassword: foundry
+  httpRelativePath: /auth/
+  ingress:
+    enabled: true
+    hostname: foundry.local
+    tls: true
+    extraTls:
+      - hosts:
+          - foundry.local
+        secretName: appliance-cert
+  postgresql:
+    enabled: false
+  externalDatabase:
+    host: foundry-postgresql
+    user: postgres
+    database: keycloak
+    password: foundry
