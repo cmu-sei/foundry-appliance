@@ -65,7 +65,7 @@ apt-get install -y dnsmasq avahi-daemon nfs-common sshpass kubectl helm pwgen bu
 
 # Install VirtualBox Guest Additions
 if [ -f ~/VBoxGuestAdditions.iso ]; then
-  mount -o loop ~/VBoxGuestAdditions.iso /mnt
+  mount -o loop,ro ~/VBoxGuestAdditions.iso /mnt
   /mnt/VBoxLinuxAdditions.run
   umount /mnt
   rm ~/VBoxGuestAdditions.iso
