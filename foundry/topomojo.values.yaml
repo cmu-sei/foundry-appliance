@@ -122,9 +122,12 @@ topomojo-api:
     ApiKeyClients__0__Key: foundry
     ApiKeyClients__0__Scope: gameboard
     Core__ConsoleHost: foundry.local/console
-    Pod__Url: ""
+    Pod__HypervisorType: Proxmox
+    Pod__Url: "proxmox.foundry.local"
     Pod__User: root
+    Pod__AccessToken: ""
     Pod__Password: VMware1!
+    Pod__SDNZone: ""
     Pod__PoolPath: ""
     Pod__Uplink: vSwitch0
     Pod__VmStore: "[datastore1] vm/"
