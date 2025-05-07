@@ -103,7 +103,7 @@ TOKEN=$(curl -k -s -X POST "${KEYCLOAK_SERVER_URL}/realms/master/protocol/openid
   -d 'client_id=admin-cli' | jq -r '.access_token')
 
 # PW Gen
-ADMIN_PASSWORD=$(openssl rand -base64 16)
+ADMIN_PASSWORD=$(pwgen -1 12)
 
 kubectl create secret generic foundry-admin-secret \
   --from-literal=admin-password="${ADMIN_PASSWORD}" \
