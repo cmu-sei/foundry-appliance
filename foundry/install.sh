@@ -45,7 +45,7 @@ cp certs/root-ca.pem ../mkdocs/docs/root-ca.crt
 # Install Keycloak
 kubectl exec postgresql-0 -- psql 'postgresql://postgres:foundry@localhost' -c 'CREATE DATABASE keycloak;'
 sed -i -r "s/<GITEA_OAUTH_CLIENT_SECRET>/$GITEA_OAUTH_CLIENT_SECRET/" keycloak/setup-keycloak.sh
-helm install --wait -f keycloak.values.yaml keycloak bitnami/keycloak --version 24.4.13
+helm install keycloak oci://registry-1.docker.io/bitnamicharts/keycloak -f keycloak.values.yaml --version 24.6.4 --wait
 ./keycloak/setup-keycloak.sh
 
 # Install Gitea

@@ -13,9 +13,8 @@ externalDatabase:
   password: foundry
 ingress:
   enabled: true
+  ingressClassName: nginx
   hostname: foundry.local
-  annotations:
-    kubernetes.io/ingress.class: "nginx"
   path: /auth
   tls: true
   extraTls:

@@ -163,7 +163,6 @@ ADMIN_TOKEN=$(curl -k -s -X POST "https://foundry.local/auth/realms/master/proto
   -d "username=administrator" \
   -d "password=${ADMIN_PASSWORD}" \
   -d "scope=openid" | jq -r '.access_token')
-echo "admin_token=$ADMIN_TOKEN"
 echo "getting foundry user ID"
 USER_ID=$(curl -k -s -X GET "https://foundry.local/auth/admin/realms/master/users?username=foundry" \
   -H "Authorization: Bearer $ADMIN_TOKEN" | jq -r '.[0].id')
