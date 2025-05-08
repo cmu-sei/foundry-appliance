@@ -27,9 +27,9 @@ postgresql:
       size: 1Gi
     initdb:
       scripts:
-        create-keycloak-db.sql: |
+        create-dbs.sql: |
           CREATE DATABASE keycloak;
-          GRANT ALL PRIVILEGES ON DATABASE keycloak TO postgres;
+          CREATE DATABASE gitea;
 
 pgadmin4:
   serverDefinitions:
@@ -103,3 +103,68 @@ keycloak:
     user: postgres
     database: keycloak
     password: foundry
+
+gitea:
+  ingress:
+    enabled: true
+    annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: /$2
+    hosts:
+      - host: foundry.local
+        paths:
+          - path: "/gitea(/|$)(.*)"
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: appliance-cert
+        hosts:
+          - foundry.local
+  persistence:
+    size: 1Gi
+    storageClass: local-path
+  extraVolumes:
+    - name: appliance-cert-vol
+      secret:
+        secretName: appliance-cert
+  extraContainerVolumeMounts:
+    - name: appliance-cert-vol
+      mountPath: /etc/ssl/certs/appliance-ca.crt
+      subPath: tls.crt
+      readOnly: true
+  extraInitVolumeMounts:
+    - name: appliance-cert-vol
+      mountPath: /etc/ssl/certs/appliance-ca.crt
+      subPath: tls.crt
+      readOnly: true
+  gitea:
+    admin:
+      existingSecret: gitea-admin-secret
+      email: "administrator@foundry.local"
+    oauth:
+      - name: Foundry
+        provider: openidConnect
+        autoDiscoverUrl: https://foundry.local/auth/realms/master/.well-known/openid-configuration
+        #existingSecret: gitea-oauth-client
+    config:
+      APP_NAME: Foundry Gitea
+      server:
+        DOMAIN: https://foundry.local/gitea/
+        ROOT_URL: https://foundry.local/gitea/
+        DISABLE_SSH: true
+      database:
+        DB_TYPE: postgres
+        HOST: foundry-postgresql:5432
+        NAME: gitea
+        USER: postgres
+        PASSWD: foundry
+        SCHEMA: public
+      security:
+        PASSWORD_COMPLEXITY: "off"
+      repository:
+        DEFAULT_BRANCH: main
+      oauth2_client:
+        OPENID_CONNECT_SCOPES: profile email
+        ENABLE_AUTO_REGISTRATION: true
+        USERNAME: userid
+        ACCOUNT_LINKING: auto
+  postgresql-ha:
+    enabled: false

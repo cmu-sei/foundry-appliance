@@ -22,3 +22,6 @@ dependencies:
   - name: keycloak
     repository: oci://registry-1.docker.io/bitnamicharts
     version: 24.6.4
+  - name: gitea
+    repository: https://dl.gitea.io/charts/
+    version: 11.0.1
