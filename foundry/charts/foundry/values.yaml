@@ -21,7 +21,7 @@ ingress-nginx:
 
 postgresql:
   auth:
-    existingSecret: foundry-secret
+    existingSecret: foundry-postgresql
   primary:
     persistence:
       size: 1Gi
@@ -102,7 +102,7 @@ keycloak:
     host: foundry-postgresql
     user: postgres
     database: keycloak
-    existingSecret: foundry-secret
+    existingSecret: foundry-postgresql
     existingSecretPasswordKey: postgres-password
 
 gitea:
@@ -170,7 +170,7 @@ gitea:
       - name: GITEA__DATABASE__PASSWD
         valueFrom:
           secretKeyRef:
-            name: foundry-secret
+            name: foundry-postgresql
             key: postgres-password
   redis-cluster:
     enabled: false
