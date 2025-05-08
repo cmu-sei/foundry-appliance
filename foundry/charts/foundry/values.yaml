@@ -21,7 +21,7 @@ ingress-nginx:
 
 postgresql:
   auth:
-    existingSecret: foundry-credentials
+    existingSecret: foundry-secret
   primary:
     persistence:
       size: 1Gi
@@ -102,7 +102,8 @@ keycloak:
     host: foundry-postgresql
     user: postgres
     database: keycloak
-    password: foundry
+    existingSecret: foundry-secret
+    existingSecretPasswordKey: postgres-password
 
 gitea:
   ingress:
@@ -137,13 +138,13 @@ gitea:
       readOnly: true
   gitea:
     admin:
-      existingSecret: gitea-admin-secret
+      existingSecret: foundry-gitea-admin-secret
       email: "administrator@foundry.local"
-    oauth:
-      - name: Foundry
-        provider: openidConnect
-        autoDiscoverUrl: https://foundry.local/auth/realms/master/.well-known/openid-configuration
-        #existingSecret: gitea-oauth-client
+#    oauth:
+#      - name: Foundry
+#        provider: openidConnect
+#        autoDiscoverUrl: https://foundry.local/auth/realms/master/.well-known/openid-configuration
+#        existingSecret: gitea-oauth-client
     config:
       APP_NAME: Foundry Gitea
       server:
@@ -155,7 +156,6 @@ gitea:
         HOST: foundry-postgresql:5432
         NAME: gitea
         USER: postgres
-        PASSWD: foundry
         SCHEMA: public
       security:
         PASSWORD_COMPLEXITY: "off"
@@ -166,5 +166,18 @@ gitea:
         ENABLE_AUTO_REGISTRATION: true
         USERNAME: userid
         ACCOUNT_LINKING: auto
+    additionalConfigFromEnvs:
+      - name: GITEA__DATABASE__PASSWD
+        valueFrom:
+          secretKeyRef:
+            name: foundry-secret
+            key: postgres-password
+  redis-cluster:
+    enabled: false
+  redis:
+    enabled: true
+    global:
+      redis:
+        password: foundry
   postgresql-ha:
     enabled: false
