@@ -19,7 +19,7 @@ kubectl apply -f namespace.yaml
 kubectl config set-context --current --namespace=foundry
 
 # Add host certificate
-kubectl create secret tls appliance-cert --key certs/host-key.pem --cert certs/ca.pem
+kubectl create secret tls appliance-cert --key certs/host-key.pem --cert certs/host.pem
 
 # Install NFS server
 helm repo add kvaps https://kvaps.github.io/charts
