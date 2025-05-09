@@ -4,6 +4,8 @@ metadata:
   name: {{ include "foundry.fullname" . }}-topomojo-nfs
   labels:
     {{- include "foundry.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
 spec:
   storageClassName: nfs
   accessModes:
