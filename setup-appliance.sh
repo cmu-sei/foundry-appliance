@@ -117,7 +117,7 @@ sudo -u $SSH_USERNAME ssh-keygen -t rsa -f ~/.ssh/id_rsa -q -N ''
 sudo -u $SSH_USERNAME ~/foundry/certs/generate-certs.sh -loglevel 3
 
 # Add newly generated CA certificate to trusted roots
-cp ~/foundry/certs/root-ca.pem /usr/local/share/ca-certificates/foundry-appliance-root-ca.crt
+cp ~/foundry/certs/ca.pem /usr/local/share/ca-certificates/foundry-appliance-ca.crt
 update-ca-certificates
 
 # Restart mDNS daemon to avoid conflict with other hosts

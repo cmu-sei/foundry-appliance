@@ -19,7 +19,7 @@ kubectl apply -f namespace.yaml
 kubectl config set-context --current --namespace=foundry
 
 # Add host certificate
-kubectl create secret tls appliance-cert --key certs/host-key.pem --cert <(cat certs/host.pem certs/int-ca.pem)
+kubectl create secret tls appliance-cert --key certs/host-key.pem --cert certs/ca.pem
 
 # Install NFS server
 helm repo add kvaps https://kvaps.github.io/charts
@@ -39,8 +39,8 @@ kubectl create secret generic pgpassfile --from-literal=pgpassfile=postgresql:54
 helm install -f pgadmin4.values.yaml pgadmin4 runix/pgadmin4 --version 1.9.10
 
 # Add root CA to chart values
-cat certs/root-ca.pem | sed 's/^/  /' | sed -i -re 's/(cacert:).*/\1 |-/' -e '/cacert:/ r /dev/stdin' mkdocs-material.values.yaml
-cp certs/root-ca.pem ../mkdocs/docs/root-ca.crt
+cat certs/ca.pem | sed 's/^/  /' | sed -i -re 's/(cacert:).*/\1 |-/' -e '/cacert:/ r /dev/stdin' mkdocs-material.values.yaml
+cp certs/ca.pem ../mkdocs/docs/ca.crt
 
 # Install Keycloak
 kubectl exec postgresql-0 -- psql 'postgresql://postgres:foundry@localhost' -c 'CREATE DATABASE keycloak;'
@@ -63,8 +63,8 @@ helm repo add sei https://helm.cmusei.dev/charts
 helm install -f mkdocs-material.values.yaml mkdocs-material sei/mkdocs-material --version 0.1.0
 
 # Add root CA to chart values
-cat certs/root-ca.pem | sed 's/^/    /' | sed -i -re 's/(cacert:).*/\1 |-/' -e '/cacert:/ r /dev/stdin' gameboard.values.yaml
-cat certs/root-ca.pem | sed 's/^/        /' | sed -i -re 's/(cacert.crt:).*/\1 |-/' -e '/cacert.crt:/ r /dev/stdin' topomojo.values.yaml
+cat certs/ca.pem | sed 's/^/    /' | sed -i -re 's/(cacert:).*/\1 |-/' -e '/cacert:/ r /dev/stdin' gameboard.values.yaml
+cat certs/ca.pem | sed 's/^/        /' | sed -i -re 's/(cacert.crt:).*/\1 |-/' -e '/cacert.crt:/ r /dev/stdin' topomojo.values.yaml
 
 # Install TopoMojo
 kubectl apply -f topomojo-pvc.yaml

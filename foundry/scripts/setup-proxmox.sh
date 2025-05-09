@@ -8,7 +8,7 @@
 
 set -euo pipefail
 
-RUI_CRT=$(cat /home/foundry/foundry/certs/host.pem /home/foundry/foundry/certs/int-ca.pem)
+RUI_CRT=$(< /home/foundry/foundry/certs/host.pem)
 RUI_KEY=$(< /home/foundry/foundry/certs/host-key.pem)
 PROXMOX_CERTDIR="/etc/pve/nodes/proxmox"
 PROXMOX_HOSTNAME="proxmox.foundry.local"

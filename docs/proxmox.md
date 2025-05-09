@@ -172,7 +172,7 @@ These certificates are required by the appliance and must match the `.foundry.lo
 - From the appliance, copy the certificate files to the Proxmox node:
 
   ```bash
-  scp /home/foundry/foundry/certs/host.pem /home/foundry/foundry/certs/int-ca.pem root@proxmox.foundry.local:/tmp/
+  scp /home/foundry/foundry/certs/host.pem root@proxmox.foundry.local:/tmp/
   scp /home/foundry/foundry/certs/host-key.pem root@proxmox.foundry.local:/tmp/
   ```
 
@@ -185,7 +185,7 @@ These certificates are required by the appliance and must match the `.foundry.lo
 - Combine and install the certificates:
 
   ```bash
-  cat /tmp/host.pem /tmp/int-ca.pem > /etc/pve/nodes/proxmox/pve-ssl.pem
+  cp /tmp/host.pem /etc/pve/nodes/proxmox/pve-ssl.pem
   cp /tmp/host-key.pem /etc/pve/nodes/proxmox/pve-ssl.key
   ```
 
