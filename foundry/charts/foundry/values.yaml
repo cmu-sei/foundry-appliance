@@ -221,7 +221,7 @@ topomojo:
           hosts:
             - foundry.local
     storage:
-      existing: topomojo-nfs
+      existing: foundry-topomojo-nfs
     existingSecret: foundry-topomojo
     env:
       PathBase: /topomojo
