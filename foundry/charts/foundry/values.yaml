@@ -84,6 +84,7 @@ keycloak:
   auth:
     adminUser: foundry
     adminPassword: foundry
+  extraEnvVarsSecret: foundry-keycloak-env
   httpRelativePath: /keycloak/
   ingress:
     enabled: true
@@ -93,6 +94,9 @@ keycloak:
       - hosts:
           - foundry.local
         secretName: appliance-cert
+  keycloakConfigCli:
+    enabled: true
+    existingConfigmap: foundry-keycloak-config-cli
   postgresql:
     enabled: false
   externalDatabase:

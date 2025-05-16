@@ -1,0 +1,184 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "foundry.fullname" . }}-keycloak-config-cli
+  labels:
+    {{- include "foundry.labels" . | nindent 4 }}
+data:
+  realm.json: |
+    {
+      "realm": "master",
+
+      "clientScopes": [
+        {
+          "name": "topomojo-api",
+          "description": "TopoMojo API",
+          "protocol": "openid-connect",
+          "attributes": {
+            "include.in.token.scope": "true",
+            "display.on.consent.screen": "true"
+          },
+          "protocolMappers": [
+            {
+              "name": "audiences",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-audience-mapper",
+              "consentRequired": false,
+              "config": {
+                "included.client.audience": "topomojo-api",
+                "id.token.claim": "false",
+                "access.token.claim": "true"
+              }
+            },
+            {
+              "name": "subject",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-sub-mapper",
+              "consentRequired": false,
+              "config": {
+                "access.token.claim": "true",
+                "id.token.claim": "true",
+                "userinfo.token.claim": "true"
+              }
+            }
+          ]
+        },
+        {
+          "name": "gameboard-api",
+          "description": "Gameboard API",
+          "protocol": "openid-connect",
+          "attributes": {
+            "include.in.token.scope": "true",
+            "display.on.consent.screen": "true"
+          },
+          "protocolMappers": [
+            {
+              "name": "audiences",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-audience-mapper",
+              "consentRequired": false,
+              "config": {
+                "included.client.audience": "gameboard-api",
+                "id.token.claim": "false",
+                "access.token.claim": "true"
+              }
+            },
+            {
+              "name": "subject",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-sub-mapper",
+              "consentRequired": false,
+              "config": {
+                "access.token.claim": "true",
+                "id.token.claim": "true",
+                "userinfo.token.claim": "true"
+              }
+            }
+          ]
+        }
+      ],
+
+      "clients": [
+        {
+          "clientId": "topomojo-client",
+          "name": "TopoMojo",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "publicClient": true,
+          "standardFlowEnabled": true,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "redirectUris": [
+            "https://foundry.local/topomojo/oidc",
+            "https://foundry.local/topomojo/oidc-silent.html"
+          ],
+          "baseUrl": "https://foundry.local/topomojo",
+          "defaultClientScopes": ["openid", "profile", "topomojo-api"],
+          "attributes": {
+            "pkce.code.challenge.method": "S256",
+            "post.logout.redirect.uris": "https://foundry.local/topomojo"
+          }
+        },
+        {
+          "clientId": "topomojo-swagger",
+          "name": "TopoMojo Swagger",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "publicClient": true,
+          "standardFlowEnabled": true,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "redirectUris": ["https://foundry.local/topomojo/api/oauth2-redirect.html"],
+          "baseUrl": "https://foundry.local/topomojo/api",
+          "defaultClientScopes": ["openid", "profile", "topomojo-api"],
+          "attributes": {
+            "consent.required": "true",
+            "post.logout.redirect.uris": "https://foundry.local/topomojo/api"
+          }
+        },
+        {
+          "clientId": "gameboard-client",
+          "name": "Gameboard",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "publicClient": true,
+          "standardFlowEnabled": true,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "redirectUris": [
+            "https://foundry.local/gameboard/oidc",
+            "https://foundry.local/gameboard/oidc-silent.html"
+          ],
+          "baseUrl": "https://foundry.local/gameboard",
+          "defaultClientScopes": [
+            "openid",
+            "profile",
+            "organization",
+            "gameboard-api"
+          ],
+          "attributes": {
+            "pkce.code.challenge.method": "S256",
+            "post.logout.redirect.uris": "https://foundry.local/gameboard"
+          }
+        },
+        {
+          "clientId": "gameboard-swagger",
+          "name": "Gameboard Swagger",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "publicClient": true,
+          "standardFlowEnabled": true,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "redirectUris": [
+            "https://foundry.local/gameboard/api/oauth2-redirect.html"
+          ],
+          "baseUrl": "https://foundry.local/gameboard/api",
+          "defaultClientScopes": ["openid", "profile", "gameboard-api"],
+          "attributes": {
+            "consent.required": "true",
+            "post.logout.redirect.uris": "https://foundry.local/gameboard/api"
+          }
+        },
+        {
+          "clientId": "gitea-client",
+          "name": "Gitea",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "publicClient": false,
+          "secret": "a92de95c865db308dfa5b7a098f45a7f",
+          "standardFlowEnabled": true,
+          "directAccessGrantsEnabled": false,
+          "implicitFlowEnabled": false,
+          "redirectUris": [
+            "https://foundry.local/gitea/user/oauth2/Foundry/callback"
+          ],
+          "baseUrl": "https://foundry.local/gitea",
+          "defaultClientScopes": ["openid", "profile", "email"],
+          "attributes": {
+            "post.logout.redirect.uris": "https://foundry.local/gitea",
+            "oauth2.device.authorization.grant.enabled": "false"
+          }
+        }
+      ]
+    }

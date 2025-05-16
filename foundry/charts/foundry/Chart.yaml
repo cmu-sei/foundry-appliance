@@ -29,5 +29,5 @@ dependencies:
     repository: https://helm.cmusei.dev/charts
     version: 0.2.4
   - name: topomojo
-    repository: file://../../../helm-charts/charts/topomojo
+    repository: https://helm.cmusei.dev/charts
     version: 0.5.0
