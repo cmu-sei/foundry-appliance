@@ -81,7 +81,7 @@ sed -i 's/default/foundry/g' ~/.kube/config
 chown $SSH_USERNAME:$SSH_USERNAME ~/.kube/config
 
 # Install nerdctl for managing containerd
-wget -q0- https://github.com/containerd/nerdctl/releases/download/v2.1.2/nerdctl-2.1.2-linux-amd64.tar.gz | tar xvf /tmp
+wget -qO- https://github.com/containerd/nerdctl/releases/download/v2.1.2/nerdctl-2.1.2-linux-amd64.tar.gz | tar zxvf - -C /tmp
 cp /tmp/nerdctl /usr/local/bin
 
 # Populate K3s registry mirror
