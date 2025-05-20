@@ -89,14 +89,13 @@ data:
           "implicitFlowEnabled": false,
           "directAccessGrantsEnabled": false,
           "redirectUris": [
-            "https://foundry.local/topomojo/oidc",
-            "https://foundry.local/topomojo/oidc-silent.html"
+            "/oidc",
+            "/oidc-silent.html"
           ],
-          "baseUrl": "https://foundry.local/topomojo",
+          "rootUrl": "https://{{ .Values.global.domain }}/topomojo",
           "defaultClientScopes": ["openid", "profile", "topomojo-api"],
           "attributes": {
             "pkce.code.challenge.method": "S256",
-            "post.logout.redirect.uris": "https://foundry.local/topomojo"
           }
         },
         {
@@ -108,12 +107,11 @@ data:
           "standardFlowEnabled": true,
           "implicitFlowEnabled": false,
           "directAccessGrantsEnabled": false,
-          "redirectUris": ["https://foundry.local/topomojo/api/oauth2-redirect.html"],
-          "baseUrl": "https://foundry.local/topomojo/api",
+          "redirectUris": ["/oauth2-redirect.html"],
+          "rootUrl": "https://{{ .Values.global.domain }}/topomojo/api",
           "defaultClientScopes": ["openid", "profile", "topomojo-api"],
           "attributes": {
             "consent.required": "true",
-            "post.logout.redirect.uris": "https://foundry.local/topomojo/api"
           }
         },
         {
@@ -126,10 +124,10 @@ data:
           "implicitFlowEnabled": false,
           "directAccessGrantsEnabled": false,
           "redirectUris": [
-            "https://foundry.local/gameboard/oidc",
-            "https://foundry.local/gameboard/oidc-silent.html"
+            "/oidc",
+            "/oidc-silent.html"
           ],
-          "baseUrl": "https://foundry.local/gameboard",
+          "rootUrl": "https://{{ .Values.global.domain }}/gameboard",
           "defaultClientScopes": [
             "openid",
             "profile",
@@ -138,7 +136,6 @@ data:
           ],
           "attributes": {
             "pkce.code.challenge.method": "S256",
-            "post.logout.redirect.uris": "https://foundry.local/gameboard"
           }
         },
         {
@@ -151,13 +148,12 @@ data:
           "implicitFlowEnabled": false,
           "directAccessGrantsEnabled": false,
           "redirectUris": [
-            "https://foundry.local/gameboard/api/oauth2-redirect.html"
+            "/oauth2-redirect.html"
           ],
-          "baseUrl": "https://foundry.local/gameboard/api",
+          "rootUrl": "https://{{ .Values.global.domain }}/gameboard/api",
           "defaultClientScopes": ["openid", "profile", "gameboard-api"],
           "attributes": {
             "consent.required": "true",
-            "post.logout.redirect.uris": "https://foundry.local/gameboard/api"
           }
         },
         {
@@ -171,14 +167,26 @@ data:
           "directAccessGrantsEnabled": false,
           "implicitFlowEnabled": false,
           "redirectUris": [
-            "https://foundry.local/gitea/user/oauth2/Foundry/callback"
+            "/user/oauth2/Foundry/callback"
           ],
-          "baseUrl": "https://foundry.local/gitea",
+          "rootUrl": "https://{{ .Values.global.domain }}/gitea",
           "defaultClientScopes": ["openid", "profile", "email"],
           "attributes": {
-            "post.logout.redirect.uris": "https://foundry.local/gitea",
             "oauth2.device.authorization.grant.enabled": "false"
           }
         }
       ]
     }
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "foundry.fullname" . }}-gitea-env
+  labels:
+    {{- include "foundry.labels" . | nindent 4 }}
+data:
+  GITEA__OAUTH2_CLIENT__OPENID_CONNECT_SCOPES: profile email
+  GITEA__OAUTH2_CLIENT__ENABLE_AUTO_REGISTRATION: "true"
+  GITEA__OAUTH2_CLIENT__USERNAME: userid
+  GITEA__OAUTH2_CLIENT__ACCOUNT_LINKING: auto

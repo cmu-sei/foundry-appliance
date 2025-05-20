@@ -1,3 +1,6 @@
+global:
+  domain: foundry.local
+
 nfs-server-provisioner:
   persistence:
     enabled: true
@@ -13,12 +16,12 @@ ingress-nginx:
     updateStrategy:
       type: RollingUpdate
   tcp:
-    2049: "foundry/nfs-server-provisioner:2049"
-    #5432: "foundry/postgresql:5432"
+    2049: "{{ .Release.Namespace }}/nfs-server-provisioner:2049"
+    #5432: "{{ .Release.Namespace }}/postgresql:5432"
 
 postgresql:
   auth:
-    existingSecret: foundry-postgresql
+    existingSecret: '{{ include "foundry.fullname" . }}'
   primary:
     persistence:
       size: 1Gi
@@ -32,14 +35,14 @@ pgadmin4:
   serverDefinitions:
     servers:
         foundry:
-          Name: "foundry"
-          Group: "Servers"
+          Name: foundry
+          Group: Servers
           Port: 5432
-          Username: "postgres"
-          Host: "postgresql"
-          PassFile: "../../pgpass.conf"
-          SSLMode: "prefer"
-          MaintenanceDB: "postgres"
+          Username: postgres
+          Host: postgresql
+          PassFile: ../../pgpass.conf
+          SSLMode: prefer
+          MaintenanceDB: postgres
   ingress:
     enabled: true
     annotations:
@@ -58,7 +61,7 @@ pgadmin4:
     - name: pgpassfile
       secret: pgpassfile
       subPath: pgpassfile
-      mountPath: "/pgpass.conf"
+      mountPath: /pgpass.conf
       readOnly: true
   env:
     email: administrator@foundry.local
@@ -84,42 +87,81 @@ keycloak:
   auth:
     adminUser: foundry
     adminPassword: foundry
-  extraEnvVarsSecret: foundry-keycloak-env
+  extraEnvVarsSecret: '{{ include "foundry.fullname" . }}-env'
   httpRelativePath: /keycloak/
   ingress:
     enabled: true
-    hostname: foundry.local
+    hostname: "{{ .Values.global.domain }}"
     tls: true
     extraTls:
       - hosts:
-          - foundry.local
+          - "{{ .Values.global.domain }}"
         secretName: appliance-cert
   keycloakConfigCli:
     enabled: true
-    existingConfigmap: foundry-keycloak-config-cli
+    existingConfigmap: '{{ include "foundry.fullname" . }}-config-cli'
   postgresql:
     enabled: false
   externalDatabase:
-    host: foundry-postgresql
+    host: "{{ .Release.Name }}-postgresql"
     user: postgres
     database: keycloak
-    existingSecret: foundry-postgresql
+    existingSecret: "{{ .Release.Name }}-postgresql"
     existingSecretPasswordKey: postgres-password
 
 gitea:
+  adminUsername: foundry
+  adminEmail: administrator@foundry.local
+  appName: Foundry Gitea
+  rootURL: https://{{ .Values.global.domain }}/gitea
+  updateStrategy:
+    type: Recreate
+  existingSecret: '{{ include "foundry.fullname" . }}-admin-secret'
+  extraEnvVarsCM: '{{ include "foundry.fullname" . }}-env'
+  extraVolumes:
+    - name: appliance-cert-vol
+      secret:
+        secretName: appliance-cert
+  extraVolumeMounts:
+    - name: appliance-cert-vol
+      mountPath: /etc/ssl/certs/appliance-ca.crt
+      subPath: tls.crt
+      readOnly: true
+  persistence:
+    storageClass: local-path
+    size: 1Gi
+  ingress:
+    enabled: true
+    hostname: "{{ .Values.global.domain }}"
+    path: /gitea(/|$)(.*)
+    annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: /$2
+    tls: true
+    extraTls:
+      - hosts:
+          - "{{ .Values.global.domain }}"
+        secretName: appliance-cert
+  postgresql:
+    enabled: false
+  externalDatabase:
+    host: "{{ .Release.Name }}-postgresql"
+    existingSecret: "{{ .Release.Name }}-postgresql"
+    existingSecretPasswordKey: postgres-password
+
+gitea-old:
   ingress:
     enabled: true
     annotations:
       nginx.ingress.kubernetes.io/rewrite-target: /$2
     hosts:
-      - host: foundry.local
+      - host: "{{ .Values.global.domain }}"
         paths:
-          - path: "/gitea(/|$)(.*)"
+          - path: /gitea(/|$)(.*)
             pathType: ImplementationSpecific
     tls:
       - secretName: appliance-cert
         hosts:
-          - foundry.local
+          - "{{ .Values.global.domain }}"
   persistence:
     size: 1Gi
     storageClass: local-path
@@ -139,12 +181,12 @@ gitea:
       readOnly: true
   gitea:
     admin:
-      existingSecret: foundry-gitea-admin-secret
-      email: "administrator@foundry.local"
+      existingSecret: '{{ include "foundry.fullname" . }}-admin-secret'
+      email: administrator@foundry.local
 #    oauth:
 #      - name: Foundry
 #        provider: openidConnect
-#        autoDiscoverUrl: https://foundry.local/auth/realms/master/.well-known/openid-configuration
+#        autoDiscoverUrl: https://foundry.local/keycloak/realms/master/.well-known/openid-configuration
 #        existingSecret: gitea-oauth-client
     config:
       APP_NAME: Foundry Gitea
@@ -171,7 +213,7 @@ gitea:
       - name: GITEA__DATABASE__PASSWD
         valueFrom:
           secretKeyRef:
-            name: foundry-postgresql
+            name: "{{ .Release.Name }}-postgresql"
             key: postgres-password
   redis-cluster:
     enabled: false
@@ -192,18 +234,28 @@ mkdocs-material:
       nginx.ingress.kubernetes.io/configuration-snippet: |
         rewrite ^(/start)$ $1/ redirect;
     hosts:
-      - host: foundry.local
+      - host: "{{ .Values.global.domain }}"
         paths:
           - path: /start(/|$)(.*)
             pathType: ImplementationSpecific
     tls:
       - secretName: appliance-cert
         hosts:
-          - foundry.local
+          - "{{ .Values.global.domain }}"
   storage:
     size: 100M
     class: local-path
-  giturl: http://foundry-gitea-http:3000/foundry/mkdocs
+  #giturl: http://foundry-gitea-http:3000/foundry/mkdocs
+  mkdocs:
+    site_name: My Site
+    site_url: https://{{ .Values.global.domain }}
+    theme:
+      name: material
+  files:
+    index.md: |
+      Welcome to My Site
+    page2.md: |
+      More content goes here.
 
 topomojo:
   topomojo-api:
@@ -212,7 +264,7 @@ topomojo:
       annotations:
         nginx.ingress.kubernetes.io/proxy-body-size: 6g
       hosts:
-        - host: foundry.local
+        - host: "{{ .Values.global.domain }}"
           paths:
             - path: /topomojo/api
               pathType: ImplementationSpecific
@@ -223,10 +275,10 @@ topomojo:
       tls:
         - secretName: appliance-cert
           hosts:
-            - foundry.local
+            - "{{ .Values.global.domain }}"
     storage:
-      existing: foundry-topomojo-nfs
-    existingSecret: foundry-topomojo
+      existing: '{{ include "foundry.fullname" . }}-nfs'
+    existingSecret: '{{ include "foundry.fullname" . }}-dbconnection'
     env:
       PathBase: /topomojo
       Database__Provider: PostgreSQL
@@ -237,13 +289,13 @@ topomojo:
       FileUpload__IsoRoot: /mnt/tm
       FileUpload__TopoRoot: /mnt/tm
       FileUpload__DocRoot: /mnt/tm/_docs
-      Oidc__Authority: https://foundry.local/auth/realms/master
+      Oidc__Authority: "https://{{ .Values.global.domain }}/auth/realms/master"
       ApiKeyClients__0__Id: gameengine
       ApiKeyClients__0__Key: foundry
       ApiKeyClients__0__Scope: gameboard
-      Core__ConsoleHost: foundry.local/console
-      Pod__ConsoleUrl: foundry.local/console
-      Headers__Cors__Origins__0: https://foundry.local
+      Core__ConsoleHost: "{{ .Values.global.domain }}/console"
+      Pod__ConsoleUrl: "{{ .Values.global.domain }}/console"
+      Headers__Cors__Origins__0: https://{{ .Values.global.domain }}'
       Headers__Forwarding__TargetHeaders: All
   topomojo-ui:
     ingress:
@@ -251,29 +303,94 @@ topomojo:
       annotations:
         nginx.ingress.kubernetes.io/proxy-body-size: 6g
       hosts:
-        - host: foundry.local
+        - host: "{{ .Values.global.domain }}"
           paths:
             - path: /topomojo
               pathType: ImplementationSpecific
       tls:
         - secretName: appliance-cert
           hosts:
-            - foundry.local
-    basehref: "/topomojo"
+            - "{{ .Values.global.domain }}"
+    basehref: /topomojo"
     settingsYaml:
       appname: TopoMojo
       oidc:
-        authority: "https://foundry.local/auth/realms/master"
-        client_id: "topomojo-client"
-        redirect_uri: "https://foundry.local/topomojo/oidc"
-        silent_redirect_uri: "https://foundry.local/topomojo/oidc-silent.html"
-        post_logout_redirect_uri: "https://foundry.local/topomojo"
-        response_type: "code"
-        scope: "openid profile topomojo-api"
+        authority: https://{{ .Values.global.domain }}/auth/realms/master
+        client_id: topomojo-client
+        redirect_uri: https://{{ .Values.global.domain }}/topomojo/oidc
+        silent_redirect_uri: https://{{ .Values.global.domain }}/topomojo/oidc-silent.html
+        post_logout_redirect_uri: https://{{ .Values.global.domain }}/topomojo
+        response_type: code
+        scope: openid profile topomojo-api
         automaticSilentRenew: true
         includeIdTokenInSilentRenew: false
         filterProtocolClaims: true
         loadUserInfo: true
+        accessTokenExpiringNotificationTime: 120
+        monitorSession: false
+        useLocalStorage: true
+
+gameboard:
+  gameboard-api:
+    ingress:
+      enabled: true
+      annotations:
+        nginx.ingress.kubernetes.io/proxy-body-size: 10m
+      hosts:
+        - host: "{{ .Values.global.domain }}"
+          paths:
+            - path: /gameboard/api
+              pathType: ImplementationSpecific
+            - path: /gameboard/hub
+              pathType: ImplementationSpecific
+            - path: /gameboard/img
+              pathType: ImplementationSpecific
+            - path: /gameboard/doc
+              pathType: ImplementationSpecific
+      tls:
+        - secretName: appliance-cert
+          hosts:
+            - "{{ .Values.global.domain }}"
+    storage:
+      size: "1Gi"
+      class: local-path
+    existingSecret: '{{ include "foundry.fullname" . }}-dbconnection'
+    env:
+      PathBase: /gameboard
+      Database__Provider: PostgreSQL
+      Oidc__Audience: gameboard-api
+      Oidc__Authority: https://{{ .Values.global.domain }}/keycloak/realms/master
+      OpenApi__Client__ClientId: gameboard-swagger
+      Core__GameEngineUrl: https://{{ .Values.global.domain }}/topomojo/
+      Core__GameEngineClientName: bot-gameboard
+      Core__GameEngineClientSecret: tdRMT_4QQjjhLSEq89tJZ2O3s_TcN0nw
+  gameboard-ui:
+    ingress:
+      enabled: true
+      hosts:
+        - host: "{{ .Values.global.domain }}"
+          paths:
+            - path: /gameboard
+              pathType: ImplementationSpecific
+      tls:
+        - secretName: appliance-cert
+          hosts:
+            - "{{ .Values.global.domain }}"
+    basehref: /gameboard
+    settingsYaml:
+      appname: Foundry Gameboard
+      oidc:
+        client_id: gameboard-client
+        authority: https://{{ .Values.global.domain }}/keycloak/realms/master
+        redirect_uri: https://{{ .Values.global.domain }}/gameboard/oidc
+        silent_redirect_uri: https://{{ .Values.global.domain }}/gameboard/oidc-silent.html
+        response_type: code
+        scope: openid profile organization gameboard-api
+        automaticSilentRenew: true
+        includeIdTokenInSilentRenew: false
+        filterProtocolClaims: true
+        loadUserInfo: true
+        checkSessionInterval: 30000
         accessTokenExpiringNotificationTime: 120
         monitorSession: false
         useLocalStorage: true

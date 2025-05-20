@@ -102,6 +102,9 @@ source "proxmox-iso" "foundry-appliance" {
   ssh_timeout          = local.ssh_timeout
   ssh_username         = var.ssh_username
   username             = var.proxmox_username
+  vga {
+    type = "qxl"
+  }
   template_name        = "foundry-appliance-${var.appliance_version}"
   template_description = "Foundry Appliance ${var.appliance_version} - built {{ isotime \"2006-01-02T15:04:05Z\" }}"
 }

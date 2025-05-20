@@ -16,18 +16,21 @@ dependencies:
   - name: postgresql
     repository: oci://registry-1.docker.io/bitnamicharts
     version: 16.6.7
-  - name: pgadmin4
-    repository: https://helm.runix.net
-    version: 1.42.1
+#  - name: pgadmin4
+#    repository: https://helm.runix.net
+#    version: 1.42.1
   - name: keycloak
     repository: oci://registry-1.docker.io/bitnamicharts
     version: 24.6.4
   - name: gitea
-    repository: https://dl.gitea.io/charts/
-    version: 11.0.1
+    repository: file://../gitea/
+    version: 3.2.8
   - name: mkdocs-material
     repository: https://helm.cmusei.dev/charts
-    version: 0.2.4
+    version: 0.2.5
   - name: topomojo
+    repository: https://helm.cmusei.dev/charts
+    version: 0.5.1
+  - name: gameboard
     repository: https://helm.cmusei.dev/charts
     version: 0.5.0

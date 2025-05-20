@@ -1,7 +1,7 @@
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: {{ include "foundry.fullname" . }}-topomojo-nfs
+  name: {{ include "foundry.fullname" . }}-topomojo-api-nfs
   labels:
     {{- include "foundry.labels" . | nindent 4 }}
   annotations:
