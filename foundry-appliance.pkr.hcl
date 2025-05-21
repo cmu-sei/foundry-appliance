@@ -135,7 +135,7 @@ build {
     script = "setup-appliance.sh"
   }
 
-  provisioner "shell" {
-    inline = ["~/foundry/install.sh"]
-  }
+  # provisioner "shell" {
+  #   inline = ["~/foundry/install.sh"]
+  # }
 }

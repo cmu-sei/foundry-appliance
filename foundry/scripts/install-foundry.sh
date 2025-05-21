@@ -1,0 +1,42 @@
+#!/bin/bash
+#
+# Copyright 2025 Carnegie Mellon University.
+# Released under a BSD (SEI)-style license, please see LICENSE.md in the
+# project root or contact permission@sei.cmu.edu for full terms.
+#
+# Finalize Foundry stack on first boot
+
+FLAG=/etc/.install-foundry
+CHART_DIR=/home/foundry/foundry/charts/foundry
+RUN_AS_USER="sudo -u foundry"
+CERT_MANAGER_VERSION=v1.17.2
+export INSTALL_K3S_VERSION="v1.32.1+k3s1"
+
+if [[ $UID != 0 ]]; then
+    echo "Please run this script with sudo:"
+    echo "sudo $0 $*"
+    exit 1
+fi
+
+if [ -f $FLAG ]; then
+    echo "$0 already executed. Delete $FLAG to run it again."
+    exit 1
+fi
+
+# Install K3s during first boot to generate unique cluster CA
+mkdir -p /etc/rancher/k3s
+echo "nameserver 10.0.1.1" >>/etc/rancher/k3s/resolv.conf
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--disable traefik --resolv-conf /etc/rancher/k3s/resolv.conf" sh -
+mkdir /home/foundry/.kube
+cp /etc/rancher/k3s/k3s.yaml /home/foundry/.kube/config
+chown -R foundry:foundry /home/foundry/.kube
+sed -i 's/default/foundry/g' /home/foundry/.kube/config
+
+# Prep cluster and install foundry Helm chart
+$RUN_AS_USER kubectl apply --validate=false -f https://github.com/cert-manager/cert-manager/releases/download/$CERT_MANAGER_VERSION/cert-manager.crds.yaml
+$RUN_AS_USER kubectl create namespace foundry
+$RUN_AS_USER kubectl config set-context --current --namespace=foundry
+$RUN_AS_USER helm install foundry $CHART_DIR --namespace foundry
+
+# Create flag file
+date > $FLAG

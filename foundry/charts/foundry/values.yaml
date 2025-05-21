@@ -19,6 +19,10 @@ ingress-nginx:
     2049: "{{ .Release.Namespace }}/nfs-server-provisioner:2049"
     #5432: "{{ .Release.Namespace }}/postgresql:5432"
 
+ca:
+  cn: test
+  org: test
+
 postgresql:
   auth:
     existingSecret: '{{ include "foundry.fullname" . }}'
@@ -118,29 +122,32 @@ gitea:
     type: Recreate
   existingSecret: '{{ include "foundry.fullname" . }}-admin-secret'
   extraEnvVarsCM: '{{ include "foundry.fullname" . }}-env'
-  extraVolumes:
-    - name: appliance-cert-vol
-      secret:
-        secretName: appliance-cert
-  extraVolumeMounts:
-    - name: appliance-cert-vol
-      mountPath: /etc/ssl/certs/appliance-ca.crt
-      subPath: tls.crt
-      readOnly: true
+  # extraVolumes:
+  #   - name: appliance-cert-vol
+  #     secret:
+  #       secretName: appliance-cert
+  # extraVolumeMounts:
+  #   - name: appliance-cert-vol
+  #     mountPath: /etc/ssl/certs/appliance-ca.crt
+  #     subPath: tls.crt
+  #     readOnly: true
   persistence:
     storageClass: local-path
     size: 1Gi
+  service:
+    type: ClusterIP
   ingress:
     enabled: true
     hostname: "{{ .Values.global.domain }}"
     path: /gitea(/|$)(.*)
     annotations:
+      cert-manager.io/cluster-issuer: "{{ .Release.Name }}-issuer"
       nginx.ingress.kubernetes.io/rewrite-target: /$2
     tls: true
     extraTls:
       - hosts:
           - "{{ .Values.global.domain }}"
-        secretName: appliance-cert
+        secretName: '{{ include "foundry.fullname" . }}-cert'
   postgresql:
     enabled: false
   externalDatabase:

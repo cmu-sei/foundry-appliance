@@ -1,0 +1,40 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: {{ include "foundry.fullname" . }}-selfsigned
+  labels:
+    {{- include "foundry.labels" . | nindent 4 }}
+spec:
+  selfSigned: {}
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "foundry.fullname" . }}-ca
+  labels:
+    {{- include "foundry.labels" . | nindent 4 }}
+spec:
+  secretName: {{ include "foundry.fullname" . }}-ca
+  isCA: true
+  duration: 87600h        # 10 years
+  privateKey:
+    algorithm: ECDSA
+    size: 384             # secp384r1
+  subject:
+    organizations: ["{{ .Values.ca.org }}"]
+  commonName: {{ .Values.ca.cn }}
+  issuerRef:
+    name: {{ include "foundry.fullname" . }}-selfsigned
+    kind: ClusterIssuer
+
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: {{ include "foundry.fullname" . }}-issuer
+  labels:
+    {{- include "foundry.labels" . | nindent 4 }}
+spec:
+  ca:
+    secretName: {{ include "foundry.fullname" . }}-ca

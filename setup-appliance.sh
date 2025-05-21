@@ -71,36 +71,12 @@ if [ -f ~/VBoxGuestAdditions.iso ]; then
   rm ~/VBoxGuestAdditions.iso
 fi
 
-# Install k3s
-mkdir -p /etc/rancher/k3s
-echo "nameserver 10.0.1.1" >>/etc/rancher/k3s/resolv.conf
-curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.32.1+k3s1" INSTALL_K3S_EXEC="--disable traefik --resolv-conf /etc/rancher/k3s/resolv.conf --embedded-registry" sh -
-sudo -u $SSH_USERNAME mkdir ~/.kube
-cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
-sed -i 's/default/foundry/g' ~/.kube/config
-chown $SSH_USERNAME:$SSH_USERNAME ~/.kube/config
-
-# Install nerdctl for managing containerd
-wget -qO- https://github.com/containerd/nerdctl/releases/download/v2.1.2/nerdctl-2.1.2-linux-amd64.tar.gz | tar zxvf - -C /tmp
-cp /tmp/nerdctl /usr/local/bin
-
-# Populate K3s registry mirror
-CHART_DIR=/home/foundry/foundry/charts/foundry
-OUTPUT_DIR=/var/lib/rancher/k3s/agent/images/
-mkdir -p $OUTPUT_DIR
-sudo -u $SSH_USERNAME helm dependency build $CHART_DIR
-IMAGES=$(helm template $CHART_DIR | grep -E '^\s+image:' | awk '{print $2}' | sed 's/"//g' | sed "s/'//g" | sort | uniq)
-for IMAGE in $IMAGES; do
-  CLEAN_NAME=$(echo "$IMAGE" | tr '/' '_' | tr ':' '-' | sed 's/@.*$//')
-  FILENAME="${OUTPUT_DIR}/${CLEAN_NAME}.tar.zst"
-  nerdctl pull "$IMAGE"
-  nerdctl save "$IMAGE" | zstd > "$FILENAME"
-  nerdctl rmi -f "$IMAGE"
-done
-
 # Install k-alias Kubernetes helper scripts
 sudo -u $SSH_USERNAME git clone https://github.com/jaggedmountain/k-alias.git
 (cd /usr/local/bin && ln -s ~/k-alias/[h,k]* .)
+
+# Build dependencies for foundry Helm chart
+sudo -u $SSH_USERNAME helm dependency build ~/foundry/charts/foundry
 
 # Customize MOTD and other text for the appliance
 chmod -x /etc/update-motd.d/00-header
@@ -111,32 +87,45 @@ rm ~/foundry/scripts/display-banner.sh
 sed -i "s/{version}/$APPLIANCE_VERSION/" ~/mkdocs/docs/index.md
 echo -e "Foundry Appliance $APPLIANCE_VERSION \\\n \l \n" >/etc/issue
 
-# Create systemd service to configure netplan primary interface
+# Create systemd services to configure netplan primary interface and install Foundry chart
 mv /home/foundry/foundry/scripts/configure-nic.sh /usr/local/bin/configure-nic
 cat <<EOF >/etc/systemd/system/configure-nic.service
 [Unit]
-Description=Configure Netplan primary Ethernet interface
+Description=Configure Netplan primary Ethernet interface (first boot)
 After=network.target
 Before=k3s.service
 
 [Service]
 Type=oneshot
 ExecStart=configure-nic
+ExecStartPost=/bin/bash -c 'systemctl disable configure-nic.service'
+RemainAfterExit=yes
 
 [Install]
 WantedBy=multi-user.target
 EOF
-systemctl enable configure-nic
+
+mv /home/foundry/foundry/scripts/install-foundry.sh /usr/local/bin/install-foundry
+cat <<EOF >/etc/systemd/system/install-foundry.service
+[Unit]
+Description=Install Foundry chart (first boot)
+After=network-online.target k3s.service
+Wants=network-online.target k3s.service
+
+[Service]
+Type=oneshot
+ExecStart=install-foundry
+ExecStartPost=/bin/bash -c 'systemctl disable install-foundry.service'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl enable configure-nic install-foundry
 
 # Generate SSH key
 sudo -u $SSH_USERNAME ssh-keygen -t rsa -f ~/.ssh/id_rsa -q -N ''
-
-# Generate CA and host certificates
-sudo -u $SSH_USERNAME ~/foundry/certs/generate-certs.sh -loglevel 3
-
-# Add newly generated CA certificate to trusted roots
-cp ~/foundry/certs/ca.pem /usr/local/share/ca-certificates/foundry-appliance-ca.crt
-update-ca-certificates
 
 # Restart mDNS daemon to avoid conflict with other hosts
 systemctl restart avahi-daemon
