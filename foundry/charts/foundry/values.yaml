@@ -96,11 +96,9 @@ keycloak:
   ingress:
     enabled: true
     hostname: "{{ .Values.global.domain }}"
+    annotations:
+      cert-manager.io/cluster-issuer: "{{ .Release.Name }}-issuer"
     tls: true
-    extraTls:
-      - hosts:
-          - "{{ .Values.global.domain }}"
-        secretName: appliance-cert
   keycloakConfigCli:
     enabled: true
     existingConfigmap: '{{ include "foundry.fullname" . }}-config-cli'
@@ -236,6 +234,7 @@ mkdocs-material:
   ingress:
     enabled: true
     annotations:
+      cert-manager.io/cluster-issuer: "{{ .Release.Name }}-issuer"
       nginx.ingress.kubernetes.io/app-root: /start
       nginx.ingress.kubernetes.io/rewrite-target: /$2
       nginx.ingress.kubernetes.io/configuration-snippet: |
@@ -246,9 +245,9 @@ mkdocs-material:
           - path: /start(/|$)(.*)
             pathType: ImplementationSpecific
     tls:
-      - secretName: appliance-cert
-        hosts:
+      - hosts:
           - "{{ .Values.global.domain }}"
+        secretName: '{{ include "foundry.fullname" . }}-cert'
   storage:
     size: 100M
     class: local-path
@@ -269,6 +268,7 @@ topomojo:
     ingress:
       enabled: true
       annotations:
+        cert-manager.io/cluster-issuer: "{{ .Release.Name }}-issuer"
         nginx.ingress.kubernetes.io/proxy-body-size: 6g
       hosts:
         - host: "{{ .Values.global.domain }}"
@@ -280,9 +280,9 @@ topomojo:
             - path: /topomojo/docs
               pathType: ImplementationSpecific
       tls:
-        - secretName: appliance-cert
-          hosts:
+        - hosts:
             - "{{ .Values.global.domain }}"
+          secretName: '{{ include "foundry.fullname" . }}-cert'
     storage:
       existing: '{{ include "foundry.fullname" . }}-nfs'
     existingSecret: '{{ include "foundry.fullname" . }}-dbconnection'
@@ -308,6 +308,7 @@ topomojo:
     ingress:
       enabled: true
       annotations:
+        cert-manager.io/cluster-issuer: "{{ .Release.Name }}-issuer"
         nginx.ingress.kubernetes.io/proxy-body-size: 6g
       hosts:
         - host: "{{ .Values.global.domain }}"
@@ -315,9 +316,9 @@ topomojo:
             - path: /topomojo
               pathType: ImplementationSpecific
       tls:
-        - secretName: appliance-cert
-          hosts:
+        - hosts:
             - "{{ .Values.global.domain }}"
+          secretName: '{{ include "foundry.fullname" . }}-cert'
     basehref: /topomojo"
     settingsYaml:
       appname: TopoMojo
@@ -342,6 +343,7 @@ gameboard:
     ingress:
       enabled: true
       annotations:
+        cert-manager.io/cluster-issuer: "{{ .Release.Name }}-issuer"
         nginx.ingress.kubernetes.io/proxy-body-size: 10m
       hosts:
         - host: "{{ .Values.global.domain }}"
@@ -355,9 +357,9 @@ gameboard:
             - path: /gameboard/doc
               pathType: ImplementationSpecific
       tls:
-        - secretName: appliance-cert
-          hosts:
+        - hosts:
             - "{{ .Values.global.domain }}"
+          secretName: '{{ include "foundry.fullname" . }}-cert'
     storage:
       size: "1Gi"
       class: local-path
@@ -374,15 +376,17 @@ gameboard:
   gameboard-ui:
     ingress:
       enabled: true
+      annotations:
+        cert-manager.io/cluster-issuer: "{{ .Release.Name }}-issuer"
       hosts:
         - host: "{{ .Values.global.domain }}"
           paths:
             - path: /gameboard
               pathType: ImplementationSpecific
       tls:
-        - secretName: appliance-cert
-          hosts:
+        - hosts:
             - "{{ .Values.global.domain }}"
+          secretName: '{{ include "foundry.fullname" . }}-cert'
     basehref: /gameboard
     settingsYaml:
       appname: Foundry Gameboard

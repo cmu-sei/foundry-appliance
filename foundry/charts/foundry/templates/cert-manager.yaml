@@ -4,6 +4,8 @@ metadata:
   name: {{ include "foundry.fullname" . }}-selfsigned
   labels:
     {{- include "foundry.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
 spec:
   selfSigned: {}
 
@@ -14,6 +16,8 @@ metadata:
   name: {{ include "foundry.fullname" . }}-ca
   labels:
     {{- include "foundry.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
 spec:
   secretName: {{ include "foundry.fullname" . }}-ca
   isCA: true
