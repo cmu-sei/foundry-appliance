@@ -12,10 +12,10 @@ To get started using the virtual appliance:
 2. Navigate to any of the apps in the following two sections.
 3. Unless otherwise noted, the default credentials are:
 
-   | key      | value                         |
-   | -------- | ----------------------------- |
-   | username | `administrator@foundry.local` |
-   | password | `<ADMIN_PW>`                  |
+   | key      | value     |
+   | -------- | --------- |
+   | username | `foundry` |
+   | password | `foundry` |
 
 ## Foundry apps
 
