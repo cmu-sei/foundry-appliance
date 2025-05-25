@@ -1,9 +1,6 @@
 #! /bin/bash
 
-# WIP script for Proxmox initialization for the Foundry Appliance and TopoMojo
-#
-# Currently only updates DNS and certificates for the appliance and the Proxmox node.
-# Looking to add Proxmox, NGINX, and TopoMojo configuration.
+# Proxmox initialization script. Also sets required TM fields.
 # -Sebastian Babon
 
 set -euo pipefail
@@ -143,3 +140,9 @@ nginx -t
 systemctl reload nginx
 systemctl restart pveproxy pvedaemon
 EOF
+
+sed -i "s|<PVE_URL>|$PROXMOX_URL|g" /home/foundry/foundry/topomojo.values.yaml
+sed -i "s|<ACCESS_TOKEN>|$API_KEY|g" /home/foundry/foundry/topomojo.values.yaml
+sed -i "s|<SDN_ZONE>|$SDN_ZONE_NAME|g" /home/foundry/foundry/topomojo.values.yaml
+
+helm upgrade --install --wait -n foundry -f topomojo.values.yaml topomojo sei/topomojo --version 0.4.5
