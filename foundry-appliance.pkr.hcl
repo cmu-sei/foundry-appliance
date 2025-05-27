@@ -120,11 +120,6 @@ build {
     source      = "./foundry"
   }
 
-  provisioner "file" {
-    destination = "/home/${var.ssh_username}"
-    source      = "./mkdocs"
-  }
-
   provisioner "shell" {
     execute_command = "echo '${var.ssh_password}' | {{ .Vars }} sudo -E -S bash '{{ .Path }}'"
     environment_vars = [
@@ -134,8 +129,4 @@ build {
     ]
     script = "setup-appliance.sh"
   }
-
-  # provisioner "shell" {
-  #   inline = ["~/foundry/install.sh"]
-  # }
 }

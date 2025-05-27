@@ -89,18 +89,24 @@ pgadmin4:
 
 keycloak:
   auth:
-    adminUser: foundry
-    adminPassword: foundry
-  extraEnvVarsSecret: '{{ include "foundry.fullname" . }}-env'
+    adminUser: "keycloak-admin"
+    existingSecret: '{{ include "foundry.fullname" . }}-auth'
   httpRelativePath: /keycloak/
   ingress:
     enabled: true
     hostname: "{{ .Values.global.domain }}"
     annotations:
       cert-manager.io/cluster-issuer: "{{ .Release.Name }}-issuer"
+      nginx.ingress.kubernetes.io/server-snippet: |
+        location ~ ^/keycloak/?$ {
+          return 302 $scheme://$host/keycloak/admin/foundry/console;
+        }
     tls: true
   keycloakConfigCli:
     enabled: true
+    extraEnvVars:
+      - name: IMPORT_MANAGED_CLIENTS
+        value: "full"
     existingConfigmap: '{{ include "foundry.fullname" . }}-config-cli'
   postgresql:
     enabled: false
@@ -191,7 +197,7 @@ gitea-old:
 #    oauth:
 #      - name: Foundry
 #        provider: openidConnect
-#        autoDiscoverUrl: https://foundry.local/keycloak/realms/master/.well-known/openid-configuration
+#        autoDiscoverUrl: https://foundry.local/keycloak/realms/foundry/.well-known/openid-configuration
 #        existingSecret: gitea-oauth-client
     config:
       APP_NAME: Foundry Gitea
@@ -251,17 +257,7 @@ mkdocs-material:
   storage:
     size: 100M
     class: local-path
-  #giturl: http://foundry-gitea-http:3000/foundry/mkdocs
-  mkdocs:
-    site_name: My Site
-    site_url: https://{{ .Values.global.domain }}
-    theme:
-      name: material
-  files:
-    index.md: |
-      Welcome to My Site
-    page2.md: |
-      More content goes here.
+  giturl: http://foundry-gitea/foundry/mkdocs
 
 topomojo:
   topomojo-api:
@@ -296,7 +292,7 @@ topomojo:
       FileUpload__IsoRoot: /mnt/tm
       FileUpload__TopoRoot: /mnt/tm
       FileUpload__DocRoot: /mnt/tm/_docs
-      Oidc__Authority: "https://{{ .Values.global.domain }}/auth/realms/master"
+      Oidc__Authority: "https://{{ .Values.global.domain }}/keycloak/realms/foundry"
       ApiKeyClients__0__Id: gameengine
       ApiKeyClients__0__Key: foundry
       ApiKeyClients__0__Scope: gameboard
@@ -319,11 +315,11 @@ topomojo:
         - hosts:
             - "{{ .Values.global.domain }}"
           secretName: '{{ include "foundry.fullname" . }}-cert'
-    basehref: /topomojo"
+    basehref: /topomojo
     settingsYaml:
-      appname: TopoMojo
+      appname: Foundry TopoMojo
       oidc:
-        authority: https://{{ .Values.global.domain }}/auth/realms/master
+        authority: https://{{ .Values.global.domain }}/keycloak/realms/foundry
         client_id: topomojo-client
         redirect_uri: https://{{ .Values.global.domain }}/topomojo/oidc
         silent_redirect_uri: https://{{ .Values.global.domain }}/topomojo/oidc-silent.html
@@ -368,7 +364,7 @@ gameboard:
       PathBase: /gameboard
       Database__Provider: PostgreSQL
       Oidc__Audience: gameboard-api
-      Oidc__Authority: https://{{ .Values.global.domain }}/keycloak/realms/master
+      Oidc__Authority: https://{{ .Values.global.domain }}/keycloak/realms/foundry
       OpenApi__Client__ClientId: gameboard-swagger
       Core__GameEngineUrl: https://{{ .Values.global.domain }}/topomojo/
       Core__GameEngineClientName: bot-gameboard
@@ -392,7 +388,7 @@ gameboard:
       appname: Foundry Gameboard
       oidc:
         client_id: gameboard-client
-        authority: https://{{ .Values.global.domain }}/keycloak/realms/master
+        authority: https://{{ .Values.global.domain }}/keycloak/realms/foundry
         redirect_uri: https://{{ .Values.global.domain }}/gameboard/oidc
         silent_redirect_uri: https://{{ .Values.global.domain }}/gameboard/oidc-silent.html
         response_type: code

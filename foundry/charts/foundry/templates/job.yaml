@@ -1,0 +1,43 @@
+{{- /* Job to seed gitea repository with mkdocs files */ -}}
+{{- $files := .Files.Glob "mkdocs/**" -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "foundry.fullname" . }}-seed-mkdocs
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: git
+          image: alpine/git:latest
+          command: ["/bin/sh","-c"]
+          args: ["/scripts/seed-gitea.sh"]
+          env:
+            - name: GITEA_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "foundry.fullname" . }}-gitea-admin-secret
+                  key: admin-password
+          volumeMounts:
+            - name: mkdocs
+              mountPath: /mkdocs
+            - name: script
+              mountPath: /scripts
+      volumes:
+        - name: mkdocs
+          configMap:
+            name: {{ include "foundry.fullname" . }}-mkdocs-files
+            items:
+            {{- range $path, $_ := $files }}
+              - key: {{ replace "/" "__" $path | quote }}
+                path: {{ (trimPrefix "mkdocs/" $path) | quote }}   # remove parent directory
+            {{- end }}
+        - name: script
+          configMap:
+            name: {{ include "foundry.fullname" . }}-gitea-job-script
+            defaultMode: 0755

@@ -23,6 +23,14 @@ if [ -f $FLAG ]; then
     exit 1
 fi
 
+# Create git repo to track changes
+$RUN_AS_USER git config --global user.name "Foundry Administrator"
+$RUN_AS_USER git config --global user.email "administrator@foundry.local"
+$RUN_AS_USER git config --global init.defaultBranch main
+$RUN_AS_USER git -C /home/foundry/foundry init
+$RUN_AS_USER git -C /home/foundry/foundry add -A
+$RUN_AS_USER git -C /home/foundry/foundry commit -am "Initial commit"
+
 # Install K3s during first boot to generate unique cluster CA
 mkdir -p /etc/rancher/k3s
 echo "nameserver 10.0.1.1" >>/etc/rancher/k3s/resolv.conf
