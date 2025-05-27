@@ -1,5 +1,6 @@
 global:
   domain: foundry.local
+  version: ""   # Appliance version overridden during Helm install on first boot
 
 nfs-server-provisioner:
   persistence:
@@ -257,7 +258,8 @@ mkdocs-material:
   storage:
     size: 100M
     class: local-path
-  giturl: http://foundry-gitea/foundry/mkdocs
+  giturl: http://{{ .Release.Name }}-gitea/foundry/mkdocs
+  pollInterval: 1
 
 topomojo:
   topomojo-api:

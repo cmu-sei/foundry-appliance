@@ -1,4 +1,4 @@
-# Foundry Appliance {version}
+# Foundry Appliance {{ .Values.global.version }}
 
 Welcome to the **Foundry Appliance**. This virtual machine hosts workforce development apps from the [Software Engineering Institute](https://sei.cmu.edu) at [Carnegie Mellon University](https://cmu.edu).
 

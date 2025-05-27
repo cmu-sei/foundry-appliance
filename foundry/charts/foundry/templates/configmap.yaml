@@ -94,7 +94,7 @@ data:
           "rootUrl": "https://{{ .Values.global.domain }}/topomojo",
           "defaultClientScopes": ["openid", "profile", "topomojo-api"],
           "attributes": {
-            "pkce.code.challenge.method": "S256",
+            "pkce.code.challenge.method": "S256"
           }
         },
         {
@@ -110,7 +110,7 @@ data:
           "rootUrl": "https://{{ .Values.global.domain }}/topomojo/api",
           "defaultClientScopes": ["topomojo-api"],
           "attributes": {
-            "consent.required": "true",
+            "consent.required": "true"
           }
         },
         {
@@ -224,7 +224,7 @@ data:
 {{- $textData := dict -}}
 {{- $binData  := dict -}}
 
-{{- range $path, $_ := .Files.Glob "mkdocs/**" }}
+{{- range $path, $_ := .Files.Glob "files/mkdocs/**" }}
   {{- $key := replace "/" "__" $path }}
   {{- $ext := trimPrefix "." (lower (ext $path)) }}
   {{- $contents := $.Files.Get $path }}
@@ -248,7 +248,7 @@ binaryData:
 data:
 {{- range $k, $v := $textData }}
   {{ $k }}: |-
-{{ $v | indent 4 }}
+{{ (tpl $v $) | indent 4 }}
 {{- end }}
 
 ---

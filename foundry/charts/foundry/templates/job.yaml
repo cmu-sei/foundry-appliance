@@ -1,5 +1,5 @@
 {{- /* Job to seed gitea repository with mkdocs files */ -}}
-{{- $files := .Files.Glob "mkdocs/**" -}}
+{{- $files := .Files.Glob "files/mkdocs/**" -}}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -35,7 +35,7 @@ spec:
             items:
             {{- range $path, $_ := $files }}
               - key: {{ replace "/" "__" $path | quote }}
-                path: {{ (trimPrefix "mkdocs/" $path) | quote }}   # remove parent directory
+                path: {{ (trimPrefix "files/mkdocs/" $path) | quote }}   # remove parent directories
             {{- end }}
         - name: script
           configMap:

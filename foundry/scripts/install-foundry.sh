@@ -9,6 +9,7 @@
 FLAG=/etc/.install-foundry
 CHART_DIR=/home/foundry/foundry/charts/foundry
 RUN_AS_USER="sudo -u foundry"
+APPLIANCE_VERSION=$(cat /etc/appliance_version)
 CERT_MANAGER_VERSION=v1.17.2
 export INSTALL_K3S_VERSION="v1.32.1+k3s1"
 
@@ -44,7 +45,7 @@ sed -i 's/default/foundry/g' /home/foundry/.kube/config
 $RUN_AS_USER kubectl apply --validate=false -f https://github.com/cert-manager/cert-manager/releases/download/$CERT_MANAGER_VERSION/cert-manager.crds.yaml
 $RUN_AS_USER kubectl create namespace foundry
 $RUN_AS_USER kubectl config set-context --current --namespace=foundry
-$RUN_AS_USER helm install foundry $CHART_DIR --namespace foundry
+$RUN_AS_USER helm install foundry $CHART_DIR --namespace foundry --set global.version=$APPLIANCE_VERSION
 
 # Create flag file
 date > $FLAG
