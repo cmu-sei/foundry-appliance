@@ -89,6 +89,7 @@ keycloak:
   auth:
     adminUser: "keycloak-admin"
     existingSecret: '{{ include "foundry.fullname" . }}-auth'
+  proxyHeaders: xforwarded
   httpRelativePath: /keycloak/
   ingress:
     enabled: true
@@ -97,7 +98,7 @@ keycloak:
       cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
       nginx.ingress.kubernetes.io/server-snippet: |
         location ~ ^/keycloak/?$ {
-          return 302 $scheme://$host/keycloak/admin/foundry/console;
+          return 302 $scheme://$host/keycloak/admin/foundry/console/;
         }
     tls: true
   keycloakConfigCli:

@@ -92,6 +92,7 @@ data:
             "/oidc-silent.html"
           ],
           "rootUrl": "https://{{ .Values.global.domain }}/topomojo",
+          "baseUrl": "/",
           "defaultClientScopes": ["openid", "profile", "topomojo-api"],
           "attributes": {
             "pkce.code.challenge.method": "S256"
@@ -108,6 +109,7 @@ data:
           "directAccessGrantsEnabled": false,
           "redirectUris": ["/oauth2-redirect.html"],
           "rootUrl": "https://{{ .Values.global.domain }}/topomojo/api",
+          "baseUrl": "/",
           "defaultClientScopes": ["topomojo-api"],
           "attributes": {
             "consent.required": "true"
@@ -127,6 +129,7 @@ data:
             "/oidc-silent.html"
           ],
           "rootUrl": "https://{{ .Values.global.domain }}/gameboard",
+          "baseUrl": "/",
           "defaultClientScopes": [ "openid", "profile", "gameboard-api" ],
           "attributes": {
             "pkce.code.challenge.method": "S256"
@@ -145,6 +148,7 @@ data:
             "/oauth2-redirect.html"
           ],
           "rootUrl": "https://{{ .Values.global.domain }}/gameboard/api",
+          "baseUrl": "/",
           "defaultClientScopes": ["openid", "profile", "gameboard-api"],
           "attributes": {
             "consent.required": "true"
@@ -164,6 +168,7 @@ data:
             "/user/oauth2/Foundry/callback"
           ],
           "rootUrl": "https://{{ .Values.global.domain }}/gitea",
+          "baseUrl": "/",
           "defaultClientScopes": ["openid", "profile", "email"],
           "attributes": {
             "oauth2.device.authorization.grant.enabled": "false"
