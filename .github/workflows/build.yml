@@ -78,3 +78,18 @@ jobs:
                                --name appliance/${{ env.build_name }}.ova \
                                --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
                                --no-progress
+
+    - name: Log OVA URL
+      run: |
+        URL=$(az storage blob url \
+          --container-name ova \
+          --name appliance/${{ env.build_name }}.ova \
+          --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
+          -o tsv)
+        echo "OVA uploaded to: $URL"
+
+        {
+          echo "### :package: Appliance image uploaded"
+          echo ""
+          echo "\`${URL}\`"
+        } >> "$GITHUB_STEP_SUMMARY"
