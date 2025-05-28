@@ -116,8 +116,8 @@ mv /home/foundry/foundry/scripts/install-foundry.sh /usr/local/bin/install-found
 cat <<EOF >/etc/systemd/system/install-foundry.service
 [Unit]
 Description=Install Foundry chart (first boot)
-After=network-online.target k3s.service
-Wants=network-online.target k3s.service
+After=network-online.target
+Requires=network-online.target
 
 [Service]
 Type=oneshot
