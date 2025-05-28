@@ -7,6 +7,9 @@
 # Foundry Appliance Setup
 #
 
+# Exit on errors
+set -euo pipefail
+
 echo "$APPLIANCE_VERSION" >/etc/appliance_version
 
 # Expand LVM volume to use full drive capacity
@@ -76,7 +79,9 @@ sudo -u $SSH_USERNAME git clone https://github.com/jaggedmountain/k-alias.git
 (cd /usr/local/bin && ln -s ~/k-alias/[h,k]* .)
 
 # Build dependencies for foundry Helm chart
-sudo -u $SSH_USERNAME helm dependency build ~/foundry/charts/foundry
+for chart in infra foundry; do
+  sudo -u $SSH_USERNAME helm dependency build ~/foundry/charts/$chart
+done
 
 # Customize MOTD and other text for the appliance
 chmod -x /etc/update-motd.d/00-header
@@ -84,7 +89,6 @@ chmod -x /etc/update-motd.d/10-help-text
 sed -i -r 's/(ENABLED=)1/\10/' /etc/default/motd-news
 cp ~/foundry/scripts/display-banner.sh /etc/update-motd.d/05-display-banner
 rm ~/foundry/scripts/display-banner.sh
-sed -i "s/{version}/$APPLIANCE_VERSION/" ~/mkdocs/docs/index.md
 echo -e "Foundry Appliance $APPLIANCE_VERSION \\\n \l \n" >/etc/issue
 
 # Create systemd services to configure netplan primary interface and install Foundry chart

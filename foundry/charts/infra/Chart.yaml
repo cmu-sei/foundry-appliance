@@ -1,0 +1,11 @@
+apiVersion: v2
+name: infra
+description: Foundry appliance infrastructure
+
+type: application
+version: 0.0.0
+
+dependencies:
+  - name: cert-manager
+    repository: https://charts.jetstack.io
+    version: v1.17.2

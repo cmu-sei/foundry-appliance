@@ -7,7 +7,7 @@
 # Finalize Foundry stack on first boot
 
 FLAG=/etc/.install-foundry
-CHART_DIR=/home/foundry/foundry/charts/foundry
+CHARTS_DIR=/home/foundry/foundry/charts
 RUN_AS_USER="sudo -u foundry"
 APPLIANCE_VERSION=$(cat /etc/appliance_version)
 CERT_MANAGER_VERSION=v1.17.2
@@ -41,11 +41,13 @@ cp /etc/rancher/k3s/k3s.yaml /home/foundry/.kube/config
 chown -R foundry:foundry /home/foundry/.kube
 sed -i 's/default/foundry/g' /home/foundry/.kube/config
 
-# Prep cluster and install foundry Helm chart
-$RUN_AS_USER kubectl apply --validate=false -f https://github.com/cert-manager/cert-manager/releases/download/$CERT_MANAGER_VERSION/cert-manager.crds.yaml
+# Prep cluster and install Helm charts
 $RUN_AS_USER kubectl create namespace foundry
 $RUN_AS_USER kubectl config set-context --current --namespace=foundry
-$RUN_AS_USER helm install foundry $CHART_DIR --namespace foundry --set global.version=$APPLIANCE_VERSION
+$RUN_AS_USER kubectl apply --validate=false -f https://github.com/cert-manager/cert-manager/releases/download/$CERT_MANAGER_VERSION/cert-manager.crds.yaml
+$RUN_AS_USER helm install infra $CHARTS_DIR/infra --wait
+$RUN_AS_USER timeout 300 bash -c 'while ! kubectl get secret infra-ca &>/dev/null; do echo "Waiting for infra-ca secret..."; sleep 5; done'
+$RUN_AS_USER helm install foundry $CHARTS_DIR/foundry --set global.version=$APPLIANCE_VERSION
 
 # Create flag file
 date > $FLAG

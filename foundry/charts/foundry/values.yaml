@@ -1,6 +1,7 @@
 global:
   domain: foundry.local
   version: ""   # Appliance version overridden during Helm install on first boot
+  infraHelmRelease: infra
 
 nfs-server-provisioner:
   persistence:
@@ -19,10 +20,6 @@ ingress-nginx:
   tcp:
     2049: "{{ .Release.Namespace }}/nfs-server-provisioner:2049"
     #5432: "{{ .Release.Namespace }}/postgresql:5432"
-
-ca:
-  cn: test
-  org: test
 
 postgresql:
   auth:
@@ -97,7 +94,7 @@ keycloak:
     enabled: true
     hostname: "{{ .Values.global.domain }}"
     annotations:
-      cert-manager.io/cluster-issuer: "{{ .Release.Name }}-issuer"
+      cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
       nginx.ingress.kubernetes.io/server-snippet: |
         location ~ ^/keycloak/?$ {
           return 302 $scheme://$host/keycloak/admin/foundry/console;
@@ -146,7 +143,7 @@ gitea:
     hostname: "{{ .Values.global.domain }}"
     path: /gitea(/|$)(.*)
     annotations:
-      cert-manager.io/cluster-issuer: "{{ .Release.Name }}-issuer"
+      cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
       nginx.ingress.kubernetes.io/rewrite-target: /$2
     tls: true
     extraTls:
@@ -241,7 +238,7 @@ mkdocs-material:
   ingress:
     enabled: true
     annotations:
-      cert-manager.io/cluster-issuer: "{{ .Release.Name }}-issuer"
+      cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
       nginx.ingress.kubernetes.io/app-root: /start
       nginx.ingress.kubernetes.io/rewrite-target: /$2
       nginx.ingress.kubernetes.io/configuration-snippet: |
@@ -266,7 +263,7 @@ topomojo:
     ingress:
       enabled: true
       annotations:
-        cert-manager.io/cluster-issuer: "{{ .Release.Name }}-issuer"
+        cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
         nginx.ingress.kubernetes.io/proxy-body-size: 6g
       hosts:
         - host: "{{ .Values.global.domain }}"
@@ -284,6 +281,14 @@ topomojo:
     storage:
       existing: '{{ include "foundry.fullname" . }}-nfs'
     existingSecret: '{{ include "foundry.fullname" . }}-dbconnection'
+    customStart:
+      command: ['/bin/sh']
+      args: ['/home/app/start/start.sh']
+      binaryFiles: {}
+      files:
+        start.sh: |
+          #!/bin/sh
+          cd /home/app && SSL_CERT_FILE=/home/app/conf/cacert.crt dotnet TopoMojo.Api.dll
     env:
       PathBase: /topomojo
       Database__Provider: PostgreSQL
@@ -306,7 +311,7 @@ topomojo:
     ingress:
       enabled: true
       annotations:
-        cert-manager.io/cluster-issuer: "{{ .Release.Name }}-issuer"
+        cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
         nginx.ingress.kubernetes.io/proxy-body-size: 6g
       hosts:
         - host: "{{ .Values.global.domain }}"
@@ -341,7 +346,7 @@ gameboard:
     ingress:
       enabled: true
       annotations:
-        cert-manager.io/cluster-issuer: "{{ .Release.Name }}-issuer"
+        cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
         nginx.ingress.kubernetes.io/proxy-body-size: 10m
       hosts:
         - host: "{{ .Values.global.domain }}"
@@ -375,7 +380,7 @@ gameboard:
     ingress:
       enabled: true
       annotations:
-        cert-manager.io/cluster-issuer: "{{ .Release.Name }}-issuer"
+        cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
       hosts:
         - host: "{{ .Values.global.domain }}"
           paths:
@@ -387,7 +392,7 @@ gameboard:
           secretName: '{{ include "foundry.fullname" . }}-cert'
     basehref: /gameboard
     settingsYaml:
-      appname: Foundry Gameboard
+      appname: Gameboard
       oidc:
         client_id: gameboard-client
         authority: https://{{ .Values.global.domain }}/keycloak/realms/foundry
