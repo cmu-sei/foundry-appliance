@@ -325,7 +325,7 @@ topomojo:
           secretName: '{{ include "foundry.fullname" . }}-cert'
     basehref: /topomojo
     settingsYaml:
-      appname: Foundry TopoMojo
+      appname: TopoMojo
       oidc:
         authority: https://{{ .Values.global.domain }}/keycloak/realms/foundry
         client_id: topomojo-client
