@@ -18,7 +18,7 @@ ingress-nginx:
     updateStrategy:
       type: RollingUpdate
   tcp:
-    2049: "{{ .Release.Namespace }}/nfs-server-provisioner:2049"
+    2049: "{{ .Release.Namespace }}/{{ .Release.Name }}-nfs-server-provisioner:2049"
     #5432: "{{ .Release.Namespace }}/postgresql:5432"
 
 postgresql:

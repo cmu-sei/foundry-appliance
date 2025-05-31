@@ -26,8 +26,9 @@ spec:
     algorithm: ECDSA
     size: 384             # secp384r1
   subject:
-    organizations: ["{{ .Values.ca.org }}"]
-  commonName: {{ .Values.ca.cn }}
+    organizations: ["{{ .Values.certificateAuthority.organization }}"]
+    organizationalUnits: ["{{ .Values.certificateAuthority.organizationalUnit }}"]
+  commonName: {{ .Values.certificateAuthority.commonName }}
   issuerRef:
     name: {{ include "infra.fullname" . }}-selfsigned
     kind: ClusterIssuer

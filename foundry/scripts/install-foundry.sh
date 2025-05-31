@@ -7,7 +7,7 @@
 # Finalize Foundry stack on first boot
 
 FLAG=/etc/.install-foundry
-CHARTS_DIR=/home/foundry/foundry/charts
+CHARTS_DIR=/home/foundry/charts
 RUN_AS_USER="sudo -u foundry"
 APPLIANCE_VERSION=$(cat /etc/appliance_version)
 CERT_MANAGER_VERSION=v1.17.2
@@ -28,9 +28,9 @@ fi
 $RUN_AS_USER git config --global user.name "Foundry Administrator"
 $RUN_AS_USER git config --global user.email "administrator@foundry.local"
 $RUN_AS_USER git config --global init.defaultBranch main
-$RUN_AS_USER git -C /home/foundry/foundry init
-$RUN_AS_USER git -C /home/foundry/foundry add -A
-$RUN_AS_USER git -C /home/foundry/foundry commit -am "Initial commit"
+$RUN_AS_USER git -C /home/foundry init
+$RUN_AS_USER git -C /home/foundry add -A
+$RUN_AS_USER git -C /home/foundry commit -am "Initial commit"
 
 # Install K3s during first boot to generate unique cluster CA
 mkdir -p /etc/rancher/k3s

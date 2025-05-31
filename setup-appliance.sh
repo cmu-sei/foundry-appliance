@@ -13,7 +13,9 @@ set -euo pipefail
 echo "$APPLIANCE_VERSION" >/etc/appliance_version
 
 # Expand LVM volume to use full drive capacity
-~/foundry/scripts/expand-volume.sh
+cp ~/scripts/expand-volume.sh /usr/local/bin/expand-volume
+rm ~/scripts/expand-volume.sh
+/usr/local/bin/expand-volume
 
 # Disable swap for Kubernetes
 swapoff -a
@@ -78,24 +80,25 @@ if [ -f ~/VBoxGuestAdditions.iso ]; then
 fi
 
 # Install k-alias Kubernetes helper scripts
-sudo -u $SSH_USERNAME git clone https://github.com/jaggedmountain/k-alias.git
-(cd /usr/local/bin && ln -s ~/k-alias/[h,k]* .)
+git clone https://github.com/jaggedmountain/k-alias.git /tmp/k-alias
+cp /tmp/k-alias/[h,k]* /usr/local/bin
 
 # Build dependencies for foundry Helm chart
 for chart in infra foundry; do
-  sudo -u $SSH_USERNAME helm dependency build ~/foundry/charts/$chart
+  sudo -u $SSH_USERNAME helm dependency build ~/charts/$chart
 done
 
 # Customize MOTD and other text for the appliance
 chmod -x /etc/update-motd.d/00-header
 chmod -x /etc/update-motd.d/10-help-text
 sed -i -r 's/(ENABLED=)1/\10/' /etc/default/motd-news
-cp ~/foundry/scripts/display-banner.sh /etc/update-motd.d/05-display-banner
-rm ~/foundry/scripts/display-banner.sh
+cp ~/scripts/display-banner.sh /etc/update-motd.d/05-display-banner
+rm ~/scripts/display-banner.sh
 echo -e "Foundry Appliance $APPLIANCE_VERSION \\\n \l \n" >/etc/issue
 
 # Create systemd services to configure netplan primary interface and install Foundry chart
-mv /home/foundry/foundry/scripts/configure-nic.sh /usr/local/bin/configure-nic
+cp ~/scripts/configure-nic.sh /usr/local/bin/configure-nic
+rm ~/scripts/configure-nic.sh
 cat <<EOF >/etc/systemd/system/configure-nic.service
 [Unit]
 Description=Configure Netplan primary Ethernet interface (first boot)
@@ -112,7 +115,8 @@ RemainAfterExit=yes
 WantedBy=multi-user.target
 EOF
 
-mv /home/foundry/foundry/scripts/install-foundry.sh /usr/local/bin/install-foundry
+cp ~/scripts/install-foundry.sh /usr/local/bin/install-foundry
+rm ~/scripts/install-foundry.sh
 cat <<EOF >/etc/systemd/system/install-foundry.service
 [Unit]
 Description=Install Foundry chart (first boot)

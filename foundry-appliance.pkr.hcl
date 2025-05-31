@@ -116,8 +116,8 @@ build {
   ]
 
   provisioner "file" {
+    source      = "./foundry/"
     destination = "/home/${var.ssh_username}"
-    source      = "./foundry"
   }
 
   provisioner "shell" {
