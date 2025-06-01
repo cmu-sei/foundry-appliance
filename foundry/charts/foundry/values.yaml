@@ -13,8 +13,6 @@ ingress-nginx:
       hsts: "false"
       annotations-risk-level: critical
     allowSnippetAnnotations: true
-    ingressClassResource:
-      default: true
     updateStrategy:
       type: RollingUpdate
   tcp:
@@ -93,6 +91,7 @@ keycloak:
   httpRelativePath: /keycloak/
   ingress:
     enabled: true
+    ingressClassName: nginx
     hostname: "{{ .Values.global.domain }}"
     annotations:
       cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
@@ -141,6 +140,7 @@ gitea:
     type: ClusterIP
   ingress:
     enabled: true
+    ingressClassName: nginx
     hostname: "{{ .Values.global.domain }}"
     path: /gitea(/|$)(.*)
     annotations:
@@ -238,6 +238,7 @@ gitea-old:
 mkdocs-material:
   ingress:
     enabled: true
+    className: nginx
     annotations:
       cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
       nginx.ingress.kubernetes.io/app-root: /start
@@ -263,6 +264,7 @@ topomojo:
   topomojo-api:
     ingress:
       enabled: true
+      className: nginx
       annotations:
         cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
         nginx.ingress.kubernetes.io/proxy-body-size: 6g
@@ -311,6 +313,7 @@ topomojo:
   topomojo-ui:
     ingress:
       enabled: true
+      className: nginx
       annotations:
         cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
         nginx.ingress.kubernetes.io/proxy-body-size: 6g
@@ -346,6 +349,7 @@ gameboard:
   gameboard-api:
     ingress:
       enabled: true
+      className: nginx
       annotations:
         cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
         nginx.ingress.kubernetes.io/proxy-body-size: 10m
@@ -380,6 +384,7 @@ gameboard:
   gameboard-ui:
     ingress:
       enabled: true
+      className: nginx
       annotations:
         cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
       hosts:

@@ -116,8 +116,13 @@ build {
   ]
 
   provisioner "file" {
-    source      = "./foundry/"
+    source      = "foundry/"
     destination = "/home/${var.ssh_username}"
+  }
+
+  provisioner "file" {
+    source      = "LICENSE.md"
+    destination = "/home/${var.ssh_username}/"
   }
 
   provisioner "shell" {
