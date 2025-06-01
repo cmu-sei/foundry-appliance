@@ -123,16 +123,19 @@ gitea:
   updateStrategy:
     type: Recreate
   existingSecret: '{{ include "foundry.fullname" . }}-admin-secret'
+  extraEnvVars:
+    - name: BITNAMI_EXTRA_CA_CERTIFICATES
+      value: "/etc/ssl/certs/ca-cert.crt"
   extraEnvVarsCM: '{{ include "foundry.fullname" . }}-env'
-  # extraVolumes:
-  #   - name: appliance-cert-vol
-  #     secret:
-  #       secretName: appliance-cert
-  # extraVolumeMounts:
-  #   - name: appliance-cert-vol
-  #     mountPath: /etc/ssl/certs/appliance-ca.crt
-  #     subPath: tls.crt
-  #     readOnly: true
+  extraVolumes:
+    - name: ca-cert
+      secret:
+        secretName: "{{ .Values.global.infraHelmRelease }}-ca"
+  extraVolumeMounts:
+    - name: ca-cert
+      mountPath: /etc/ssl/certs/ca-cert.crt
+      subPath: ca.crt
+      readOnly: true
   persistence:
     storageClass: local-path
     size: 1Gi
@@ -405,7 +408,7 @@ gameboard:
         redirect_uri: https://{{ .Values.global.domain }}/gameboard/oidc
         silent_redirect_uri: https://{{ .Values.global.domain }}/gameboard/oidc-silent.html
         response_type: code
-        scope: openid profile organization gameboard-api
+        scope: openid profile gameboard-api
         automaticSilentRenew: true
         includeIdTokenInSilentRenew: false
         filterProtocolClaims: true
