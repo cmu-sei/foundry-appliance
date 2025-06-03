@@ -60,3 +60,13 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{- define "foundry.gitea.image" -}}
+{{- $giteaCtx := dict
+      "Values"       .Values.gitea
+      "Chart"        .Subcharts.gitea
+      "Release"      .Release
+      "Capabilities" .Capabilities
+  -}}
+{{- include "gitea.image" $giteaCtx -}}
+{{- end -}}

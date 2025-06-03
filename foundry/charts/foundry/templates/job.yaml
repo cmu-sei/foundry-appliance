@@ -1,3 +1,72 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-add-oidc
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    helm.sh/hook-weight: "10"
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      volumes:
+        - name: gitea-data
+          persistentVolumeClaim:
+            claimName: {{ include "foundry.fullname" . }}-gitea
+        - name: ca-cert
+          secret:
+            defaultMode: 420
+            secretName: {{ .Values.global.infraHelmRelease }}-ca
+      containers:
+        - name: gitea-cli
+          image: {{ include "foundry.gitea.image" . }}
+          volumeMounts:
+            - name: gitea-data
+              mountPath: /bitnami/gitea
+              readOnly: true
+            - name: ca-cert
+              mountPath: /etc/ssl/certs/ca-cert.crt
+              readOnly: true
+              subPath: ca.crt
+          env:
+            - name: GITEA_APP_INI
+              value: /bitnami/gitea/custom/conf/app.ini
+            - name: GITEA_WORK_DIR
+              value: /bitnami/gitea
+            - name: GITEA_ADMIN_USERNAME
+              value: {{ .Values.gitea.adminUsername }}
+            - name: GITEA_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "foundry.fullname" . }}-gitea-admin-secret
+                  key: admin-password
+            - name: OIDC_CLIENT_ID
+              value: gitea-client
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "foundry.fullname" . }}-keycloak-auth
+                  key: oauth-client-secret
+          command:
+            - /bin/bash
+            - -eu
+            - -c
+            - |
+              if /opt/bitnami/gitea/bin/gitea admin auth list | grep -q "Foundry"; then
+                  echo "OAuth auth source 'Foundry' already exists, skipping creation"
+                  exit 0
+              fi
+
+              /opt/bitnami/gitea/bin/gitea admin auth add-oauth \
+                  --name "Foundry" \
+                  --provider openidConnect \
+                  --key "$OIDC_CLIENT_ID" \
+                  --secret "$OIDC_CLIENT_SECRET" \
+                  --auto-discover-url "https://{{ .Values.global.domain }}/keycloak/realms/foundry/.well-known/openid-configuration" \
+                  --scopes "openid profile email" \
+
+---
 {{- /* Job to seed gitea repository with mkdocs files */ -}}
 {{- $files := .Files.Glob "files/mkdocs/**" -}}
 apiVersion: batch/v1
