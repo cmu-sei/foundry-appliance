@@ -1,0 +1,342 @@
+global:
+  domain: foundry.local
+  version: ""   # Appliance version overridden during Helm install on first boot
+  infraHelmRelease: infra
+
+nfs-server-provisioner:
+  persistence:
+    enabled: true
+
+ingress-nginx:
+  controller:
+    config:
+      hsts: "false"
+      annotations-risk-level: critical
+    allowSnippetAnnotations: true
+    updateStrategy:
+      type: RollingUpdate
+  tcp:
+    2049: "{{ .Release.Namespace }}/{{ .Release.Name }}-nfs-server-provisioner:2049"
+    #5432: "{{ .Release.Namespace }}/postgresql:5432"
+
+postgresql:
+  auth:
+    existingSecret: '{{ include "foundry.fullname" . }}'
+  primary:
+    persistence:
+      size: 1Gi
+    initdb:
+      scripts:
+        create-dbs.sql: |
+          CREATE DATABASE keycloak;
+          CREATE DATABASE gitea;
+
+pgadmin4:
+  serverDefinitions:
+    servers:
+        foundry:
+          Name: foundry
+          Group: Servers
+          Port: 5432
+          Username: postgres
+          Host: postgresql
+          PassFile: ../../pgpass.conf
+          SSLMode: prefer
+          MaintenanceDB: postgres
+  ingress:
+    enabled: true
+    annotations:
+      nginx.ingress.kubernetes.io/configuration-snippet: |
+        proxy_set_header X-Script-Name /pgadmin;
+    hosts:
+      - host: foundry.local
+        paths:
+          - path: /pgadmin
+            pathType: Prefix
+    tls:
+      - secretName: appliance-cert
+        hosts:
+          - foundry.local
+  extraSecretMounts:
+    - name: pgpassfile
+      secret: pgpassfile
+      subPath: pgpassfile
+      mountPath: /pgpass.conf
+      readOnly: true
+  env:
+    email: administrator@foundry.local
+    password: foundry
+    variables:
+      - name: PGADMIN_DISABLE_POSTFIX
+        value: "true"
+      - name: PGADMIN_CONFIG_ALLOW_SPECIAL_EMAIL_DOMAINS
+        value: "['local']"
+  persistentVolume:
+    size: 1Gi
+  extraInitContainers: |
+    - name: add-folder-for-pgpass
+      image: "dpage/pgadmin4:latest"
+      command: ["/bin/mkdir", "-p", "/var/lib/pgadmin/storage/pgadmin"]
+      volumeMounts:
+        - name: pgadmin-data
+          mountPath: /var/lib/pgadmin
+      securityContext:
+        runAsUser: 5050
+
+keycloak:
+  auth:
+    adminUser: "keycloak-admin"
+    existingSecret: '{{ include "foundry.fullname" . }}-auth'
+  proxyHeaders: xforwarded
+  httpRelativePath: /keycloak/
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hostname: "{{ .Values.global.domain }}"
+    annotations:
+      cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
+      nginx.ingress.kubernetes.io/server-snippet: |
+        location ~ ^/keycloak/?$ {
+          return 302 $scheme://$host/keycloak/admin/foundry/console/;
+        }
+    tls: true
+  keycloakConfigCli:
+    enabled: true
+    extraEnvVars:
+      - name: IMPORT_MANAGED_CLIENTS
+        value: "full"
+    existingConfigmap: '{{ include "foundry.fullname" . }}-config-cli'
+  postgresql:
+    enabled: false
+  externalDatabase:
+    host: "{{ .Release.Name }}-postgresql"
+    user: postgres
+    database: keycloak
+    existingSecret: "{{ .Release.Name }}-postgresql"
+    existingSecretPasswordKey: postgres-password
+
+gitea:
+  adminUsername: foundry
+  adminEmail: administrator@foundry.local
+  appName: Foundry Gitea
+  rootURL: https://{{ .Values.global.domain }}/gitea
+  updateStrategy:
+    type: Recreate
+  existingSecret: '{{ include "foundry.fullname" . }}-admin-secret'
+  extraEnvVars:
+    - name: BITNAMI_EXTRA_CA_CERTIFICATES
+      value: "/etc/ssl/certs/ca-cert.crt"
+  extraEnvVarsCM: '{{ include "foundry.fullname" . }}-env'
+  extraVolumes:
+    - name: ca-cert
+      secret:
+        secretName: "{{ .Values.global.infraHelmRelease }}-ca"
+  extraVolumeMounts:
+    - name: ca-cert
+      mountPath: /etc/ssl/certs/ca-cert.crt
+      subPath: ca.crt
+      readOnly: true
+  persistence:
+    storageClass: local-path
+    size: 1Gi
+  service:
+    type: ClusterIP
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hostname: "{{ .Values.global.domain }}"
+    path: /gitea(/|$)(.*)
+    annotations:
+      cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
+      nginx.ingress.kubernetes.io/rewrite-target: /$2
+    tls: true
+    extraTls:
+      - hosts:
+          - "{{ .Values.global.domain }}"
+        secretName: '{{ include "foundry.fullname" . }}-cert'
+  postgresql:
+    enabled: false
+  externalDatabase:
+    host: "{{ .Release.Name }}-postgresql"
+    existingSecret: "{{ .Release.Name }}-postgresql"
+    existingSecretPasswordKey: postgres-password
+
+mkdocs-material:
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
+      nginx.ingress.kubernetes.io/app-root: /start
+      nginx.ingress.kubernetes.io/rewrite-target: /$2
+      nginx.ingress.kubernetes.io/configuration-snippet: |
+        rewrite ^(/start)$ $1/ redirect;
+    hosts:
+      - host: "{{ .Values.global.domain }}"
+        paths:
+          - path: /start(/|$)(.*)
+            pathType: ImplementationSpecific
+    tls:
+      - hosts:
+          - "{{ .Values.global.domain }}"
+        secretName: '{{ include "foundry.fullname" . }}-cert'
+  storage:
+    size: 100M
+    class: local-path
+  giturl: http://{{ .Release.Name }}-gitea/foundry/mkdocs
+  pollInterval: 1
+
+topomojo:
+  topomojo-api:
+    ingress:
+      enabled: true
+      className: nginx
+      annotations:
+        cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
+        nginx.ingress.kubernetes.io/proxy-body-size: 6g
+      hosts:
+        - host: "{{ .Values.global.domain }}"
+          paths:
+            - path: /topomojo/api
+              pathType: ImplementationSpecific
+            - path: /topomojo/hub
+              pathType: ImplementationSpecific
+            - path: /topomojo/docs
+              pathType: ImplementationSpecific
+      tls:
+        - hosts:
+            - "{{ .Values.global.domain }}"
+          secretName: '{{ include "foundry.fullname" . }}-cert'
+    storage:
+      existing: '{{ include "foundry.fullname" . }}-nfs'
+    existingSecret: '{{ include "foundry.fullname" . }}-dbconnection'
+    customStart:
+      command: ['/bin/sh']
+      args: ['/home/app/start/start.sh']
+      binaryFiles: {}
+      files:
+        start.sh: |
+          #!/bin/sh
+          cd /home/app && SSL_CERT_FILE=/home/app/conf/cacert.crt dotnet TopoMojo.Api.dll
+    env:
+      PathBase: /topomojo
+      Database__Provider: PostgreSQL
+      Database__AdminId: 704d16ba-b969-45c2-843a-c12589963e77
+      Database__AdminName: Administrator
+      Cache__SharedFolder: ""
+      OpenApi__Client__ClientId: topomojo-swagger
+      FileUpload__IsoRoot: /mnt/tm
+      FileUpload__TopoRoot: /mnt/tm
+      FileUpload__DocRoot: /mnt/tm/_docs
+      Oidc__Authority: "https://{{ .Values.global.domain }}/keycloak/realms/foundry"
+      ApiKeyClients__0__Id: gameengine
+      ApiKeyClients__0__Key: foundry
+      ApiKeyClients__0__Scope: gameboard
+      Core__ConsoleHost: "{{ .Values.global.domain }}/console"
+      Pod__ConsoleUrl: "{{ .Values.global.domain }}/console"
+      Headers__Cors__Origins__0: https://{{ .Values.global.domain }}'
+      Headers__Forwarding__TargetHeaders: All
+  topomojo-ui:
+    ingress:
+      enabled: true
+      className: nginx
+      annotations:
+        cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
+        nginx.ingress.kubernetes.io/proxy-body-size: 6g
+      hosts:
+        - host: "{{ .Values.global.domain }}"
+          paths:
+            - path: /topomojo
+              pathType: ImplementationSpecific
+      tls:
+        - hosts:
+            - "{{ .Values.global.domain }}"
+          secretName: '{{ include "foundry.fullname" . }}-cert'
+    basehref: /topomojo
+    settingsYaml:
+      appname: TopoMojo
+      oidc:
+        authority: https://{{ .Values.global.domain }}/keycloak/realms/foundry
+        client_id: topomojo-client
+        redirect_uri: https://{{ .Values.global.domain }}/topomojo/oidc
+        silent_redirect_uri: https://{{ .Values.global.domain }}/topomojo/oidc-silent.html
+        post_logout_redirect_uri: https://{{ .Values.global.domain }}/topomojo
+        response_type: code
+        scope: openid profile topomojo-api
+        automaticSilentRenew: true
+        includeIdTokenInSilentRenew: false
+        filterProtocolClaims: true
+        loadUserInfo: true
+        accessTokenExpiringNotificationTime: 120
+        monitorSession: false
+        useLocalStorage: true
+
+gameboard:
+  gameboard-api:
+    ingress:
+      enabled: true
+      className: nginx
+      annotations:
+        cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
+        nginx.ingress.kubernetes.io/proxy-body-size: 10m
+      hosts:
+        - host: "{{ .Values.global.domain }}"
+          paths:
+            - path: /gameboard/api
+              pathType: ImplementationSpecific
+            - path: /gameboard/hub
+              pathType: ImplementationSpecific
+            - path: /gameboard/img
+              pathType: ImplementationSpecific
+            - path: /gameboard/doc
+              pathType: ImplementationSpecific
+      tls:
+        - hosts:
+            - "{{ .Values.global.domain }}"
+          secretName: '{{ include "foundry.fullname" . }}-cert'
+    storage:
+      size: "1Gi"
+      class: local-path
+    existingSecret: '{{ include "foundry.fullname" . }}-dbconnection'
+    env:
+      PathBase: /gameboard
+      Database__Provider: PostgreSQL
+      Oidc__Audience: gameboard-api
+      Oidc__Authority: https://{{ .Values.global.domain }}/keycloak/realms/foundry
+      OpenApi__Client__ClientId: gameboard-swagger
+      Core__GameEngineUrl: https://{{ .Values.global.domain }}/topomojo/
+      Core__GameEngineClientName: bot-gameboard
+      Core__GameEngineClientSecret: tdRMT_4QQjjhLSEq89tJZ2O3s_TcN0nw
+  gameboard-ui:
+    ingress:
+      enabled: true
+      className: nginx
+      annotations:
+        cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
+      hosts:
+        - host: "{{ .Values.global.domain }}"
+          paths:
+            - path: /gameboard
+              pathType: ImplementationSpecific
+      tls:
+        - hosts:
+            - "{{ .Values.global.domain }}"
+          secretName: '{{ include "foundry.fullname" . }}-cert'
+    basehref: /gameboard
+    settingsYaml:
+      appname: Gameboard
+      oidc:
+        client_id: gameboard-client
+        authority: https://{{ .Values.global.domain }}/keycloak/realms/foundry
+        redirect_uri: https://{{ .Values.global.domain }}/gameboard/oidc
+        silent_redirect_uri: https://{{ .Values.global.domain }}/gameboard/oidc-silent.html
+        response_type: code
+        scope: openid profile gameboard-api
+        automaticSilentRenew: true
+        includeIdTokenInSilentRenew: false
+        filterProtocolClaims: true
+        loadUserInfo: true
+        checkSessionInterval: 30000
+        accessTokenExpiringNotificationTime: 120
+        monitorSession: false
+        useLocalStorage: true

@@ -1,0 +1,4 @@
+certificateAuthority:
+  commonName: Foundry Appliance CA
+  organization: Carnegie Mellon University
+  organizationalUnit: Software Engineering Institute

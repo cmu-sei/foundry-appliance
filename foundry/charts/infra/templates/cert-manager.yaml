@@ -1,0 +1,45 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: {{ include "infra.fullname" . }}-selfsigned
+  labels:
+    {{- include "infra.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  selfSigned: {}
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "infra.fullname" . }}-ca
+  labels:
+    {{- include "infra.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  secretName: {{ include "infra.fullname" . }}-ca
+  isCA: true
+  duration: 87600h        # 10 years
+  privateKey:
+    algorithm: ECDSA
+    size: 384             # secp384r1
+  subject:
+    organizations: ["{{ .Values.certificateAuthority.organization }}"]
+    organizationalUnits: ["{{ .Values.certificateAuthority.organizationalUnit }}"]
+  commonName: {{ .Values.certificateAuthority.commonName }}
+  issuerRef:
+    name: {{ include "infra.fullname" . }}-selfsigned
+    kind: ClusterIssuer
+
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: {{ include "infra.fullname" . }}-issuer
+  labels:
+    {{- include "infra.labels" . | nindent 4 }}
+spec:
+  ca:
+    secretName: {{ include "infra.fullname" . }}-ca

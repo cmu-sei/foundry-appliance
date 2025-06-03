@@ -1,0 +1,38 @@
+#!/bin/bash
+#
+# Copyright 2025 Carnegie Mellon University.
+# Released under a BSD (SEI)-style license, please see LICENSE.md in the
+# project root or contact permission@sei.cmu.edu for full terms.
+
+
+# Parse target hypervisors into Packer -only option syntax
+if [[ $1 != -* ]]; then
+    IFS=',' read -ra TARGETS <<< "$1"
+    for i in "${TARGETS[@]}"; do
+        ONLY_VAR+="$i*,"
+    done
+    ONLY_VAR=${ONLY_VAR%?}
+    shift 1
+fi
+
+if git rev-parse --git-dir > /dev/null 2>&1; then
+    VERSION_TAG=$(git tag --points-at HEAD)
+    GIT_BRANCH=$(git branch --show-current)
+    GIT_HASH=$(git rev-parse --short HEAD)
+fi
+
+if [ -n "$VERSION_TAG" ]; then
+    BUILD_VERSION=$VERSION_TAG
+elif [ -n "$GITHUB_PULL_REQUEST" ]; then
+    BUILD_VERSION=PR$GITHUB_PULL_REQUEST-$GIT_HASH
+elif [ -n "$GIT_HASH" ]; then
+    BUILD_VERSION=$GIT_BRANCH-$GIT_HASH
+else
+    BUILD_VERSION="custom-$(date '+%Y%m%d')"
+fi
+
+if [ -n "$ONLY_VAR" ]; then
+    packer build -only=$ONLY_VAR -var "appliance_version=$BUILD_VERSION" $@ .
+else
+    packer build -var "appliance_version=$BUILD_VERSION" $@ .
+fi

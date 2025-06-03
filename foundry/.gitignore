@@ -1,0 +1,8 @@
+# Helm chart dependencies
+**/charts/*.tgz
+
+# Hidden files/dirs in foundry home directory
+/.*
+
+# But keep this file
+!/.gitignore
