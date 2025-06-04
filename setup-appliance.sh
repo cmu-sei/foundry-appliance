@@ -103,7 +103,6 @@ cat <<EOF >/etc/systemd/system/configure-nic.service
 [Unit]
 Description=Configure Netplan primary Ethernet interface (first boot)
 After=network.target
-Before=k3s.service
 
 [Service]
 Type=oneshot
@@ -120,7 +119,7 @@ rm ~/scripts/install-foundry.sh
 cat <<EOF >/etc/systemd/system/install-foundry.service
 [Unit]
 Description=Install Foundry chart (first boot)
-After=network-online.target
+After=configure-nic.service
 Requires=network-online.target
 
 [Service]

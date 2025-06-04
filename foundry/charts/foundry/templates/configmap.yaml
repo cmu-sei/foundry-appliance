@@ -125,6 +125,10 @@ data:
     git config --global init.defaultBranch main
 
     cp -RL /mkdocs /tmp
+
+    # Copy Foundry CA certificate to mkdocs assets
+    cp /foundry-ca/ca.crt /tmp/mkdocs/docs/assets/foundry-ca.crt
+
     git -C /tmp/mkdocs init
     git -C /tmp/mkdocs add -A
     git -C /tmp/mkdocs commit -m "Initial commit"
