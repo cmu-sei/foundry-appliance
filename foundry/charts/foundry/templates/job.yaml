@@ -97,6 +97,9 @@ spec:
               mountPath: /mkdocs
             - name: script
               mountPath: /scripts
+            - name: foundry-ca-cert
+              mountPath: /foundry-ca
+              readOnly: true
       volumes:
         - name: mkdocs
           configMap:
@@ -110,3 +113,9 @@ spec:
           configMap:
             name: {{ include "foundry.fullname" . }}-gitea-job-script
             defaultMode: 0755
+        - name: foundry-ca-cert
+          secret:
+            secretName: {{ .Values.global.infraHelmRelease }}-ca
+            items:
+            - key: ca.crt
+              path: ca.crt

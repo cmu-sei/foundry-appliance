@@ -66,18 +66,7 @@ chmod 600 /etc/netplan/01-loopback.yaml
 netplan apply
 
 # Install apt packages
-apt-get install -y dnsmasq avahi-daemon nfs-common sshpass kubectl helm pwgen build-essential
-
-# Install VirtualBox Guest Additions
-if [ -f ~/VBoxGuestAdditions.iso ]; then
-  mount -o loop,ro ~/VBoxGuestAdditions.iso /mnt
-
-  # Temporarily disable exit on errors, since the VirtualBox Guest Additions installer returns '2'
-  set +e; /mnt/VBoxLinuxAdditions.run; set -e
-
-  umount /mnt
-  rm ~/VBoxGuestAdditions.iso
-fi
+apt-get install -y dnsmasq avahi-daemon nfs-common sshpass kubectl helm pwgen
 
 # Install k-alias Kubernetes helper scripts
 git clone https://github.com/jaggedmountain/k-alias.git /tmp/k-alias
@@ -103,7 +92,6 @@ cat <<EOF >/etc/systemd/system/configure-nic.service
 [Unit]
 Description=Configure Netplan primary Ethernet interface (first boot)
 After=network.target
-Before=k3s.service
 
 [Service]
 Type=oneshot
@@ -120,7 +108,7 @@ rm ~/scripts/install-foundry.sh
 cat <<EOF >/etc/systemd/system/install-foundry.service
 [Unit]
 Description=Install Foundry chart (first boot)
-After=network-online.target
+After=configure-nic.service
 Requires=network-online.target
 
 [Service]
