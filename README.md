@@ -21,7 +21,6 @@ password: foundry
 
 The following SEI apps are loaded on the appliance:
 
-- [Identity](https://github.com/cmu-sei/identity) - OAuth2/OIDC identity provider
 - [TopoMojo](https://github.com/cmu-sei/topomojo) - Virtual lab builder and player
 - [Gameboard](https://github.com/cmu-sei/gameboard) - Competition manager
 
