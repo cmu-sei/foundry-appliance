@@ -66,7 +66,7 @@ chmod 600 /etc/netplan/01-loopback.yaml
 netplan apply
 
 # Install apt packages
-apt-get install -y dnsmasq avahi-daemon nfs-common sshpass kubectl helm pwgen
+apt-get install -y dnsmasq avahi-daemon nfs-common kubectl helm pwgen
 
 # Install k-alias Kubernetes helper scripts
 git clone https://github.com/jaggedmountain/k-alias.git /tmp/k-alias
