@@ -5,7 +5,7 @@ metadata:
   annotations:
     helm.sh/hook: post-install,post-upgrade
     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
-    helm.sh/hook-weight: "10"
+    helm.sh/hook-weight: "15"
 spec:
   template:
     spec:
@@ -119,3 +119,101 @@ spec:
             items:
             - key: ca.crt
               path: ca.crt
+
+---
+{{- /* Add foundry user to realm of the same name */ -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "foundry.fullname" . }}-add-foundry-user
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    helm.sh/hook-weight: "10"
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: curl
+          image: alpine/curl:latest
+          env:
+            - name: KEYCLOAK_ADMIN_USER
+              value: {{ .Values.keycloak.auth.adminUser }}
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "foundry.fullname" . }}-keycloak-auth
+                  key: admin-password
+            - name: KEYCLOAK_URL
+              value: https://{{ .Values.global.domain }}/keycloak
+            - name: KEYCLOAK_FOUNDRY_USER_GUID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "foundry.fullname" . }}-keycloak-auth
+                  key: foundry-user-guid
+            - name: KEYCLOAK_FOUNDRY_USERNAME
+              value: foundry
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+
+              echo "Waiting for Keycloak to be ready..."
+              until curl -sfk "${KEYCLOAK_URL}/realms/master" > /dev/null 2>&1; do
+                echo "Keycloak not ready, waiting 10 seconds..."
+                sleep 10
+              done
+              echo "Keycloak is ready!"
+
+              echo "Getting admin access token..."
+              ACCESS_TOKEN=$(curl -sk -X POST \
+                "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token" \
+                -H "Content-Type: application/x-www-form-urlencoded" \
+                -d "grant_type=password" \
+                -d "client_id=admin-cli" \
+                -d "username=${KEYCLOAK_ADMIN_USER}" \
+                -d "password=${KEYCLOAK_ADMIN_PASSWORD}" | \
+                grep -o '"access_token":"[^"]*' | \
+                grep -o '[^"]*$')
+
+              echo "Searching for existing user '${KEYCLOAK_FOUNDRY_USERNAME}' by username..."
+              USERS_JSON=$(curl -sk -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+                "${KEYCLOAK_URL}/admin/realms/foundry/users?username=${KEYCLOAK_FOUNDRY_USERNAME}")
+
+              NOW_MS=$(( $(date +%s) * 1000 ))
+
+              if echo "${USERS_JSON}" | grep -q '"id"'; then
+                echo "User '${KEYCLOAK_FOUNDRY_USERNAME}' already exists, skipping import."
+              else
+                echo "User '${KEYCLOAK_FOUNDRY_USERNAME}' not found, importing now..."
+                curl -k -X POST \
+                  "${KEYCLOAK_URL}/admin/realms/foundry/partialImport" \
+                  -H "Content-Type: application/json" \
+                  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+                  -d '{
+                    "users": [
+                      {
+                        "id": "'"${KEYCLOAK_FOUNDRY_USER_GUID}"'",
+                        "username": "foundry",
+                        "email": "administrator@{{ .Values.global.domain }}",
+                        "firstName": "Foundry",
+                        "lastName": "Administrator",
+                        "enabled": true,
+                        "createdTimestamp": "'"${NOW_MS}"'",
+                        "credentials": [
+                          {
+                            "type": "password",
+                            "value": "foundry",
+                            "userLabel": "initial",
+                            "temporary": true
+                          }
+                        ],
+                        "requiredActions":["UPDATE_PASSWORD"],
+                        "realmRoles": ["foundry-admin"]
+                      }
+                    ]
+                  }'
+              fi

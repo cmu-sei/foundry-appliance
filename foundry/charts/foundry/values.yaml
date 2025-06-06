@@ -102,9 +102,6 @@ keycloak:
     tls: true
   keycloakConfigCli:
     enabled: true
-    extraEnvVars:
-      - name: IMPORT_MANAGED_CLIENTS
-        value: "full"
     existingConfigmap: '{{ include "foundry.fullname" . }}-config-cli'
   postgresql:
     enabled: false
@@ -209,7 +206,7 @@ topomojo:
           secretName: '{{ include "foundry.fullname" . }}-cert'
     storage:
       existing: '{{ include "foundry.fullname" . }}-nfs'
-    existingSecret: '{{ include "foundry.fullname" . }}-dbconnection'
+    existingSecret: '{{ include "foundry.fullname" . }}-custom'
     customStart:
       command: ['/bin/sh']
       args: ['/home/app/start/start.sh']
@@ -221,8 +218,7 @@ topomojo:
     env:
       PathBase: /topomojo
       Database__Provider: PostgreSQL
-      Database__AdminId: 704d16ba-b969-45c2-843a-c12589963e77
-      Database__AdminName: Administrator
+      Database__AdminName: Foundry Administrator
       Cache__SharedFolder: ""
       OpenApi__Client__ClientId: topomojo-swagger
       FileUpload__IsoRoot: /mnt/tm
@@ -297,10 +293,12 @@ gameboard:
     storage:
       size: "1Gi"
       class: local-path
-    existingSecret: '{{ include "foundry.fullname" . }}-dbconnection'
+    existingSecret: '{{ include "foundry.fullname" . }}-custom'
+    cacertSecret: '{{ .Values.global.infraHelmRelease }}-ca'
     env:
       PathBase: /gameboard
       Database__Provider: PostgreSQL
+      Database__AdminName: Foundry Administrator
       Oidc__Audience: gameboard-api
       Oidc__Authority: https://{{ .Values.global.domain }}/keycloak/realms/foundry
       OpenApi__Client__ClientId: gameboard-swagger
