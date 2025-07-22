@@ -230,7 +230,7 @@ topomojo:
       ApiKeyClients__0__Scope: gameboard
       Core__ConsoleHost: "{{ .Values.global.domain }}/console"
       Pod__ConsoleUrl: "{{ .Values.global.domain }}/console"
-      Headers__Cors__Origins__0: https://{{ .Values.global.domain }}'
+      Headers__Cors__Origins__0: https://{{ .Values.global.domain }}
       Headers__Forwarding__TargetHeaders: All
   topomojo-ui:
     ingress:
