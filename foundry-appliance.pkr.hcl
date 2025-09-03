@@ -66,6 +66,10 @@ source "virtualbox-iso" "foundry-appliance" {
   ssh_timeout          = local.ssh_timeout
   ssh_username         = var.ssh_username
   vm_name              = "foundry-appliance-${var.appliance_version}"
+
+  vboxmanage = [
+    ["modifyvm", "{{ .Name }}", "--audio-enabled", "off"]
+  ]
 }
 
 source "proxmox-iso" "foundry-appliance" {
