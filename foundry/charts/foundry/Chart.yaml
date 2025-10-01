@@ -23,7 +23,7 @@ dependencies:
     version: 24.6.4
   - name: mkdocs-material
     repository: https://helm.cmusei.dev/charts
-    version: 0.2.7
+    version: 0.2.14
   - name: topomojo
     repository: https://helm.cmusei.dev/charts
     version: 0.5.2
