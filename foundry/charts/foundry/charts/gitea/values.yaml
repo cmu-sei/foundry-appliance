@@ -77,7 +77,7 @@ usePasswordFiles: true
 ##
 image:
   registry: docker.io
-  repository: bitnami/gitea
+  repository: bitnamilegacy/gitea
   tag: 1.23.8-debian-12-r0
   digest: ""
   ## Specify a imagePullPolicy
@@ -750,7 +750,7 @@ volumePermissions:
   ##
   image:
     registry: docker.io
-    repository: bitnami/os-shell
+    repository: bitnamilegacy/os-shell
     tag: 12-debian-12-r43
     digest: ""
     pullPolicy: IfNotPresent

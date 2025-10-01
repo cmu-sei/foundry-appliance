@@ -2,6 +2,8 @@ global:
   domain: foundry.local
   version: ""   # Appliance version overridden during Helm install on first boot
   infraHelmRelease: infra
+  security:
+    allowInsecureImages: true
 
 nfs-server-provisioner:
   persistence:
@@ -20,6 +22,8 @@ ingress-nginx:
     #5432: "{{ .Release.Namespace }}/postgresql:5432"
 
 postgresql:
+  image:
+    repository: bitnamilegacy/postgresql
   auth:
     existingSecret: '{{ include "foundry.fullname" . }}'
   primary:
@@ -84,6 +88,8 @@ pgadmin4:
         runAsUser: 5050
 
 keycloak:
+  image:
+    repository: bitnamilegacy/keycloak
   auth:
     adminUser: "keycloak-admin"
     existingSecret: '{{ include "foundry.fullname" . }}-auth'
