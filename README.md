@@ -39,7 +39,7 @@ To build the appliance using Proxmox, create a file named `proxmox.auto.pkrvars.
 
 ```
 proxmox_url      = "https://<proxmox.fqdn>:8006/api2/json" # replace with your PVE server
-proxmox_user     = "root@pam"
+proxmox_username     = "root@pam"
 proxmox_password = "<password>"
 proxmox_node     = "pve.lan" # replace with the Proxmox node name that should build the appliance
 ```
