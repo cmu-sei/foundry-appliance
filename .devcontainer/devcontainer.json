@@ -1,0 +1,51 @@
+{
+    "name": "${localWorkspaceFolderBasename}",
+    "runArgs": [
+        "--name",
+        "${localWorkspaceFolderBasename}",
+        "--env-file",
+        ".devcontainer/devcontainer.env"
+    ],
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "features": {
+        "ghcr.io/devcontainers/features/common-utils:2": {
+            "configureZshAsDefaultShell": true
+        },
+        "ghcr.io/devcontainers/features/github-cli:1": {},
+    },
+    "containerEnv": {
+        "CLAUDE_CODE_USE_BEDROCK": "1", // vars for Claude Code using Amazon Bedrock
+        "AWS_REGION": "us-east-1",
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL": "us-gov.anthropic.claude-sonnet-4-6"
+    },
+    "mounts": [
+        // Shell history
+        "source=crucible-appliance-shell-history,target=/home/vscode/.history,type=volume",
+        // Claude Code data (sessions, history, todos, etc.)
+        "source=crucible-appliance-claude,target=/home/vscode/.claude,type=volume",
+        // Packer plugin cache (avoids re-downloading plugins on container rebuild)
+        "source=crucible-appliance-packer,target=/home/vscode/.config/packer,type=volume"
+    ],
+    "postCreateCommand": "bash -l .devcontainer/postcreate.sh",
+    "postStartCommand": "bash -l .devcontainer/poststart.sh",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "esbenp.prettier-vscode",
+                "GitHub.vscode-pull-request-github",
+                "shardulm94.trailing-spaces",
+                "shd101wyy.markdown-preview-enhanced",
+                "Anthropic.claude-code"
+            ],
+            "settings": {
+                "editor.formatOnSave": true,
+                "files.insertFinalNewline": true,
+                "files.eol": "\n",
+                "files.trimTrailingWhitespace": true,
+            }
+        }
+    }
+}
