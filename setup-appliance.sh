@@ -21,6 +21,12 @@ rm ~/scripts/expand-volume.sh
 swapoff -a
 sed -i -r 's/(\/swap\.img.*)/#\1/' /etc/fstab
 
+# Suppress kernel cgroup/container messages from appearing on the terminal.
+# Without this, cri-containerd and kubepods cgroup events flood all TTYs.
+# printk levels: console_loglevel default_loglevel minimum_loglevel default_console_loglevel
+echo 'kernel.printk = 4 4 1 7' >/etc/sysctl.d/10-console-loglevel.conf
+sysctl -p /etc/sysctl.d/10-console-loglevel.conf
+
 # Add Kubernetes apt repo
 apt-get update
 apt-get install -y apt-transport-https
