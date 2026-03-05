@@ -6,6 +6,8 @@
 #
 # Finalize Crucible stack on first boot
 
+set -euo pipefail
+
 FLAG=/etc/.install-crucible
 CHARTS_DIR=/home/crucible/charts
 RUN_AS_USER="sudo -u crucible"
@@ -32,6 +34,13 @@ $RUN_AS_USER git -C /home/crucible init
 $RUN_AS_USER git -C /home/crucible add -A
 $RUN_AS_USER git -C /home/crucible commit -am "Initial commit"
 
+# Wait for network connectivity before downloading K3s
+echo "Waiting for network connectivity..."
+until curl -sf --max-time 5 https://get.k3s.io > /dev/null 2>&1; do
+    echo "Network not ready, retrying in 5s..."
+    sleep 5
+done
+
 # Install K3s during first boot to generate unique cluster CA
 mkdir -p /etc/rancher/k3s
 echo "nameserver 10.0.1.1" >>/etc/rancher/k3s/resolv.conf
@@ -40,6 +49,13 @@ mkdir /home/crucible/.kube
 cp /etc/rancher/k3s/k3s.yaml /home/crucible/.kube/config
 chown -R crucible:crucible /home/crucible/.kube
 sed -i 's/default/crucible/g' /home/crucible/.kube/config
+
+# Wait for K3s API server to be ready before running kubectl
+echo "Waiting for K3s API server..."
+until $RUN_AS_USER kubectl get nodes &>/dev/null; do
+    echo "K3s API not ready, retrying in 5s..."
+    sleep 5
+done
 
 # Prep cluster and install Helm charts
 $RUN_AS_USER kubectl create namespace crucible

@@ -108,7 +108,7 @@ rm ~/scripts/install-crucible.sh
 cat <<EOF >/etc/systemd/system/install-crucible.service
 [Unit]
 Description=Install Crucible chart (first boot)
-After=configure-nic.service
+After=configure-nic.service network-online.target
 Requires=network-online.target
 
 [Service]
