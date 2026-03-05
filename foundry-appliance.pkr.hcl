@@ -27,9 +27,20 @@ variable "virtualbox_headless" {
   type    = bool
   default = false
 }
+variable "use_cidata" {
+  description = "Use a CD-ROM instead of Packer's HTTP server for autoinstall data. Required when the target hypervisor cannot reach Packer's HTTP server (e.g., building from a container)."
+  type    = bool
+  default = false
+}
 
 locals {
-  boot_command = [
+  boot_command = var.use_cidata ? [
+    "e<wait>",
+    "<down><down><down>",
+    "<end><bs><bs><bs><bs><wait>",
+    "autoinstall ds=nocloud ---<wait>",
+    "<f10><wait>"
+  ] : [
     "e<wait>",
     "<down><down><down>",
     "<end><bs><bs><bs><bs><wait>",
@@ -44,6 +55,7 @@ locals {
   iso_checksum         = "sha256:c3514bf0056180d09376462a7a1b4f213c1d6e8ea67fae5c25099c6fd3d8274b"
   memory               = 8192
   ssh_timeout          = "30m"
+  user_data            = file("${path.root}/http/user-data")
 }
 
 source "virtualbox-iso" "foundry-appliance" {
@@ -55,7 +67,9 @@ source "virtualbox-iso" "foundry-appliance" {
   guest_os_type        = "Ubuntu_64"
   hard_drive_interface = "scsi"
   headless             = var.virtualbox_headless
-  http_directory       = "http"
+  http_directory       = var.use_cidata ? null : "http"
+  cd_content           = var.use_cidata ? { "meta-data" = "", "user-data" = local.user_data } : null
+  cd_label             = var.use_cidata ? "cidata" : null
   iso_checksum         = local.iso_checksum
   iso_url              = local.iso_url
   memory               = local.memory
@@ -89,7 +103,20 @@ source "proxmox-iso" "foundry-appliance" {
     type         = "scsi"
     format       = "raw"
   }
-  http_directory           = "http"
+  http_directory = var.use_cidata ? null : "http"
+  dynamic "additional_iso_files" {
+    for_each = var.use_cidata ? [1] : []
+    content {
+      cd_content = {
+        "meta-data" = ""
+        "user-data" = local.user_data
+      }
+      cd_label         = "cidata"
+      type             = "sata"
+      iso_storage_pool = "local"
+      unmount          = true
+    }
+  }
   insecure_skip_tls_verify = true
   memory                   = local.memory
   network_adapters {

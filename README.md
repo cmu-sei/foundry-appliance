@@ -69,3 +69,19 @@ To add Proxmox to the previous build, run this command:
 ```
 ./build-appliance.sh <hypervisor> -on-error=abort -force
 ```
+
+### CD-ROM Autoinstall (`use_cidata`)
+
+By default, Packer starts a local HTTP server to serve the Ubuntu autoinstall configuration. This requires the target hypervisor to have network access back to the machine running Packer.
+
+If you are building from an environment where the hypervisor cannot reach Packer's HTTP server (e.g., a dev container, a CI runner behind NAT, or a remote Proxmox host), set `use_cidata` to deliver the autoinstall data via a mounted CD-ROM instead:
+
+```
+./build-appliance.sh proxmox -var use_cidata=true
+```
+
+Or add it to your `proxmox.auto.pkrvars.hcl`:
+
+```
+use_cidata = true
+```
