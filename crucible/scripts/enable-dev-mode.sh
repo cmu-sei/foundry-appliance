@@ -6,7 +6,7 @@
 #
 # Install window manager, VS Code, and other development tools
 
-USER_SESSION_PATH=/var/lib/AccountsService/users/foundry
+USER_SESSION_PATH=/var/lib/AccountsService/users/crucible
 
 if [[ $UID == 0 ]]; then
     echo "Please run this script without sudo:"
@@ -46,7 +46,7 @@ else
 [User]
 Session=xfce
 XSession=xfce
-Icon=/home/foundry/.face
+Icon=/home/crucible/.face
 SystemAccount=false
 EOF"
 fi
@@ -55,8 +55,8 @@ fi
 curl -fsSL https://tailscale.com/install.sh | sh
 
 # Enable external PostgreSQL access
-sed -i -r "s/#(5432:)/\1/" ~/foundry/ingress-nginx.values.yaml
-helm upgrade -n foundry -f ~/foundry/ingress-nginx.values.yaml ingress-nginx ingress-nginx/ingress-nginx
+sed -i -r "s/#(5432:)/\1/" ~/crucible/ingress-nginx.values.yaml
+helm upgrade -n crucible -f ~/crucible/ingress-nginx.values.yaml ingress-nginx ingress-nginx/ingress-nginx
 
 # Install VS Code
 sudo apt-get install -y code

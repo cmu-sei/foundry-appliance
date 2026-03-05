@@ -13,14 +13,14 @@ if [[ $UID != 0 ]]; then
 fi
 
 PRIMARY_ETH=$(find /sys/class/net/en* -type l -printf "%f\n" | head -n 1)
-DNSMASQ_CONF=/etc/dnsmasq.d/foundry.conf
+DNSMASQ_CONF=/etc/dnsmasq.d/crucible.conf
 NETPLAN_CONF=/etc/netplan/50-cloud-init.yaml
 FLAG=/etc/.configure-nic
 
 if [ ! -f "$FLAG" ]; then
     sed -i -r "s/en.*:/$PRIMARY_ETH:/" $NETPLAN_CONF
     netplan apply
-    sed -i -r "s/(foundry.local,).*/\1$PRIMARY_ETH/" $DNSMASQ_CONF
+    sed -i -r "s/(crucible.local,).*/\1$PRIMARY_ETH/" $DNSMASQ_CONF
     systemctl restart dnsmasq
     date > $FLAG
     echo "$PRIMARY_ETH configured as primary Ethernet interface."

@@ -1,10 +1,8 @@
 # Proxmox Setup
 
-
-
 ### Part One: Appliance Setup
 
-1. Download the latest release of the appliance from:  
+1. Download the latest release of the appliance from:
    [https://github.com/cmu-sei/foundry-appliance](https://github.com/cmu-sei/foundry-appliance)
 
 2. Import the appliance into Proxmox:
@@ -23,13 +21,13 @@
 ### Part Two: Configure Proxmox & TopoMojo
 
 1. **Create an Access Token**
-   - In the Proxmox Web UI, go to:  
+   - In the Proxmox Web UI, go to:
      **Datacenter** → **Permissions** → **API Tokens**
    - Select the `root` user and uncheck **Privilege Separation**.
    - Copy the **Token ID** and **Secret**; they’ll be used later.
 
 2. **Create an SDN Zone**
-   - In the Proxmox Web UI:  
+   - In the Proxmox Web UI:
      **Datacenter** → **SDN** → **Zones**
    - Click **Add**, choose **VXLAN** as the type.
    - Note the **ID** — this will be referenced in TopoMojo config.
@@ -101,14 +99,14 @@
      }
      ```
 
-   - Replace `"pve.local"` with your custom name, e.g., `"proxmox.foundry.local"`.
+   - Replace `"pve.local"` with your custom name, e.g., `"proxmox.crucible.local"`.
      - This is required to match the appliance's certificate structure.
-     - Example: `proxmox.foundry.local`
+     - Example: `proxmox.crucible.local`
 
    - Insert your API token in this format:
 
      ```
-     root@pam!foundry=efae52e5-2650-41a7-8486-71bb050ea9d5
+     root@pam!crucible=efae52e5-2650-41a7-8486-71bb050ea9d5
      ```
 
    - Create the symlink:
@@ -130,56 +128,57 @@
 
 This step sets the Proxmox hostname, ensures local DNS resolution, and installs the appliance-generated SSL certificates.
 
-> This process is also scripted and stored in:  
+> This process is also scripted and stored in:
 > `scripts/proxmox-setup.sh`
 >
-> For the purpose of explanation, it is assumed you wish to name your Proxmox instance proxmox.foundry.local
+> For the purpose of explanation, it is assumed you wish to name your Proxmox instance proxmox.crucible.local
 
 1. **Update your local `/etc/hosts`**
-    ```bash
-    echo "<proxmox-ip> proxmox.foundry.local" >> /etc/hosts
-    ```
+
+   ```bash
+   echo "<proxmox-ip> proxmox.crucible.local" >> /etc/hosts
+   ```
 
 2. **Set the Proxmox hostname and update `/etc/hosts`**
-    - SSH into the Proxmox node:
+   - SSH into the Proxmox node:
 
-    ```bash
-    ssh root@proxmox.foundry.local
-    ```
+   ```bash
+   ssh root@proxmox.crucible.local
+   ```
 
-    - Set the system hostname:
+   - Set the system hostname:
 
-    ```bash
-    hostnamectl set-hostname proxmox.foundry.local
-    ```
+   ```bash
+   hostnamectl set-hostname proxmox.crucible.local
+   ```
 
-    - Overwrite the contents of `/etc/hostname`:
+   - Overwrite the contents of `/etc/hostname`:
 
-    ```bash
-    echo "proxmox.foundry.local" > /etc/hostname
-    ```
+   ```bash
+   echo "proxmox.crucible.local" > /etc/hostname
+   ```
 
-    - Add the IP mapping to `/etc/hosts` (replace `<proxmox-ip>` with the actual IP):
+   - Add the IP mapping to `/etc/hosts` (replace `<proxmox-ip>` with the actual IP):
 
-    ```bash
-    echo "<proxmox-ip> proxmox.foundry.local proxmox" >> /etc/hosts
-    ```
+   ```bash
+   echo "<proxmox-ip> proxmox.crucible.local proxmox" >> /etc/hosts
+   ```
 
 3. **Install appliance-generated SSL certificates**
 
-These certificates are required by the appliance and must match the `.foundry.local` domain.
+These certificates are required by the appliance and must match the `.crucible.local` domain.
 
 - From the appliance, copy the certificate files to the Proxmox node:
 
   ```bash
-  scp /home/foundry/foundry/certs/host.pem root@proxmox.foundry.local:/tmp/
-  scp /home/foundry/foundry/certs/host-key.pem root@proxmox.foundry.local:/tmp/
+  scp /home/crucible/crucible/certs/host.pem root@proxmox.crucible.local:/tmp/
+  scp /home/crucible/crucible/certs/host-key.pem root@proxmox.crucible.local:/tmp/
   ```
 
 - SSH into the Proxmox node:
 
   ```bash
-  ssh root@proxmox.foundry.local
+  ssh root@proxmox.crucible.local
   ```
 
 - Combine and install the certificates:
@@ -202,51 +201,50 @@ These certificates are required by the appliance and must match the `.foundry.lo
   systemctl restart nginx
   systemctl restart pveproxy pvedaemon
   ```
+
 ---
 
 ### Part Four: TopoMojo Configuration
 
 This section covers configuration changes to the TopoMojo values file. These can be configured in TopoMojo's appsettings as well.
 
-> The TopoMojo values file is located at:  
-> `/home/foundry/foundry/topomojo.values.yaml`  
->  
-> The values that need to be updated can be found under:  
+> The TopoMojo values file is located at:
+> `/home/crucible/crucible/topomojo.values.yaml`
+>
+> The values that need to be updated can be found under:
 > `topomojo-api -> env`
 
-
 1. **Required Updates**
-   - `Pod__HypervisorType`:  
+   - `Pod__HypervisorType`:
      Set to `Proxmox`
-   - `Pod__Url`:  
-     Set to `"proxmox.foundry.local"`
-   - `Pod__AccessToken`:  
-     Example: `root@pam!foundry=efae52e5-2650-41a7-8486-71bb050ea9d5`
-   - `Pod__SDNZone`:  
+   - `Pod__Url`:
+     Set to `"proxmox.crucible.local"`
+   - `Pod__AccessToken`:
+     Example: `root@pam!crucible=efae52e5-2650-41a7-8486-71bb050ea9d5`
+   - `Pod__SDNZone`:
      Set this to the ID of the SDN Zone configured earlier
 
 2. **Optional Updates**
-   - `Pod__Password`:  
+   - `Pod__Password`:
      Password of the root user (enables Guest Settings support)
-   - `Pod__Vlan__ResetDebounceDuration`:  
+   - `Pod__Vlan__ResetDebounceDuration`:
      Milliseconds TopoMojo will wait before reloading Proxmox's SDN after a virtual network operation
-   - `Pod__Vlan__ResetDebounceMaxDuration`:  
+   - `Pod__Vlan__ResetDebounceMaxDuration`:
      Maximum debounce duration in milliseconds before TopoMojo reloads Proxmox's SDN
 
 3. **ISO Upload Support**
-TopoMojo can optionally allow uploading ISO files to be mounted to virtual machines. To enable this:
-
-   - `Pod__IsoStore`:  
-     Name of the shared storage in your Proxmox cluster where ISOs will be stored  
+   TopoMojo can optionally allow uploading ISO files to be mounted to virtual machines. To enable this:
+   - `Pod__IsoStore`:
+     Name of the shared storage in your Proxmox cluster where ISOs will be stored
      _Example:_ `iso`
 
-   - `FileUpload_IsoRoot`:  
-     Path mounted to the TopoMojo API container where uploaded ISOs will be saved.  
-     This should map to the same underlying storage as `Pod__IsoStore`.  
-     The path must end in `/template/iso`.  
+   - `FileUpload_IsoRoot`:
+     Path mounted to the TopoMojo API container where uploaded ISOs will be saved.
+     This should map to the same underlying storage as `Pod__IsoStore`.
+     The path must end in `/template/iso`.
      _Example:_ `/mnt/isos/template/iso`
 
-   - `FileUpload_SupportsSubFolders`:  
+   - `FileUpload_SupportsSubFolders`:
      Set this to `false` — Proxmox does not allow subfolders in ISO stores
 
 ---

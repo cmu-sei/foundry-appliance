@@ -1,5 +1,5 @@
-site_name: Foundry Appliance
-site_url: https://foundry.local/start
+site_name: Crucible Appliance
+site_url: https://crucible.local/start
 markdown_extensions:
   - attr_list
   - md_in_html

@@ -1,4 +1,4 @@
 certificateAuthority:
-  commonName: Foundry Appliance CA
+  commonName: Crucible Appliance CA
   organization: Carnegie Mellon University
   organizationalUnit: Software Engineering Institute

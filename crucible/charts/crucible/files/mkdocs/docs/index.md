@@ -1,25 +1,25 @@
-# Foundry Appliance {{ .Values.global.version }}
+# Crucible Appliance {{ .Values.global.version }}
 
-Welcome to the **Foundry Appliance**. This virtual machine hosts workforce development apps from the [Software Engineering Institute](https://sei.cmu.edu) at [Carnegie Mellon University](https://cmu.edu).
+Welcome to the **Crucible Appliance**. This virtual machine hosts workforce development apps from the [Software Engineering Institute](https://sei.cmu.edu) at [Carnegie Mellon University](https://cmu.edu).
 
 ## Getting started
 
-The appliance advertises the _foundry.local_ domain via mDNS. All apps are served as subdirectories under this domain.
+The appliance advertises the _crucible.local_ domain via mDNS. All apps are served as subdirectories under this domain.
 
 To get started using the virtual appliance:
 
-1. Download [foundry-ca.crt](assets/foundry-ca.crt) and trust it in your keychain/certificate store. This removes browser certificate warnings.
+1. Download [crucible-ca.crt](assets/crucible-ca.crt) and trust it in your keychain/certificate store. This removes browser certificate warnings.
 2. Navigate to any of the apps in the following two sections.
 3. Unless otherwise noted, the default credentials are:
 
    | key      | value     |
    | -------- | --------- |
-   | username | `foundry` |
-   | password | `foundry` |
+   | username | `crucible` |
+   | password | `crucible` |
 
-## Foundry apps
+## Crucible apps
 
-The following Foundry applications are loaded on this appliance:
+The following Crucible applications are loaded on this appliance:
 
 | location                 | api                                                                 | description                                                                                                      |
 | ------------------------ | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
@@ -41,10 +41,10 @@ The following third-party applications are loaded on this appliance:
 For command line access to the appliance:
 
 ```
-ssh foundry@foundry.local
+ssh crucible@crucible.local
 ```
 
-The SSH password is `foundry`. Then you can run normal Kubernetes commands via `kubectl`.
+The SSH password is `crucible`. Then you can run normal Kubernetes commands via `kubectl`.
 
 ```
 kubectl get pods

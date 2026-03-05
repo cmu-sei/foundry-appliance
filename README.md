@@ -1,20 +1,20 @@
-# Foundry Appliance
+# Crucible Appliance
 
 A virtual appliance for building cyber labs, challenges and competitions
 
 ## Overview
 
-Foundry Appliance is a virtual machine that integrates cyber workforce development apps from the [Software Engineering Institute](https://www.sei.cmu.edu) at [Carnegie Mellon University](https://www.cmu.edu).
+Crucible Appliance is a virtual machine that integrates cyber workforce development apps from the [Software Engineering Institute](https://www.sei.cmu.edu) at [Carnegie Mellon University](https://www.cmu.edu).
 
 This project builds the virtual appliance using Ubuntu and [K3s](https://k3s.io/)&mdash;a lightweight Kubernetes environment. Pre-built OVA images are also available under [Releases](https://github.com/cmu-sei/foundry-appliance/releases).
 
 ## Getting Started
 
-After deploying the appliance, visit https://foundry.local to begin using the apps. Or login using the VM console:
+After deploying the appliance, visit https://crucible.local to begin using the apps. Or login using the VM console:
 
 ```
-username: foundry  
-password: foundry
+username: crucible
+password: crucible
 ```
 
 ## Apps
@@ -30,8 +30,8 @@ To build the appliance, you will need:
 
 - [Packer](https://www.packer.io/) 1.7+
 - A compatible hypervisor:
-    - [VirtualBox](https://www.virtualbox.org/) (`virtualbox`)
-    - [Proxmox Virtual Environment](https://www.proxmox.com/en/products/proxmox-virtual-environment/overview) (`proxmox`)
+  - [VirtualBox](https://www.virtualbox.org/) (`virtualbox`)
+  - [Proxmox Virtual Environment](https://www.proxmox.com/en/products/proxmox-virtual-environment/overview) (`proxmox`)
 
 ### Proxmox Build (optional)
 

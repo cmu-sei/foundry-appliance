@@ -13,14 +13,14 @@ spec:
       volumes:
         - name: gitea-data
           persistentVolumeClaim:
-            claimName: {{ include "foundry.fullname" . }}-gitea
+            claimName: {{ include "crucible.fullname" . }}-gitea
         - name: ca-cert
           secret:
             defaultMode: 420
             secretName: {{ .Values.global.infraHelmRelease }}-ca
       containers:
         - name: gitea-cli
-          image: {{ include "foundry.gitea.image" . }}
+          image: {{ include "crucible.gitea.image" . }}
           volumeMounts:
             - name: gitea-data
               mountPath: /bitnami/gitea
@@ -39,31 +39,31 @@ spec:
             - name: GITEA_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "foundry.fullname" . }}-gitea-admin-secret
+                  name: {{ include "crucible.fullname" . }}-gitea-admin-secret
                   key: admin-password
             - name: OIDC_CLIENT_ID
               value: gitea-client
             - name: OIDC_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "foundry.fullname" . }}-keycloak-auth
+                  name: {{ include "crucible.fullname" . }}-keycloak-auth
                   key: oauth-client-secret
           command:
             - /bin/bash
             - -eu
             - -c
             - |
-              if /opt/bitnami/gitea/bin/gitea admin auth list | grep -q "Foundry"; then
-                  echo "OAuth auth source 'Foundry' already exists, skipping creation"
+              if /opt/bitnami/gitea/bin/gitea admin auth list | grep -q "Crucible"; then
+                  echo "OAuth auth source 'Crucible' already exists, skipping creation"
                   exit 0
               fi
 
               /opt/bitnami/gitea/bin/gitea admin auth add-oauth \
-                  --name "Foundry" \
+                  --name "Crucible" \
                   --provider openidConnect \
                   --key "$OIDC_CLIENT_ID" \
                   --secret "$OIDC_CLIENT_SECRET" \
-                  --auto-discover-url "https://{{ .Values.global.domain }}/keycloak/realms/foundry/.well-known/openid-configuration" \
+                  --auto-discover-url "https://{{ .Values.global.domain }}/keycloak/realms/crucible/.well-known/openid-configuration" \
                   --scopes "openid profile email" \
 
 ---
@@ -72,7 +72,7 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "foundry.fullname" . }}-seed-mkdocs
+  name: {{ include "crucible.fullname" . }}-seed-mkdocs
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
@@ -90,20 +90,20 @@ spec:
             - name: GITEA_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "foundry.fullname" . }}-gitea-admin-secret
+                  name: {{ include "crucible.fullname" . }}-gitea-admin-secret
                   key: admin-password
           volumeMounts:
             - name: mkdocs
               mountPath: /mkdocs
             - name: script
               mountPath: /scripts
-            - name: foundry-ca-cert
-              mountPath: /foundry-ca
+            - name: crucible-ca-cert
+              mountPath: /crucible-ca
               readOnly: true
       volumes:
         - name: mkdocs
           configMap:
-            name: {{ include "foundry.fullname" . }}-mkdocs-files
+            name: {{ include "crucible.fullname" . }}-mkdocs-files
             items:
             {{- range $path, $_ := $files }}
               - key: {{ replace "/" "__" $path | quote }}
@@ -111,9 +111,9 @@ spec:
             {{- end }}
         - name: script
           configMap:
-            name: {{ include "foundry.fullname" . }}-gitea-job-script
+            name: {{ include "crucible.fullname" . }}-gitea-job-script
             defaultMode: 0755
-        - name: foundry-ca-cert
+        - name: crucible-ca-cert
           secret:
             secretName: {{ .Values.global.infraHelmRelease }}-ca
             items:
@@ -121,11 +121,11 @@ spec:
               path: ca.crt
 
 ---
-{{- /* Add foundry user to realm of the same name */ -}}
+{{- /* Add crucible user to realm of the same name */ -}}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "foundry.fullname" . }}-add-foundry-user
+  name: {{ include "crucible.fullname" . }}-add-crucible-user
   annotations:
     helm.sh/hook: post-install,post-upgrade
     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
@@ -144,17 +144,17 @@ spec:
             - name: KEYCLOAK_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "foundry.fullname" . }}-keycloak-auth
+                  name: {{ include "crucible.fullname" . }}-keycloak-auth
                   key: admin-password
             - name: KEYCLOAK_URL
               value: https://{{ .Values.global.domain }}/keycloak
-            - name: KEYCLOAK_FOUNDRY_USER_GUID
+            - name: KEYCLOAK_CRUCIBLE_USER_GUID
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "foundry.fullname" . }}-keycloak-auth
-                  key: foundry-user-guid
-            - name: KEYCLOAK_FOUNDRY_USERNAME
-              value: foundry
+                  name: {{ include "crucible.fullname" . }}-keycloak-auth
+                  key: crucible-user-guid
+            - name: KEYCLOAK_CRUCIBLE_USERNAME
+              value: crucible
           command:
             - /bin/sh
             - -c
@@ -179,40 +179,40 @@ spec:
                 grep -o '"access_token":"[^"]*' | \
                 grep -o '[^"]*$')
 
-              echo "Searching for existing user '${KEYCLOAK_FOUNDRY_USERNAME}' by username..."
+              echo "Searching for existing user '${KEYCLOAK_CRUCIBLE_USERNAME}' by username..."
               USERS_JSON=$(curl -sk -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-                "${KEYCLOAK_URL}/admin/realms/foundry/users?username=${KEYCLOAK_FOUNDRY_USERNAME}")
+                "${KEYCLOAK_URL}/admin/realms/crucible/users?username=${KEYCLOAK_CRUCIBLE_USERNAME}")
 
               NOW_MS=$(( $(date +%s) * 1000 ))
 
               if echo "${USERS_JSON}" | grep -q '"id"'; then
-                echo "User '${KEYCLOAK_FOUNDRY_USERNAME}' already exists, skipping import."
+                echo "User '${KEYCLOAK_CRUCIBLE_USERNAME}' already exists, skipping import."
               else
-                echo "User '${KEYCLOAK_FOUNDRY_USERNAME}' not found, importing now..."
+                echo "User '${KEYCLOAK_CRUCIBLE_USERNAME}' not found, importing now..."
                 curl -k -X POST \
-                  "${KEYCLOAK_URL}/admin/realms/foundry/partialImport" \
+                  "${KEYCLOAK_URL}/admin/realms/crucible/partialImport" \
                   -H "Content-Type: application/json" \
                   -H "Authorization: Bearer ${ACCESS_TOKEN}" \
                   -d '{
                     "users": [
                       {
-                        "id": "'"${KEYCLOAK_FOUNDRY_USER_GUID}"'",
-                        "username": "foundry",
+                        "id": "'"${KEYCLOAK_CRUCIBLE_USER_GUID}"'",
+                        "username": "crucible",
                         "email": "administrator@{{ .Values.global.domain }}",
-                        "firstName": "Foundry",
+                        "firstName": "Crucible",
                         "lastName": "Administrator",
                         "enabled": true,
                         "createdTimestamp": "'"${NOW_MS}"'",
                         "credentials": [
                           {
                             "type": "password",
-                            "value": "foundry",
+                            "value": "crucible",
                             "userLabel": "initial",
                             "temporary": true
                           }
                         ],
                         "requiredActions":["UPDATE_PASSWORD"],
-                        "realmRoles": ["foundry-admin"]
+                        "realmRoles": ["crucible-admin"]
                       }
                     ]
                   }'

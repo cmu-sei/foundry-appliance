@@ -1,4 +1,4 @@
-# Foundry Appliance
+# Crucible Appliance
 
 Copyright 2025 Carnegie Mellon University.
 
@@ -14,7 +14,7 @@ Redistribution and use in source and binary forms, with or without modification,
 
 **ACKNOWLEDGMENTS AND DISCLAIMERS:**
 
-Foundry Appliance includes and/or can make use of certain third party software ("Third Party Software"). The Third Party Software that is used by Foundry Appliance is dependent upon your system configuration, but typically includes the software identified in the documentation and/or ReadMe files. By using Foundry Appliance, You agree to comply with any and all relevant Third Party Software terms and conditions contained in any such Third Party Software or separate license file distributed with such Third Party Software. The parties who own the Third Party Software ("Third Party Licensors") are intended third party beneficiaries to this License with respect to the terms applicable to their Third Party Software. Third Party Software licenses only apply to the Third Party Software and not any other portion of Foundry Appliance or Foundry Appliance as a whole.
+Crucible Appliance includes and/or can make use of certain third party software ("Third Party Software"). The Third Party Software that is used by Crucible Appliance is dependent upon your system configuration, but typically includes the software identified in the documentation and/or ReadMe files. By using Crucible Appliance, You agree to comply with any and all relevant Third Party Software terms and conditions contained in any such Third Party Software or separate license file distributed with such Third Party Software. The parties who own the Third Party Software ("Third Party Licensors") are intended third party beneficiaries to this License with respect to the terms applicable to their Third Party Software. Third Party Software licenses only apply to the Third Party Software and not any other portion of Crucible Appliance or Crucible Appliance as a whole.
 
 This material is based upon work funded and supported by the Department of Homeland Security under Contract No. FA8702-15-D-0002 with Carnegie Mellon University for the operation of the Software Engineering Institute, a federally funded research and development center sponsored by the United States Department of Defense.
 

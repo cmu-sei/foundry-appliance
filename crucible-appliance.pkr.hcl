@@ -1,4 +1,4 @@
-# Plugins - install with `packer init foundry-appliance.pkr.hcl`
+# Plugins - install with `packer init crucible-appliance.pkr.hcl`
 packer {
   required_plugins {
     virtualbox = {
@@ -12,10 +12,10 @@ packer {
   }
 }
 
-# Variables - override in foundry.auto.pkrvars.hcl
+# Variables - override in crucible.auto.pkrvars.hcl
 variable "appliance_version" { default = "" }
-variable "ssh_username" { default = "foundry" }
-variable "ssh_password" { default = "foundry" }
+variable "ssh_username" { default = "crucible" }
+variable "ssh_password" { default = "crucible" }
 variable "proxmox_url" { default = "" }
 variable "proxmox_node" { default = "pve.lan" }
 variable "proxmox_username" { default = "root@pam" }
@@ -58,7 +58,7 @@ locals {
   user_data            = file("${path.root}/http/user-data")
 }
 
-source "virtualbox-iso" "foundry-appliance" {
+source "virtualbox-iso" "crucible-appliance" {
   boot_command         = local.boot_command
   boot_wait            = local.boot_wait
   cpus                 = local.cpus
@@ -79,14 +79,14 @@ source "virtualbox-iso" "foundry-appliance" {
   ssh_password         = var.ssh_password
   ssh_timeout          = local.ssh_timeout
   ssh_username         = var.ssh_username
-  vm_name              = "foundry-appliance-${var.appliance_version}"
+  vm_name              = "crucible-appliance-${var.appliance_version}"
 
   vboxmanage = [
     ["modifyvm", "{{ .Name }}", "--audio-enabled", "off"]
   ]
 }
 
-source "proxmox-iso" "foundry-appliance" {
+source "proxmox-iso" "crucible-appliance" {
   boot_command = local.boot_command
   boot_iso {
     type         = "scsi"
@@ -135,18 +135,18 @@ source "proxmox-iso" "foundry-appliance" {
   vga {
     type = "qxl"
   }
-  template_name        = "foundry-appliance-${var.appliance_version}"
-  template_description = "Foundry Appliance ${var.appliance_version} - built {{ isotime \"2006-01-02T15:04:05Z\" }}"
+  template_name        = "crucible-appliance-${var.appliance_version}"
+  template_description = "Crucible Appliance ${var.appliance_version} - built {{ isotime \"2006-01-02T15:04:05Z\" }}"
 }
 
 build {
   sources = [
-    "source.virtualbox-iso.foundry-appliance",
-    "source.proxmox-iso.foundry-appliance"
+    "source.virtualbox-iso.crucible-appliance",
+    "source.proxmox-iso.crucible-appliance"
   ]
 
   provisioner "file" {
-    source      = "foundry/"
+    source      = "crucible/"
     destination = "/home/${var.ssh_username}"
   }
 

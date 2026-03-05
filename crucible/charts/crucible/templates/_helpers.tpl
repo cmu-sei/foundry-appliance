@@ -1,7 +1,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "foundry.name" -}}
+{{- define "crucible.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -10,7 +10,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "foundry.fullname" -}}
+{{- define "crucible.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -26,16 +26,16 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "foundry.chart" -}}
+{{- define "crucible.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "foundry.labels" -}}
-helm.sh/chart: {{ include "foundry.chart" . }}
-{{ include "foundry.selectorLabels" . }}
+{{- define "crucible.labels" -}}
+helm.sh/chart: {{ include "crucible.chart" . }}
+{{ include "crucible.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -45,23 +45,23 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "foundry.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "foundry.name" . }}
+{{- define "crucible.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "crucible.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "foundry.serviceAccountName" -}}
+{{- define "crucible.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "foundry.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "crucible.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
 
-{{- define "foundry.gitea.image" -}}
+{{- define "crucible.gitea.image" -}}
 {{- $giteaCtx := dict
       "Values"       .Values.gitea
       "Chart"        .Subcharts.gitea

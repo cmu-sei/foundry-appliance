@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# WIP script for Proxmox initialization for the Foundry Appliance and TopoMojo
+# WIP script for Proxmox initialization for the Crucible Appliance and TopoMojo
 #
 # Currently only updates DNS and certificates for the appliance and the Proxmox node.
 # Looking to add Proxmox, NGINX, and TopoMojo configuration.
@@ -8,10 +8,10 @@
 
 set -euo pipefail
 
-RUI_CRT=$(< /home/foundry/foundry/certs/host.pem)
-RUI_KEY=$(< /home/foundry/foundry/certs/host-key.pem)
+RUI_CRT=$(< /home/crucible/crucible/certs/host.pem)
+RUI_KEY=$(< /home/crucible/crucible/certs/host-key.pem)
 PROXMOX_CERTDIR="/etc/pve/nodes/proxmox"
-PROXMOX_HOSTNAME="proxmox.foundry.local"
+PROXMOX_HOSTNAME="proxmox.crucible.local"
 PROXMOX_USER="root"
 HOSTS_FILE="/etc/hosts"
 

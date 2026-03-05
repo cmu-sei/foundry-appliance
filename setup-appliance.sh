@@ -4,7 +4,7 @@
 # Released under a BSD (SEI)-style license, please see LICENSE.md in the
 # project root or contact permission@sei.cmu.edu for full terms.
 #
-# Foundry Appliance Setup
+# Crucible Appliance Setup
 #
 
 # Exit on errors
@@ -35,16 +35,16 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.
 apt-get update
 apt-get full-upgrade -y
 
-# Add foundry.local to hosts file
-sed -i -r 's/(foundry)$/\1 foundry.local/' /etc/hosts
+# Add crucible.local to hosts file
+sed -i -r 's/(crucible)$/\1 crucible.local/' /etc/hosts
 
 # Add dnsmasq resolver and other required packages
 PRIMARY_INTERFACE=$(ip -o -4 route show to default | awk '{print $5}')
 mkdir /etc/dnsmasq.d
-cat <<EOF >/etc/dnsmasq.d/foundry.conf
+cat <<EOF >/etc/dnsmasq.d/crucible.conf
 bind-interfaces
 listen-address=10.0.1.1
-interface-name=foundry.local,$PRIMARY_INTERFACE
+interface-name=crucible.local,$PRIMARY_INTERFACE
 EOF
 
 cat <<EOF >/etc/netplan/01-loopback.yaml
@@ -72,8 +72,8 @@ apt-get install -y dnsmasq avahi-daemon nfs-common kubectl helm pwgen
 git clone https://github.com/jaggedmountain/k-alias.git /tmp/k-alias
 cp /tmp/k-alias/[h,k]* /usr/local/bin
 
-# Build dependencies for foundry Helm chart
-for chart in infra foundry; do
+# Build dependencies for crucible Helm chart
+for chart in infra crucible; do
   sudo -u $SSH_USERNAME helm dependency build ~/charts/$chart
 done
 
@@ -83,9 +83,9 @@ chmod -x /etc/update-motd.d/10-help-text
 sed -i -r 's/(ENABLED=)1/\10/' /etc/default/motd-news
 cp ~/scripts/display-banner.sh /etc/update-motd.d/05-display-banner
 rm ~/scripts/display-banner.sh
-echo -e "Foundry Appliance $APPLIANCE_VERSION \\\n \l \n" >/etc/issue
+echo -e "Crucible Appliance $APPLIANCE_VERSION \\\n \l \n" >/etc/issue
 
-# Create systemd services to configure netplan primary interface and install Foundry chart
+# Create systemd services to configure netplan primary interface and install Crucible chart
 cp ~/scripts/configure-nic.sh /usr/local/bin/configure-nic
 rm ~/scripts/configure-nic.sh
 cat <<EOF >/etc/systemd/system/configure-nic.service
@@ -103,25 +103,25 @@ RemainAfterExit=yes
 WantedBy=multi-user.target
 EOF
 
-cp ~/scripts/install-foundry.sh /usr/local/bin/install-foundry
-rm ~/scripts/install-foundry.sh
-cat <<EOF >/etc/systemd/system/install-foundry.service
+cp ~/scripts/install-crucible.sh /usr/local/bin/install-crucible
+rm ~/scripts/install-crucible.sh
+cat <<EOF >/etc/systemd/system/install-crucible.service
 [Unit]
-Description=Install Foundry chart (first boot)
+Description=Install Crucible chart (first boot)
 After=configure-nic.service
 Requires=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=install-foundry
-ExecStartPost=/bin/bash -c 'systemctl disable install-foundry.service'
+ExecStart=install-crucible
+ExecStartPost=/bin/bash -c 'systemctl disable install-crucible.service'
 RemainAfterExit=yes
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-systemctl enable configure-nic install-foundry
+systemctl enable configure-nic install-crucible
 
 # Generate SSH key
 sudo -u $SSH_USERNAME ssh-keygen -t rsa -f ~/.ssh/id_rsa -q -N ''

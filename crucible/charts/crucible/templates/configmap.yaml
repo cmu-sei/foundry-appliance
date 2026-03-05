@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "foundry.fullname" . }}-gitea-env
+  name: {{ include "crucible.fullname" . }}-gitea-env
   labels:
-    {{- include "foundry.labels" . | nindent 4 }}
+    {{- include "crucible.labels" . | nindent 4 }}
 data:
   GITEA__OAUTH2_CLIENT__OPENID_CONNECT_SCOPES: profile email
   GITEA__OAUTH2_CLIENT__ENABLE_AUTO_REGISTRATION: "true"
@@ -29,9 +29,9 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "foundry.fullname" . }}-mkdocs-files
+  name: {{ include "crucible.fullname" . }}-mkdocs-files
   labels:
-    {{- include "foundry.labels" . | nindent 4 }}
+    {{- include "crucible.labels" . | nindent 4 }}
 binaryData:
 {{- range $k, $v := $binData }}
   {{ $k }}: {{ $v }}
@@ -46,15 +46,15 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "foundry.fullname" . }}-gitea-job-script
+  name: {{ include "crucible.fullname" . }}-gitea-job-script
   labels:
-    {{- include "foundry.labels" . | nindent 4 }}
+    {{- include "crucible.labels" . | nindent 4 }}
 data:
   seed-gitea.sh: |
     #!/bin/sh
     set -e
 
-    GITEA_URL=http://{{ include "foundry.fullname" . }}-gitea
+    GITEA_URL=http://{{ include "crucible.fullname" . }}-gitea
     GITEA_ADMIN_USERNAME={{ .Values.gitea.adminUsername }}
 
     # Wait for Gitea to be ready
@@ -107,7 +107,7 @@ data:
     echo "Repository created or already exists."
 
     # Check if repository is empty before committing
-    REPO_URL="http://$GITEA_ADMIN_USERNAME:$GITEA_ADMIN_PASSWORD@{{ include "foundry.fullname" . }}-gitea/foundry/mkdocs.git"
+    REPO_URL="http://$GITEA_ADMIN_USERNAME:$GITEA_ADMIN_PASSWORD@{{ include "crucible.fullname" . }}-gitea/crucible/mkdocs.git"
 
     echo "Checking if repository is empty..."
     REMOTE_REFS=$(git ls-remote "$REPO_URL" 2>/dev/null || echo "")
@@ -120,16 +120,16 @@ data:
     echo "Repository is empty. Proceeding with initial commit..."
 
     # Set git user vars
-    git config --global user.name "Foundry Administrator"
-    git config --global user.email "administrator@foundry.local"
+    git config --global user.name "Crucible Administrator"
+    git config --global user.email "administrator@crucible.local"
     git config --global init.defaultBranch main
 
     cp -RL /mkdocs /tmp
 
-    # Copy Foundry CA certificate to mkdocs assets
-    cp /foundry-ca/ca.crt /tmp/mkdocs/docs/assets/foundry-ca.crt
+    # Copy Crucible CA certificate to mkdocs assets
+    cp /crucible-ca/ca.crt /tmp/mkdocs/docs/assets/crucible-ca.crt
 
     git -C /tmp/mkdocs init
     git -C /tmp/mkdocs add -A
     git -C /tmp/mkdocs commit -m "Initial commit"
-    git -C /tmp/mkdocs push -u http://$GITEA_ADMIN_USERNAME:$GITEA_ADMIN_PASSWORD@{{ include "foundry.fullname" . }}-gitea/foundry/mkdocs.git --all
+    git -C /tmp/mkdocs push -u http://$GITEA_ADMIN_USERNAME:$GITEA_ADMIN_PASSWORD@{{ include "crucible.fullname" . }}-gitea/crucible/mkdocs.git --all

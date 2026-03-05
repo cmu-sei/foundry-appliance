@@ -1,5 +1,5 @@
 global:
-  domain: foundry.local
+  domain: crucible.local
   version: ""   # Appliance version overridden during Helm install on first boot
   infraHelmRelease: infra
   security:
@@ -25,7 +25,7 @@ postgresql:
   image:
     repository: bitnamilegacy/postgresql
   auth:
-    existingSecret: '{{ include "foundry.fullname" . }}'
+    existingSecret: '{{ include "crucible.fullname" . }}'
   primary:
     persistence:
       size: 1Gi
@@ -38,8 +38,8 @@ postgresql:
 pgadmin4:
   serverDefinitions:
     servers:
-        foundry:
-          Name: foundry
+        crucible:
+          Name: crucible
           Group: Servers
           Port: 5432
           Username: postgres
@@ -53,14 +53,14 @@ pgadmin4:
       nginx.ingress.kubernetes.io/configuration-snippet: |
         proxy_set_header X-Script-Name /pgadmin;
     hosts:
-      - host: foundry.local
+      - host: crucible.local
         paths:
           - path: /pgadmin
             pathType: Prefix
     tls:
       - secretName: appliance-cert
         hosts:
-          - foundry.local
+          - crucible.local
   extraSecretMounts:
     - name: pgpassfile
       secret: pgpassfile
@@ -68,8 +68,8 @@ pgadmin4:
       mountPath: /pgpass.conf
       readOnly: true
   env:
-    email: administrator@foundry.local
-    password: foundry
+    email: administrator@crucible.local
+    password: crucible
     variables:
       - name: PGADMIN_DISABLE_POSTFIX
         value: "true"
@@ -92,7 +92,7 @@ keycloak:
     repository: bitnamilegacy/keycloak
   auth:
     adminUser: "keycloak-admin"
-    existingSecret: '{{ include "foundry.fullname" . }}-auth'
+    existingSecret: '{{ include "crucible.fullname" . }}-auth'
   proxyHeaders: xforwarded
   httpRelativePath: /keycloak/
   ingress:
@@ -103,12 +103,12 @@ keycloak:
       cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
       nginx.ingress.kubernetes.io/server-snippet: |
         location ~ ^/keycloak/?$ {
-          return 302 $scheme://$host/keycloak/admin/foundry/console/;
+          return 302 $scheme://$host/keycloak/admin/crucible/console/;
         }
     tls: true
   keycloakConfigCli:
     enabled: true
-    existingConfigmap: '{{ include "foundry.fullname" . }}-config-cli'
+    existingConfigmap: '{{ include "crucible.fullname" . }}-config-cli'
   postgresql:
     enabled: false
   externalDatabase:
@@ -119,17 +119,17 @@ keycloak:
     existingSecretPasswordKey: postgres-password
 
 gitea:
-  adminUsername: foundry
-  adminEmail: administrator@foundry.local
-  appName: Foundry Gitea
+  adminUsername: crucible
+  adminEmail: administrator@crucible.local
+  appName: Crucible Gitea
   rootURL: https://{{ .Values.global.domain }}/gitea
   updateStrategy:
     type: Recreate
-  existingSecret: '{{ include "foundry.fullname" . }}-admin-secret'
+  existingSecret: '{{ include "crucible.fullname" . }}-admin-secret'
   extraEnvVars:
     - name: BITNAMI_EXTRA_CA_CERTIFICATES
       value: "/etc/ssl/certs/ca-cert.crt"
-  extraEnvVarsCM: '{{ include "foundry.fullname" . }}-env'
+  extraEnvVarsCM: '{{ include "crucible.fullname" . }}-env'
   extraVolumes:
     - name: ca-cert
       secret:
@@ -156,7 +156,7 @@ gitea:
     extraTls:
       - hosts:
           - "{{ .Values.global.domain }}"
-        secretName: '{{ include "foundry.fullname" . }}-cert'
+        secretName: '{{ include "crucible.fullname" . }}-cert'
   postgresql:
     enabled: false
   externalDatabase:
@@ -182,11 +182,11 @@ mkdocs-material:
     tls:
       - hosts:
           - "{{ .Values.global.domain }}"
-        secretName: '{{ include "foundry.fullname" . }}-cert'
+        secretName: '{{ include "crucible.fullname" . }}-cert'
   storage:
     size: 100M
     class: local-path
-  giturl: http://{{ .Release.Name }}-gitea/foundry/mkdocs
+  giturl: http://{{ .Release.Name }}-gitea/crucible/mkdocs
   pollInterval: 1
 
 topomojo:
@@ -209,10 +209,10 @@ topomojo:
       tls:
         - hosts:
             - "{{ .Values.global.domain }}"
-          secretName: '{{ include "foundry.fullname" . }}-cert'
+          secretName: '{{ include "crucible.fullname" . }}-cert'
     storage:
-      existing: '{{ include "foundry.fullname" . }}-nfs'
-    existingSecret: '{{ include "foundry.fullname" . }}-custom'
+      existing: '{{ include "crucible.fullname" . }}-nfs'
+    existingSecret: '{{ include "crucible.fullname" . }}-custom'
     customStart:
       command: ['/bin/sh']
       args: ['/home/app/start/start.sh']
@@ -224,15 +224,15 @@ topomojo:
     env:
       PathBase: /topomojo
       Database__Provider: PostgreSQL
-      Database__AdminName: Foundry Administrator
+      Database__AdminName: Crucible Administrator
       Cache__SharedFolder: ""
       OpenApi__Client__ClientId: topomojo-swagger
       FileUpload__IsoRoot: /mnt/tm
       FileUpload__TopoRoot: /mnt/tm
       FileUpload__DocRoot: /mnt/tm/_docs
-      Oidc__Authority: "https://{{ .Values.global.domain }}/keycloak/realms/foundry"
+      Oidc__Authority: "https://{{ .Values.global.domain }}/keycloak/realms/crucible"
       ApiKeyClients__0__Id: gameengine
-      ApiKeyClients__0__Key: foundry
+      ApiKeyClients__0__Key: crucible
       ApiKeyClients__0__Scope: gameboard
       Core__ConsoleHost: "{{ .Values.global.domain }}/console"
       Pod__ConsoleUrl: "{{ .Values.global.domain }}/console"
@@ -253,12 +253,12 @@ topomojo:
       tls:
         - hosts:
             - "{{ .Values.global.domain }}"
-          secretName: '{{ include "foundry.fullname" . }}-cert'
+          secretName: '{{ include "crucible.fullname" . }}-cert'
     basehref: /topomojo
     settingsYaml:
       appname: TopoMojo
       oidc:
-        authority: https://{{ .Values.global.domain }}/keycloak/realms/foundry
+        authority: https://{{ .Values.global.domain }}/keycloak/realms/crucible
         client_id: topomojo-client
         redirect_uri: https://{{ .Values.global.domain }}/topomojo/oidc
         silent_redirect_uri: https://{{ .Values.global.domain }}/topomojo/oidc-silent.html
@@ -295,18 +295,18 @@ gameboard:
       tls:
         - hosts:
             - "{{ .Values.global.domain }}"
-          secretName: '{{ include "foundry.fullname" . }}-cert'
+          secretName: '{{ include "crucible.fullname" . }}-cert'
     storage:
       size: "1Gi"
       class: local-path
-    existingSecret: '{{ include "foundry.fullname" . }}-custom'
+    existingSecret: '{{ include "crucible.fullname" . }}-custom'
     cacertSecret: '{{ .Values.global.infraHelmRelease }}-ca'
     env:
       PathBase: /gameboard
       Database__Provider: PostgreSQL
-      Database__AdminName: Foundry Administrator
+      Database__AdminName: Crucible Administrator
       Oidc__Audience: gameboard-api
-      Oidc__Authority: https://{{ .Values.global.domain }}/keycloak/realms/foundry
+      Oidc__Authority: https://{{ .Values.global.domain }}/keycloak/realms/crucible
       OpenApi__Client__ClientId: gameboard-swagger
       Core__GameEngineUrl: https://{{ .Values.global.domain }}/topomojo/
       Core__GameEngineClientName: bot-gameboard
@@ -325,13 +325,13 @@ gameboard:
       tls:
         - hosts:
             - "{{ .Values.global.domain }}"
-          secretName: '{{ include "foundry.fullname" . }}-cert'
+          secretName: '{{ include "crucible.fullname" . }}-cert'
     basehref: /gameboard
     settingsYaml:
       appname: Gameboard
       oidc:
         client_id: gameboard-client
-        authority: https://{{ .Values.global.domain }}/keycloak/realms/foundry
+        authority: https://{{ .Values.global.domain }}/keycloak/realms/crucible
         redirect_uri: https://{{ .Values.global.domain }}/gameboard/oidc
         silent_redirect_uri: https://{{ .Values.global.domain }}/gameboard/oidc-silent.html
         response_type: code

@@ -1,7 +1,7 @@
 # Helm chart dependencies
 **/charts/*.tgz
 
-# Hidden files/dirs in foundry home directory
+# Hidden files/dirs in crucible home directory
 /.*
 
 # But keep this file
