@@ -1,5 +1,4 @@
 .DS_Store
-.vscode/
 packer_cache/
 output-*/
 *.pkrvars.hcl
