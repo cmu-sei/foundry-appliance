@@ -21,11 +21,17 @@ rm ~/scripts/expand-volume.sh
 swapoff -a
 sed -i -r 's/(\/swap\.img.*)/#\1/' /etc/fstab
 
-# Suppress kernel cgroup/container messages from appearing on the terminal.
-# Without this, cri-containerd and kubepods cgroup events flood all TTYs.
-# printk levels: console_loglevel default_loglevel minimum_loglevel default_console_loglevel
-echo 'kernel.printk = 4 4 1 7' >/etc/sysctl.d/10-console-loglevel.conf
+# Suppress cri-containerd and cgroup slice messages from flooding the terminal.
+# K3s/containerd write to /dev/kmsg at ERR level, so console_loglevel must be
+# lower than 4 to suppress them. Level 1 = only KERN_EMERG reaches the console.
+# printk: console_loglevel default_msg_loglevel min_console_loglevel default_console_loglevel
+echo 'kernel.printk = 1 4 1 1' >/etc/sysctl.d/10-console-loglevel.conf
 sysctl -p /etc/sysctl.d/10-console-loglevel.conf
+
+# Set the kernel boot-time console log level via GRUB so messages are suppressed
+# before systemd-sysctl applies the sysctl.d file.
+sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="quiet loglevel=1"/' /etc/default/grub
+update-grub
 
 # Add Kubernetes apt repo
 apt-get update
@@ -78,7 +84,10 @@ apt-get install -y dnsmasq avahi-daemon nfs-common kubectl helm pwgen
 git clone https://github.com/jaggedmountain/k-alias.git /tmp/k-alias
 cp /tmp/k-alias/[h,k]* /usr/local/bin
 
-# Build dependencies for crucible Helm chart
+# Add Helm chart repositories and build dependencies
+sudo -u $SSH_USERNAME helm repo add jetstack https://charts.jetstack.io
+sudo -u $SSH_USERNAME helm repo add sei https://helm.cmusei.dev/charts
+sudo -u $SSH_USERNAME helm repo update
 for chart in infra crucible; do
   sudo -u $SSH_USERNAME helm dependency build ~/charts/$chart
 done
