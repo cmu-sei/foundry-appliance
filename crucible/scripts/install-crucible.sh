@@ -12,8 +12,8 @@ FLAG=/etc/.install-crucible
 CHARTS_DIR=/home/crucible/charts
 RUN_AS_USER="sudo -u crucible"
 APPLIANCE_VERSION=$(cat /etc/appliance_version)
-CERT_MANAGER_VERSION=v1.17.2
-export INSTALL_K3S_VERSION="v1.32.1+k3s1"
+CERT_MANAGER_VERSION=v1.20.0
+export INSTALL_K3S_VERSION="v1.35.2+k3s1"
 
 if [[ $UID != 0 ]]; then
     echo "Please run this script with sudo:"
