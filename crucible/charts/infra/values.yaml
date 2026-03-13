@@ -2,9 +2,8 @@ global:
   domain: crucible.local
 
 # ---------------------------------------------------------------------------
-# Appliance-only: cert-manager with self-signed CA chain
-# The upstream reference deployment creates TLS certs and CA ConfigMaps
-# externally; this appliance uses cert-manager to generate them automatically.
+# cert-manager with self-signed CA chain
+# https://artifacthub.io/packages/helm/cert-manager/cert-manager
 # ---------------------------------------------------------------------------
 certificateAuthority:
   commonName: Crucible Appliance CA
@@ -30,7 +29,6 @@ nfsVolumes:
 
 # ---------------------------------------------------------------------------
 # Ingress NGINX Controller
-# Routes external traffic to services within the cluster
 # https://kubernetes.github.io/ingress-nginx/
 # ---------------------------------------------------------------------------
 ingress-nginx:
@@ -45,7 +43,6 @@ ingress-nginx:
 
 # ---------------------------------------------------------------------------
 # PostgreSQL Database
-# Primary database for Crucible applications
 # https://github.com/self-hosters-by-night/helm-charts/tree/main/charts/postgres
 # ---------------------------------------------------------------------------
 postgresql:
