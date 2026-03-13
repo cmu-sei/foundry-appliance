@@ -43,3 +43,20 @@ metadata:
 spec:
   ca:
     secretName: {{ include "infra.fullname" . }}-ca
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: crucible-cert
+  labels:
+    {{- include "infra.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  secretName: crucible-cert
+  dnsNames:
+    - {{ .Values.global.domain }}
+  issuerRef:
+    name: {{ include "infra.fullname" . }}-issuer
+    kind: ClusterIssuer

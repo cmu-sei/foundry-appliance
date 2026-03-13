@@ -1,139 +1,552 @@
 global:
   domain: crucible.local
-  version: ""   # Appliance version overridden during Helm install on first boot
-  infraHelmRelease: infra
+  version: "" # Set at install time from /etc/appliance_version
   security:
-    allowInsecureImages: true
+    allowInsecureImages: true # required to pull keycloak from bitnamilegacy
+  keycloak:
+    basePath: "/keycloak"
+    realm: "crucible"
 
-nfs-server-provisioner:
-  persistence:
+# ---------------------------------------------------------------------------
+# Upstream sei/crucible chart (aliased as sei-crucible)
+# See https://github.com/cmu-sei/helm-charts/tree/main/charts/crucible
+# ---------------------------------------------------------------------------
+sei-crucible:
+  nameOverride: crucible
+
+  keycloak:
     enabled: true
+    image:
+      # This bitnamilegacy image requires allowing insecure images
+      repository: bitnamilegacy/keycloak
+    ingress:
+      enabled: true
+      hostname: "{{ .Values.global.domain }}"
+      path: "/keycloak/"
+      annotations:
+        nginx.ingress.kubernetes.io/server-snippet: |
+          location ~ ^/keycloak/?$ {
+            return 302 $scheme://$host/keycloak/admin/crucible/console/;
+          }
+      tls: true
+      extraTls:
+        - hosts:
+            - "{{ .Values.global.domain }}"
+          secretName: crucible-cert
+    # Automatically generate OIDC client secrets and create a realm ConfigMap
+    createRealm: true
+    # Import realm on startup
+    extraEnvVars:
+      - name: KEYCLOAK_EXTRA_ARGS
+        value: "--import-realm"
+    extraVolumes:
+      - name: realm-import
+        secret:
+          secretName: "{{ .Release.Name }}-realm"
+    extraVolumeMounts:
+      - name: realm-import
+        mountPath: /opt/bitnami/keycloak/data/import
+        readOnly: true
+    externalDatabase:
+      host: "infra-postgresql"
+      user: "postgres"
+      database: keycloak
+      existingSecret: "infra-postgresql"
+      existingSecretPasswordKey: "postgres-password"
 
-ingress-nginx:
-  controller:
-    config:
-      hsts: "false"
-      annotations-risk-level: critical
-    allowSnippetAnnotations: true
-    updateStrategy:
-      type: RollingUpdate
-  tcp:
-    2049: "{{ .Release.Namespace }}/{{ .Release.Name }}-nfs-server-provisioner:2049"
-    #5432: "{{ .Release.Namespace }}/postgresql:5432"
-
-postgresql:
-  image:
-    repository: bitnamilegacy/postgresql
-  auth:
-    existingSecret: '{{ include "crucible.fullname" . }}'
-  primary:
-    persistence:
-      size: 1Gi
-    initdb:
-      scripts:
-        create-dbs.sql: |
-          CREATE DATABASE keycloak;
-          CREATE DATABASE gitea;
-
-pgadmin4:
-  serverDefinitions:
-    servers:
-        crucible:
-          Name: crucible
-          Group: Servers
-          Port: 5432
-          Username: postgres
-          Host: postgresql
-          PassFile: ../../pgpass.conf
-          SSLMode: prefer
-          MaintenanceDB: postgres
-  ingress:
+  alloy:
     enabled: true
-    annotations:
-      nginx.ingress.kubernetes.io/configuration-snippet: |
-        proxy_set_header X-Script-Name /pgadmin;
-    hosts:
-      - host: crucible.local
-        paths:
-          - path: /pgadmin
-            pathType: Prefix
-    tls:
-      - secretName: appliance-cert
+    alloy-api:
+      database:
+        host: "infra-postgresql"
+        port: 5432
+        name: "alloy"
+        existingSecret: "infra-postgresql"
+        usernameKey: "username"
+        passwordKey: "postgres-password"
+      ingress:
         hosts:
-          - crucible.local
-  extraSecretMounts:
-    - name: pgpassfile
-      secret: pgpassfile
-      subPath: pgpassfile
-      mountPath: /pgpass.conf
-      readOnly: true
-  env:
-    email: administrator@crucible.local
-    password: crucible
-    variables:
-      - name: PGADMIN_DISABLE_POSTFIX
-        value: "true"
-      - name: PGADMIN_CONFIG_ALLOW_SPECIAL_EMAIL_DOMAINS
-        value: "['local']"
-  persistentVolume:
-    size: 1Gi
-  extraInitContainers: |
-    - name: add-folder-for-pgpass
-      image: "dpage/pgadmin4:latest"
-      command: ["/bin/mkdir", "-p", "/var/lib/pgadmin/storage/pgadmin"]
-      volumeMounts:
-        - name: pgadmin-data
-          mountPath: /var/lib/pgadmin
-      securityContext:
-        runAsUser: 5050
+          - host: "{{ .Values.global.domain }}"
+            paths:
+              - path: /alloy/(api|swagger|hubs)
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - "{{ .Values.global.domain }}"
+            secretName: crucible-cert
+      env:
+        ResourceOwnerAuthorization__UserName: "admin@{{ .Values.global.domain }}"
 
-keycloak:
-  image:
-    repository: bitnamilegacy/keycloak
-  auth:
-    adminUser: "keycloak-admin"
-    existingSecret: '{{ include "crucible.fullname" . }}-auth'
-  proxyHeaders: xforwarded
-  httpRelativePath: /keycloak/
-  ingress:
-    enabled: true
-    ingressClassName: nginx
-    hostname: "{{ .Values.global.domain }}"
-    annotations:
-      cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
-      nginx.ingress.kubernetes.io/server-snippet: |
-        location ~ ^/keycloak/?$ {
-          return 302 $scheme://$host/keycloak/admin/crucible/console/;
-        }
-    tls: true
-  keycloakConfigCli:
-    enabled: true
-    existingConfigmap: '{{ include "crucible.fullname" . }}-config-cli'
-  postgresql:
-    enabled: false
-  externalDatabase:
-    host: "{{ .Release.Name }}-postgresql"
-    user: postgres
-    database: keycloak
-    existingSecret: "{{ .Release.Name }}-postgresql"
-    existingSecretPasswordKey: postgres-password
+    alloy-ui:
+      ingress:
+        hosts:
+          - host: "{{ .Values.global.domain }}"
+            paths:
+              - path: /alloy
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - "{{ .Values.global.domain }}"
+            secretName: crucible-cert
+      settings: '{
+        "ApiUrl": "https://{{ .Values.global.domain }}/alloy",
+        "OIDCSettings": {
+        "authority": "https://{{ .Values.global.domain }}/keycloak/realms/crucible",
+        "client_id": "alloy.ui",
+        "redirect_uri": "https://{{ .Values.global.domain }}/alloy/auth-callback",
+        "post_logout_redirect_uri": "https://{{ .Values.global.domain }}/alloy",
+        "response_type": "code",
+        "scope": "openid profile alloy player player-vm caster steamfitter",
+        "automaticSilentRenew": true,
+        "silent_redirect_uri": "https://{{ .Values.global.domain }}/alloy/auth-callback-silent"
+        },
+        "AppTitle": "Alloy",
+        "AppTopBarText": "Alloy",
+        "PlayerUIAddress": "https://{{ .Values.global.domain }}/player",
+        "UseLocalAuthStorage": true
+        }'
 
+  blueprint:
+    enabled: true
+    blueprint-api:
+      certificateMap: "crucible-ca-cert"
+      database:
+        host: "infra-postgresql"
+        port: 5432
+        name: "blueprint"
+        existingSecret: "infra-postgresql"
+        usernameKey: "username"
+        passwordKey: "postgres-password"
+      ingress:
+        hosts:
+          - host: "{{ .Values.global.domain }}"
+            paths:
+              - path: /blueprint/(api|swagger|hubs)
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - "{{ .Values.global.domain }}"
+            secretName: crucible-cert
+      env:
+        SSL_CERT_FILE: /usr/local/share/ca-certificates/ca.crt
+        SSL_CERT_DIR: /usr/local/share/ca-certificates
+
+    blueprint-ui:
+      ingress:
+        hosts:
+          - host: "{{ .Values.global.domain }}"
+            paths:
+              - path: /blueprint
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - "{{ .Values.global.domain }}"
+            secretName: crucible-cert
+
+  caster:
+    enabled: true
+    caster-api:
+      certificateMap: "crucible-ca-cert"
+      database:
+        host: "infra-postgresql"
+        port: 5432
+        name: "caster"
+        existingSecret: "infra-postgresql"
+        usernameKey: "username"
+        passwordKey: "postgres-password"
+      ingress:
+        hosts:
+          - host: "{{ .Values.global.domain }}"
+            paths:
+              - path: /caster/(api|swagger|hubs)
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - "{{ .Values.global.domain }}"
+            secretName: crucible-cert
+      env:
+        SSL_CERT_FILE: /usr/local/share/ca-certificates/ca.crt
+        SSL_CERT_DIR: /usr/local/share/ca-certificates
+
+    caster-ui:
+      ingress:
+        hosts:
+          - host: "{{ .Values.global.domain }}"
+            paths:
+              - path: /caster
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - "{{ .Values.global.domain }}"
+            secretName: crucible-cert
+
+  cite:
+    enabled: true
+    cite-api:
+      certificateMap: "crucible-ca-cert"
+      database:
+        host: "infra-postgresql"
+        port: 5432
+        name: "cite"
+        existingSecret: "infra-postgresql"
+        usernameKey: "username"
+        passwordKey: "postgres-password"
+      ingress:
+        hosts:
+          - host: "{{ .Values.global.domain }}"
+            paths:
+              - path: /cite/(api|swagger|hubs)
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - "{{ .Values.global.domain }}"
+            secretName: crucible-cert
+      env:
+        SSL_CERT_FILE: /usr/local/share/ca-certificates/ca.crt
+        SSL_CERT_DIR: /usr/local/share/ca-certificates
+
+    cite-ui:
+      ingress:
+        hosts:
+          - host: "{{ .Values.global.domain }}"
+            paths:
+              - path: /cite
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - "{{ .Values.global.domain }}"
+            secretName: crucible-cert
+
+  gallery:
+    enabled: true
+    gallery-api:
+      certificateMap: "crucible-ca-cert"
+      database:
+        host: "infra-postgresql"
+        port: 5432
+        name: "gallery"
+        existingSecret: "infra-postgresql"
+        usernameKey: "username"
+        passwordKey: "postgres-password"
+      ingress:
+        hosts:
+          - host: "{{ .Values.global.domain }}"
+            paths:
+              - path: /gallery/(api|swagger|hubs)
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - "{{ .Values.global.domain }}"
+            secretName: crucible-cert
+      env:
+        SSL_CERT_FILE: /usr/local/share/ca-certificates/ca.crt
+        SSL_CERT_DIR: /usr/local/share/ca-certificates
+
+    gallery-ui:
+      ingress:
+        hosts:
+          - host: "{{ .Values.global.domain }}"
+            paths:
+              - path: /gallery
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - "{{ .Values.global.domain }}"
+            secretName: crucible-cert
+
+  gameboard:
+    enabled: true
+    gameboard-api:
+      certificateMap: "crucible-ca-cert"
+      database:
+        host: "infra-postgresql"
+        port: 5432
+        name: "gameboard"
+        existingSecret: "infra-postgresql"
+        usernameKey: "username"
+        passwordKey: "postgres-password"
+      ingress:
+        enabled: true
+        hosts:
+          - host: "{{ .Values.global.domain }}"
+            paths:
+              - path: /gameboard/(api|hub|img|docs|supportfiles)
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - "{{ .Values.global.domain }}"
+            secretName: crucible-cert
+      env:
+        Oidc__Authority: https://{{ .Values.global.domain }}/keycloak/realms/crucible
+        Oidc__Audience: gameboard
+
+    gameboard-ui:
+      ingress:
+        enabled: true
+        hosts:
+          - host: "{{ .Values.global.domain }}"
+            paths:
+              - path: /gameboard
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - "{{ .Values.global.domain }}"
+            secretName: crucible-cert
+      settingsYaml:
+        consoleForgeConfig:
+          defaultConsoleType: proxmox
+          logThreshold: 2
+
+  player:
+    enabled: true
+    player-api:
+      certificateMap: "crucible-ca-cert"
+      database:
+        host: "infra-postgresql"
+        port: 5432
+        name: "player"
+        existingSecret: "infra-postgresql"
+        usernameKey: "username"
+        passwordKey: "postgres-password"
+      ingress:
+        hosts:
+          - host: "{{ .Values.global.domain }}"
+            paths:
+              - path: /player/(hubs|swagger|api)
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - "{{ .Values.global.domain }}"
+            secretName: crucible-cert
+      env:
+        SSL_CERT_FILE: /usr/local/share/ca-certificates/ca.crt
+        SSL_CERT_DIR: /usr/local/share/ca-certificates
+
+    player-ui:
+      ingress:
+        hosts:
+          - host: "{{ .Values.global.domain }}"
+            paths:
+              - path: /player
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - "{{ .Values.global.domain }}"
+            secretName: crucible-cert
+
+    vm-api:
+      certificateMap: "crucible-ca-cert"
+      database:
+        host: "infra-postgresql"
+        port: 5432
+        name: "player_vm"
+        existingSecret: "infra-postgresql"
+        usernameKey: "username"
+        passwordKey: "postgres-password"
+      ingress:
+        hosts:
+          - host: "{{ .Values.global.domain }}"
+            paths:
+              - path: /vm/(notifications|hubs|api|swagger)
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - "{{ .Values.global.domain }}"
+            secretName: crucible-cert
+
+    vm-ui:
+      ingress:
+        hosts:
+          - host: "{{ .Values.global.domain }}"
+            paths:
+              - path: /vm
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - "{{ .Values.global.domain }}"
+            secretName: crucible-cert
+
+    console-ui:
+      ingress:
+        hosts:
+          - host: "{{ .Values.global.domain }}"
+            paths:
+              - path: /console
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - "{{ .Values.global.domain }}"
+            secretName: crucible-cert
+
+  steamfitter:
+    enabled: true
+    steamfitter-api:
+      certificateMap: "crucible-ca-cert"
+      database:
+        host: "infra-postgresql"
+        port: 5432
+        name: "steamfitter"
+        existingSecret: "infra-postgresql"
+        usernameKey: "username"
+        passwordKey: "postgres-password"
+      ingress:
+        hosts:
+          - host: "{{ .Values.global.domain }}"
+            paths:
+              - path: /steamfitter/(api|swagger|hubs)
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - "{{ .Values.global.domain }}"
+            secretName: crucible-cert
+      env:
+        # Trust a custom CA certificate
+        SSL_CERT_FILE: /usr/local/share/ca-certificates/ca.crt
+        SSL_CERT_DIR: /usr/local/share/ca-certificates
+
+    steamfitter-ui:
+      ingress:
+        hosts:
+          - host: "{{ .Values.global.domain }}"
+            paths:
+              - path: /steamfitter
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - "{{ .Values.global.domain }}"
+            secretName: crucible-cert
+
+  topomojo:
+    enabled: true
+    topomojo-api:
+      certificateMap: "crucible-ca-cert"
+      database:
+        host: "infra-postgresql"
+        port: 5432
+        name: "topomojo"
+        existingSecret: "infra-postgresql"
+        usernameKey: "username"
+        passwordKey: "postgres-password"
+      ingress:
+        enabled: true
+        hosts:
+          - host: "{{ .Values.global.domain }}"
+            paths:
+              - path: /topomojo/(api|hub|docs)
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - "{{ .Values.global.domain }}"
+            secretName: crucible-cert
+      env:
+        Oidc__Authority: https://{{ .Values.global.domain }}/keycloak/realms/crucible
+        Oidc__MetadataAddress: https://{{ .Values.global.domain }}/keycloak/realms/crucible/.well-known/openid-configuration
+        OpenApi__Client__AuthorizationUrl: https://{{ .Values.global.domain }}/keycloak/realms/crucible/protocol/openid-connect/auth
+        OpenApi__Client__TokenUrl: https://{{ .Values.global.domain }}/keycloak/realms/crucible/protocol/openid-connect/token
+        ## Hypervisor "Pod" Configuration
+        ## TopoMojo uses "Pod" terminology to refer to hypervisor connections
+        ## Supports both vSphere and Proxmox - specify type with Pod__HypervisorType
+        ## Uncomment and configure for your hypervisor
+        # Pod__HypervisorType: "pROXMOX"  # Options: "Vsphere" or "Proxmox"
+        # Pod__Url: ""  # vSphere: https://vcenter.example.com or Proxmox: https://proxmox.example.com:8006
+        # Pod__User: ""
+        # Pod__Password: ""
+        # Pod__ConsoleUrl: "{{ .Values.global.domain }}/console"
+        # Pod__PoolPath: ""
+        # Pod__Uplink: "vSwitch0"
+        # Pod__VmStore: ""
+        # Pod__IsoStore: ""
+        # Pod__DiskStore: ""
+        # Pod__TicketUrlHandler: "querystring"
+        # Pod__Vlan__Range: ""
+        # Pod__KeepAliveMinutes: 10
+        # Pod__DebugVerbose: false
+        # VMware NSX/SDDC Configuration (optional)
+        # Advanced networking configuration for VMware NSX environments
+        # Uncomment and configure if using NSX-T or VMware Cloud on AWS (VMC)
+        # Pod__IsNsxNetwork: false
+        # Pod__Sddc__ApiUrl: ""
+        # Pod__Sddc__MetadataUrl: ""
+        # Pod__Sddc__SegmentApiPath: "policy/api/v1/infra/tier-1s/cgw/segments"
+        # Pod__Sddc__ApiKey: ""
+        # Pod__Sddc__AuthUrl: ""
+        # Pod__Sddc__CertificatePath: ""
+        # Pod__Sddc__CertificatePassword: ""
+
+    topomojo-ui:
+      ingress:
+        enabled: true
+        hosts:
+          - host: "{{ .Values.global.domain }}"
+            paths:
+              - path: /topomojo
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - "{{ .Values.global.domain }}"
+            secretName: crucible-cert
+
+  moodle:
+    enabled: true
+    moodle:
+      site:
+        url: "https://{{ .Values.global.domain }}"
+      database:
+        host: "infra-postgresql"
+        name: "moodle"
+        user: "postgres"
+        existingSecret: "infra-postgresql"
+        existingSecretUserKey: "username"
+        existingSecretPasswordKey: "postgres-password"
+      oidc:
+        enabled: true
+        discoveryUrl: "https://{{ .Values.global.domain }}/keycloak/realms/crucible/.well-known/openid-configuration"
+        existingSecret: "crucible-moodle"
+        caCert:
+          path: "/opt/sei/certs/ca.crt"
+    extraEnvVars:
+      - name: SSL_CERT_FILE
+        value: /opt/sei/certs/ca.crt
+      - name: SSL_CERT_DIR
+        value: /opt/sei/certs
+      - name: CURL_CA_BUNDLE
+        value: /opt/sei/certs/ca.crt
+    extraVolumes:
+      - name: crucible-ca-cert
+        configMap:
+          name: crucible-ca-cert
+    extraVolumeMounts:
+      - name: crucible-ca-cert
+        mountPath: /opt/sei/certs
+        readOnly: true
+    ingress:
+      hostname: "{{ .Values.global.domain }}"
+      path: /
+      pathType: Prefix
+      tls:
+        - hosts:
+            - "{{ .Values.global.domain }}"
+          secretName: crucible-cert
+
+# ---------------------------------------------------------------------------
+# Gitea - Git server at /gitea
+# ---------------------------------------------------------------------------
 gitea:
   adminUsername: crucible
   adminEmail: administrator@crucible.local
   appName: Crucible Gitea
-  rootURL: https://{{ .Values.global.domain }}/gitea
+  rootURL: "https://{{ .Values.global.domain }}/gitea"
   updateStrategy:
     type: Recreate
-  existingSecret: '{{ include "crucible.fullname" . }}-admin-secret'
+  existingSecret: infra-gitea-admin
   extraEnvVars:
     - name: BITNAMI_EXTRA_CA_CERTIFICATES
-      value: "/etc/ssl/certs/ca-cert.crt"
-  extraEnvVarsCM: '{{ include "crucible.fullname" . }}-env'
+      value: /etc/ssl/certs/ca-cert.crt
+  extraEnvVarsCM: "{{ .Release.Name }}-gitea-env"
   extraVolumes:
     - name: ca-cert
       secret:
-        secretName: "{{ .Values.global.infraHelmRelease }}-ca"
+        secretName: infra-ca
   extraVolumeMounts:
     - name: ca-cert
       mountPath: /etc/ssl/certs/ca-cert.crt
@@ -150,26 +563,27 @@ gitea:
     hostname: "{{ .Values.global.domain }}"
     path: /gitea(/|$)(.*)
     annotations:
-      cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
       nginx.ingress.kubernetes.io/rewrite-target: /$2
     tls: true
     extraTls:
       - hosts:
           - "{{ .Values.global.domain }}"
-        secretName: '{{ include "crucible.fullname" . }}-cert'
+        secretName: crucible-cert
   postgresql:
     enabled: false
   externalDatabase:
-    host: "{{ .Release.Name }}-postgresql"
-    existingSecret: "{{ .Release.Name }}-postgresql"
+    host: infra-postgresql
+    existingSecret: infra-postgresql
     existingSecretPasswordKey: postgres-password
 
+# ---------------------------------------------------------------------------
+# MkDocs Material - Documentation site at /start
+# ---------------------------------------------------------------------------
 mkdocs-material:
   ingress:
     enabled: true
     className: nginx
     annotations:
-      cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
       nginx.ingress.kubernetes.io/app-root: /start
       nginx.ingress.kubernetes.io/rewrite-target: /$2
       nginx.ingress.kubernetes.io/configuration-snippet: |
@@ -182,165 +596,9 @@ mkdocs-material:
     tls:
       - hosts:
           - "{{ .Values.global.domain }}"
-        secretName: '{{ include "crucible.fullname" . }}-cert'
+        secretName: crucible-cert
   storage:
     size: 100M
     class: local-path
-  giturl: http://{{ .Release.Name }}-gitea/crucible/mkdocs
+  giturl: "http://{{ .Release.Name }}-gitea/crucible/mkdocs"
   pollInterval: 1
-
-topomojo:
-  topomojo-api:
-    ingress:
-      enabled: true
-      className: nginx
-      annotations:
-        cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
-        nginx.ingress.kubernetes.io/proxy-body-size: 6g
-      hosts:
-        - host: "{{ .Values.global.domain }}"
-          paths:
-            - path: /topomojo/api
-              pathType: ImplementationSpecific
-            - path: /topomojo/hub
-              pathType: ImplementationSpecific
-            - path: /topomojo/docs
-              pathType: ImplementationSpecific
-      tls:
-        - hosts:
-            - "{{ .Values.global.domain }}"
-          secretName: '{{ include "crucible.fullname" . }}-cert'
-    storage:
-      existing: '{{ include "crucible.fullname" . }}-nfs'
-    existingSecret: '{{ include "crucible.fullname" . }}-custom'
-    customStart:
-      command: ['/bin/sh']
-      args: ['/home/app/start/start.sh']
-      binaryFiles: {}
-      files:
-        start.sh: |
-          #!/bin/sh
-          cd /home/app && SSL_CERT_FILE=/home/app/conf/cacert.crt dotnet TopoMojo.Api.dll
-    env:
-      PathBase: /topomojo
-      Database__Provider: PostgreSQL
-      Database__AdminName: Crucible Administrator
-      Cache__SharedFolder: ""
-      OpenApi__Client__ClientId: topomojo-swagger
-      FileUpload__IsoRoot: /mnt/tm
-      FileUpload__TopoRoot: /mnt/tm
-      FileUpload__DocRoot: /mnt/tm/_docs
-      Oidc__Authority: "https://{{ .Values.global.domain }}/keycloak/realms/crucible"
-      ApiKeyClients__0__Id: gameengine
-      ApiKeyClients__0__Key: crucible
-      ApiKeyClients__0__Scope: gameboard
-      Core__ConsoleHost: "{{ .Values.global.domain }}/console"
-      Pod__ConsoleUrl: "{{ .Values.global.domain }}/console"
-      Headers__Cors__Origins__0: https://{{ .Values.global.domain }}
-      Headers__Forwarding__TargetHeaders: All
-  topomojo-ui:
-    ingress:
-      enabled: true
-      className: nginx
-      annotations:
-        cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
-        nginx.ingress.kubernetes.io/proxy-body-size: 6g
-      hosts:
-        - host: "{{ .Values.global.domain }}"
-          paths:
-            - path: /topomojo
-              pathType: ImplementationSpecific
-      tls:
-        - hosts:
-            - "{{ .Values.global.domain }}"
-          secretName: '{{ include "crucible.fullname" . }}-cert'
-    basehref: /topomojo
-    settingsYaml:
-      appname: TopoMojo
-      oidc:
-        authority: https://{{ .Values.global.domain }}/keycloak/realms/crucible
-        client_id: topomojo-client
-        redirect_uri: https://{{ .Values.global.domain }}/topomojo/oidc
-        silent_redirect_uri: https://{{ .Values.global.domain }}/topomojo/oidc-silent.html
-        post_logout_redirect_uri: https://{{ .Values.global.domain }}/topomojo
-        response_type: code
-        scope: openid profile topomojo-api
-        automaticSilentRenew: true
-        includeIdTokenInSilentRenew: false
-        filterProtocolClaims: true
-        loadUserInfo: true
-        accessTokenExpiringNotificationTime: 120
-        monitorSession: false
-        useLocalStorage: true
-
-gameboard:
-  gameboard-api:
-    ingress:
-      enabled: true
-      className: nginx
-      annotations:
-        cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
-        nginx.ingress.kubernetes.io/proxy-body-size: 10m
-      hosts:
-        - host: "{{ .Values.global.domain }}"
-          paths:
-            - path: /gameboard/api
-              pathType: ImplementationSpecific
-            - path: /gameboard/hub
-              pathType: ImplementationSpecific
-            - path: /gameboard/img
-              pathType: ImplementationSpecific
-            - path: /gameboard/doc
-              pathType: ImplementationSpecific
-      tls:
-        - hosts:
-            - "{{ .Values.global.domain }}"
-          secretName: '{{ include "crucible.fullname" . }}-cert'
-    storage:
-      size: "1Gi"
-      class: local-path
-    existingSecret: '{{ include "crucible.fullname" . }}-custom'
-    cacertSecret: '{{ .Values.global.infraHelmRelease }}-ca'
-    env:
-      PathBase: /gameboard
-      Database__Provider: PostgreSQL
-      Database__AdminName: Crucible Administrator
-      Oidc__Audience: gameboard-api
-      Oidc__Authority: https://{{ .Values.global.domain }}/keycloak/realms/crucible
-      OpenApi__Client__ClientId: gameboard-swagger
-      Core__GameEngineUrl: https://{{ .Values.global.domain }}/topomojo/
-      Core__GameEngineClientName: bot-gameboard
-      Core__GameEngineClientSecret: tdRMT_4QQjjhLSEq89tJZ2O3s_TcN0nw
-  gameboard-ui:
-    ingress:
-      enabled: true
-      className: nginx
-      annotations:
-        cert-manager.io/cluster-issuer: "{{ .Values.global.infraHelmRelease }}-issuer"
-      hosts:
-        - host: "{{ .Values.global.domain }}"
-          paths:
-            - path: /gameboard
-              pathType: ImplementationSpecific
-      tls:
-        - hosts:
-            - "{{ .Values.global.domain }}"
-          secretName: '{{ include "crucible.fullname" . }}-cert'
-    basehref: /gameboard
-    settingsYaml:
-      appname: Gameboard
-      oidc:
-        client_id: gameboard-client
-        authority: https://{{ .Values.global.domain }}/keycloak/realms/crucible
-        redirect_uri: https://{{ .Values.global.domain }}/gameboard/oidc
-        silent_redirect_uri: https://{{ .Values.global.domain }}/gameboard/oidc-silent.html
-        response_type: code
-        scope: openid profile gameboard-api
-        automaticSilentRenew: true
-        includeIdTokenInSilentRenew: false
-        filterProtocolClaims: true
-        loadUserInfo: true
-        checkSessionInterval: 30000
-        accessTokenExpiringNotificationTime: 120
-        monitorSession: false
-        useLocalStorage: true

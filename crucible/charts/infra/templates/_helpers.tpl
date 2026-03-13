@@ -51,12 +51,22 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
-Create the name of the service account to use
+PostgreSQL service name
 */}}
-{{- define "infra.serviceAccountName" -}}
-{{- if .Values.serviceAccount.create }}
-{{- default (include "infra.fullname" .) .Values.serviceAccount.name }}
-{{- else }}
-{{- default "default" .Values.serviceAccount.name }}
+{{- define "infra.postgresql.serviceName" -}}
+{{- printf "%s-postgresql" (include "infra.fullname" .) -}}
 {{- end }}
+
+{{/*
+PostgreSQL secret name
+*/}}
+{{- define "infra.postgresql.secretName" -}}
+{{- printf "%s-postgresql" (include "infra.fullname" .) -}}
+{{- end }}
+
+{{/*
+TLS certificate secret name
+*/}}
+{{- define "infra.tls.secretName" -}}
+crucible-cert
 {{- end }}

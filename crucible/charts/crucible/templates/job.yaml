@@ -1,3 +1,6 @@
+{{- /* ================================================================== */ -}}
+{{- /* Configure Gitea OIDC                                                */ -}}
+{{- /* ================================================================== */ -}}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -13,14 +16,14 @@ spec:
       volumes:
         - name: gitea-data
           persistentVolumeClaim:
-            claimName: {{ include "crucible.fullname" . }}-gitea
+            claimName: {{ .Release.Name }}-gitea
         - name: ca-cert
           secret:
             defaultMode: 420
-            secretName: {{ .Values.global.infraHelmRelease }}-ca
+            secretName: infra-ca
       containers:
         - name: gitea-cli
-          image: {{ include "crucible.gitea.image" . }}
+          image: {{ include "crucible-local.gitea.image" . }}
           volumeMounts:
             - name: gitea-data
               mountPath: /bitnami/gitea
@@ -39,15 +42,15 @@ spec:
             - name: GITEA_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "crucible.fullname" . }}-gitea-admin-secret
+                  name: infra-gitea-admin
                   key: admin-password
             - name: OIDC_CLIENT_ID
               value: gitea-client
             - name: OIDC_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "crucible.fullname" . }}-keycloak-auth
-                  key: oauth-client-secret
+                  name: {{ .Release.Name }}-gitea-oidc
+                  key: client-secret
           command:
             - /bin/bash
             - -eu
@@ -67,12 +70,14 @@ spec:
                   --scopes "openid profile email" \
 
 ---
-{{- /* Job to seed gitea repository with mkdocs files */ -}}
+{{- /* ================================================================== */ -}}
+{{- /* Seed Gitea with MkDocs repository                                   */ -}}
+{{- /* ================================================================== */ -}}
 {{- $files := .Files.Glob "files/mkdocs/**" -}}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "crucible.fullname" . }}-seed-mkdocs
+  name: {{ .Release.Name }}-seed-mkdocs
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
@@ -90,7 +95,7 @@ spec:
             - name: GITEA_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "crucible.fullname" . }}-gitea-admin-secret
+                  name: infra-gitea-admin
                   key: admin-password
           volumeMounts:
             - name: mkdocs
@@ -103,58 +108,68 @@ spec:
       volumes:
         - name: mkdocs
           configMap:
-            name: {{ include "crucible.fullname" . }}-mkdocs-files
+            name: {{ .Release.Name }}-mkdocs-files
             items:
             {{- range $path, $_ := $files }}
               - key: {{ replace "/" "__" $path | quote }}
-                path: {{ (trimPrefix "files/mkdocs/" $path) | quote }}   # remove parent directories
+                path: {{ (trimPrefix "files/mkdocs/" $path) | quote }}
             {{- end }}
         - name: script
           configMap:
-            name: {{ include "crucible.fullname" . }}-gitea-job-script
+            name: {{ .Release.Name }}-gitea-job-script
             defaultMode: 0755
         - name: crucible-ca-cert
           secret:
-            secretName: {{ .Values.global.infraHelmRelease }}-ca
+            secretName: infra-ca
             items:
             - key: ca.crt
               path: ca.crt
 
 ---
-{{- /* Add crucible user to realm of the same name */ -}}
+{{- /* ================================================================== */ -}}
+{{- /* Keycloak post-install setup:                                        */ -}}
+{{- /*   1. Create default crucible user (with crucible-user-guid)         */ -}}
+{{- /*   2. Register gitea-client (not in the upstream realm)              */ -}}
+{{- /* ================================================================== */ -}}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "crucible.fullname" . }}-add-crucible-user
+  name: {{ .Release.Name }}-keycloak-setup
   annotations:
-    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook: post-install
     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
-    helm.sh/hook-weight: "10"
+    helm.sh/hook-weight: "20"
 spec:
-  backoffLimit: 1
+  backoffLimit: 5
+  ttlSecondsAfterFinished: 300
   template:
     spec:
-      restartPolicy: Never
+      restartPolicy: OnFailure
       containers:
         - name: curl
           image: alpine/curl:latest
           env:
             - name: KEYCLOAK_ADMIN_USER
-              value: {{ .Values.keycloak.auth.adminUser }}
+              value: keycloak-admin
             - name: KEYCLOAK_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "crucible.fullname" . }}-keycloak-auth
+                  name: {{ .Release.Name }}-keycloak-auth
                   key: admin-password
             - name: KEYCLOAK_URL
-              value: https://{{ .Values.global.domain }}/keycloak
+              value: "http://{{ .Release.Name }}-keycloak:80/keycloak"
             - name: KEYCLOAK_CRUCIBLE_USER_GUID
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "crucible.fullname" . }}-keycloak-auth
-                  key: crucible-user-guid
-            - name: KEYCLOAK_CRUCIBLE_USERNAME
-              value: crucible
+                  name: {{ .Release.Name }}-keycloak-auth
+                  key: default-user-guid
+            - name: GITEA_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-gitea-oidc
+                  key: client-secret
+            - name: DOMAIN
+              value: "{{ .Values.global.domain }}"
           command:
             - /bin/sh
             - -c
@@ -179,16 +194,16 @@ spec:
                 grep -o '"access_token":"[^"]*' | \
                 grep -o '[^"]*$')
 
-              echo "Searching for existing user '${KEYCLOAK_CRUCIBLE_USERNAME}' by username..."
+              echo "Searching for existing user 'crucible'..."
               USERS_JSON=$(curl -sk -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-                "${KEYCLOAK_URL}/admin/realms/crucible/users?username=${KEYCLOAK_CRUCIBLE_USERNAME}")
+                "${KEYCLOAK_URL}/admin/realms/crucible/users?username=crucible")
 
               NOW_MS=$(( $(date +%s) * 1000 ))
 
               if echo "${USERS_JSON}" | grep -q '"id"'; then
-                echo "User '${KEYCLOAK_CRUCIBLE_USERNAME}' already exists, skipping import."
+                echo "User 'crucible' already exists, skipping import."
               else
-                echo "User '${KEYCLOAK_CRUCIBLE_USERNAME}' not found, importing now..."
+                echo "User 'crucible' not found, importing now..."
                 curl -k -X POST \
                   "${KEYCLOAK_URL}/admin/realms/crucible/partialImport" \
                   -H "Content-Type: application/json" \
@@ -198,7 +213,7 @@ spec:
                       {
                         "id": "'"${KEYCLOAK_CRUCIBLE_USER_GUID}"'",
                         "username": "crucible",
-                        "email": "administrator@{{ .Values.global.domain }}",
+                        "email": "administrator@crucible.local",
                         "firstName": "Crucible",
                         "lastName": "Administrator",
                         "enabled": true,
@@ -216,4 +231,32 @@ spec:
                       }
                     ]
                   }'
+              fi
+
+              # Register Gitea as an OIDC client in Keycloak (not included in upstream realm)
+              echo "Checking for gitea-client in Keycloak..."
+              CLIENTS_JSON=$(curl -sk -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+                "${KEYCLOAK_URL}/admin/realms/crucible/clients?clientId=gitea-client")
+
+              if echo "${CLIENTS_JSON}" | grep -q '"id"'; then
+                echo "Client 'gitea-client' already exists, skipping creation."
+              else
+                echo "Creating 'gitea-client' in Keycloak..."
+                curl -k -X POST \
+                  "${KEYCLOAK_URL}/admin/realms/crucible/clients" \
+                  -H "Content-Type: application/json" \
+                  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+                  -d '{
+                    "clientId": "gitea-client",
+                    "secret": "'"${GITEA_CLIENT_SECRET}"'",
+                    "enabled": true,
+                    "clientAuthenticatorType": "client-secret",
+                    "protocol": "openid-connect",
+                    "redirectUris": ["https://'"${DOMAIN}"'/gitea/*"],
+                    "webOrigins": ["https://'"${DOMAIN}"'"],
+                    "standardFlowEnabled": true,
+                    "directAccessGrantsEnabled": false,
+                    "publicClient": false
+                  }'
+                echo "Client 'gitea-client' created."
               fi

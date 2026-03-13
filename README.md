@@ -19,10 +19,40 @@ password: crucible
 
 ## Apps
 
-The following SEI apps are loaded on the appliance:
+The following apps are deployed on the appliance, all accessible under `https://crucible.local`:
 
-- [TopoMojo](https://github.com/cmu-sei/topomojo) - Virtual lab builder and player
-- [Gameboard](https://github.com/cmu-sei/gameboard) - Competition manager
+| App | Path | Description |
+|-----|------|-------------|
+| [Keycloak](https://www.keycloak.org/) | `/keycloak` | OIDC identity provider |
+| [TopoMojo](https://github.com/cmu-sei/topomojo) | `/topomojo` | Virtual lab builder and player |
+| [Gameboard](https://github.com/cmu-sei/gameboard) | `/gameboard` | Competition manager |
+| [Player](https://github.com/cmu-sei/crucible/wiki/player) | `/player` | Exercise presentation platform |
+| [Alloy](https://github.com/cmu-sei/crucible/wiki/alloy) | `/alloy` | Just-in-time lab deployment |
+| [Blueprint](https://github.com/cmu-sei/crucible/wiki/blueprint) | `/blueprint` | Exercise template editor |
+| [Caster](https://github.com/cmu-sei/crucible/wiki/caster) | `/caster` | Infrastructure-as-code environment |
+| [CITE](https://github.com/cmu-sei/crucible/wiki/cite) | `/cite` | Incident tabletop evaluator |
+| [Gallery](https://github.com/cmu-sei/crucible/wiki/gallery) | `/gallery` | Information feed and reporting |
+| [Steamfitter](https://github.com/cmu-sei/crucible/wiki/steamfitter) | `/steamfitter` | Scripted scenario automation |
+| [Moodle](https://moodle.org/) | `/moodle` | Learning management system |
+| [Gitea](https://gitea.io/) | `/gitea` | Git server for content hosting |
+| [MkDocs](https://www.mkdocs.org/) | `/start` | Documentation site |
+| [pgAdmin](https://www.pgadmin.org/) | `/pgadmin` | PostgreSQL database management |
+
+## Helm Charts
+
+The appliance uses a two-chart deployment model installed into the `crucible` namespace:
+
+1. **`infra`** — Infrastructure chart; installs cert-manager (self-signed CA), ingress-nginx, PostgreSQL, NFS storage provisioner, pgAdmin, and all pre-created secrets.
+2. **`crucible`** — Application chart; wraps the upstream `sei/crucible` chart (Keycloak + all Crucible apps) along with Gitea and MkDocs as subchart dependencies.
+
+To upgrade the charts after modifying values or templates on a deployed appliance:
+
+```bash
+helm upgrade -n crucible infra /home/crucible/charts/infra
+helm upgrade -n crucible crucible /home/crucible/charts/crucible --set global.version=$(cat /etc/appliance_version)
+```
+
+See [`crucible/charts/README.md`](crucible/charts/README.md) for detailed chart architecture documentation.
 
 ## Build
 

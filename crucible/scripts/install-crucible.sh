@@ -61,8 +61,20 @@ done
 $RUN_AS_USER kubectl create namespace crucible
 $RUN_AS_USER kubectl config set-context --current --namespace=crucible
 $RUN_AS_USER kubectl apply --validate=false -f https://github.com/cert-manager/cert-manager/releases/download/$CERT_MANAGER_VERSION/cert-manager.crds.yaml
+
+# Install infra chart (cert-manager, ingress, PostgreSQL, NFS, pgAdmin, secrets, realm)
 $RUN_AS_USER helm install infra $CHARTS_DIR/infra --wait
+
+# Wait for CA secret and PostgreSQL to be ready
 $RUN_AS_USER timeout 300 bash -c 'while ! kubectl get secret infra-ca &>/dev/null; do echo "Waiting for infra-ca secret..."; sleep 5; done'
+$RUN_AS_USER timeout 300 bash -c 'while ! kubectl get pods -l app.kubernetes.io/name=postgresql -o jsonpath="{.items[0].status.phase}" 2>/dev/null | grep -q Running; do echo "Waiting for PostgreSQL..."; sleep 5; done'
+
+# Create CA cert ConfigMap from infra-ca secret (upstream chart certificateMap requires a ConfigMap)
+$RUN_AS_USER kubectl get secret infra-ca -o jsonpath='{.data.ca\.crt}' | base64 -d > /tmp/ca.crt
+$RUN_AS_USER kubectl create configmap crucible-ca-cert --from-file=ca.crt=/tmp/ca.crt
+rm -f /tmp/ca.crt
+
+# Install crucible chart (Keycloak, all Crucible apps, Gitea, MkDocs)
 $RUN_AS_USER helm install crucible $CHARTS_DIR/crucible --set global.version=$APPLIANCE_VERSION
 
 # Create flag file

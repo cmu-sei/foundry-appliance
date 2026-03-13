@@ -1,4 +1,69 @@
+global:
+  domain: crucible.local
+
+# ---------------------------------------------------------------------------
+# Appliance-only: cert-manager with self-signed CA chain
+# The upstream reference deployment creates TLS certs and CA ConfigMaps
+# externally; this appliance uses cert-manager to generate them automatically.
+# ---------------------------------------------------------------------------
 certificateAuthority:
   commonName: Crucible Appliance CA
   organization: Carnegie Mellon University
   organizationalUnit: Software Engineering Institute
+
+# ---------------------------------------------------------------------------
+# NFS Server Provisioner
+# Provides dynamic provisioning of NFS-backed persistent volumes
+# https://artifacthub.io/packages/helm/kvaps/nfs-server-provisioner
+# ---------------------------------------------------------------------------
+nfs-server-provisioner:
+  enabled: true
+  persistence:
+    enabled: true
+
+nfsVolumes:
+  namePrefix: crucible
+  storageClassName: nfs
+  topomojoSize: 5Gi
+  gameboardSize: 5Gi
+  casterSize: 5Gi
+
+# ---------------------------------------------------------------------------
+# Ingress NGINX Controller
+# Routes external traffic to services within the cluster
+# https://kubernetes.github.io/ingress-nginx/
+# ---------------------------------------------------------------------------
+ingress-nginx:
+  enabled: true
+  controller:
+    config:
+      hsts: "false"
+      annotations-risk-level: critical
+    allowSnippetAnnotations: true
+  tcp:
+    2049: "{{ .Release.Namespace }}/{{ .Release.Name }}-nfs-server-provisioner:2049"
+
+# ---------------------------------------------------------------------------
+# PostgreSQL Database
+# Primary database for Crucible applications
+# https://github.com/self-hosters-by-night/helm-charts/tree/main/charts/postgres
+# ---------------------------------------------------------------------------
+postgresql:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: postgres
+    tag: "18.1"
+  env:
+    vars:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+      PGDATA: /var/lib/postgresql/18/docker/pgdata
+    fromSecret:
+      POSTGRES_PASSWORD:
+        from: "{{ .Release.Name }}-postgresql"
+        key: postgres-password
+  persistence:
+    enabled: true
+    storageClass: local-path
+    size: 1Gi

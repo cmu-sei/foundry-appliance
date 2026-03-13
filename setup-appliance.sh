@@ -85,12 +85,20 @@ git clone https://github.com/jaggedmountain/k-alias.git /tmp/k-alias
 cp /tmp/k-alias/[h,k]* /usr/local/bin
 
 # Add Helm chart repositories and build dependencies
-sudo -u $SSH_USERNAME helm repo add jetstack https://charts.jetstack.io
-sudo -u $SSH_USERNAME helm repo add sei https://helm.cmusei.dev/charts
-sudo -u $SSH_USERNAME helm repo update
-for chart in infra crucible; do
-  sudo -u $SSH_USERNAME helm dependency build ~/charts/$chart
+helm_repos=(
+  "jetstack https://charts.jetstack.io"
+  "sei https://helm.cmusei.dev/charts"
+  "kvaps https://kvaps.github.io/charts"
+  "ingress-nginx https://kubernetes.github.io/ingress-nginx"
+  "runix https://helm.runix.net"
+  "self-hosters https://self-hosters-by-night.github.io/helm-charts"
+)
+for repo in "${helm_repos[@]}"; do
+  sudo -u $SSH_USERNAME helm repo add $repo
 done
+sudo -u $SSH_USERNAME helm repo update
+sudo -u $SSH_USERNAME helm dependency build ~/charts/infra
+sudo -u $SSH_USERNAME helm dependency build ~/charts/crucible
 
 # Customize MOTD and other text for the appliance
 chmod -x /etc/update-motd.d/00-header

@@ -1,0 +1,44 @@
+{{- /* ================================================================== */ -}}
+{{- /* Create all application databases in PostgreSQL                      */ -}}
+{{- /* ================================================================== */ -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-create-databases
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    helm.sh/hook-weight: "-5"
+spec:
+  backoffLimit: 10
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: create-databases
+          image: postgres:18-alpine
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "infra.fullname" . }}-postgresql
+                  key: postgres-password
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h {{ include "infra.postgresql.serviceName" . }} -p 5432 -U postgres; do
+                echo "Waiting for PostgreSQL..."
+                sleep 5
+              done
+
+              for DB in keycloak gitea topomojo gameboard alloy blueprint caster cite gallery player player_vm player_vm_logging steamfitter moodle; do
+                EXISTS=$(psql -h {{ include "infra.postgresql.serviceName" . }} -p 5432 -U postgres -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='${DB}'")
+                if [ "$EXISTS" = "1" ]; then
+                  echo "Database '${DB}' already exists"
+                else
+                  echo "Creating database '${DB}'"
+                  psql -h {{ include "infra.postgresql.serviceName" . }} -p 5432 -U postgres -d postgres -c "CREATE DATABASE ${DB};"
+                fi
+              done
+              echo "All databases ready."

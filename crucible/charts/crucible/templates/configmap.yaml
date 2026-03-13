@@ -1,9 +1,12 @@
+{{- /* ================================================================== */ -}}
+{{- /* Gitea environment variables for OIDC                               */ -}}
+{{- /* ================================================================== */ -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "crucible.fullname" . }}-gitea-env
+  name: {{ .Release.Name }}-gitea-env
   labels:
-    {{- include "crucible.labels" . | nindent 4 }}
+    {{- include "crucible-local.labels" . | nindent 4 }}
 data:
   GITEA__OAUTH2_CLIENT__OPENID_CONNECT_SCOPES: profile email
   GITEA__OAUTH2_CLIENT__ENABLE_AUTO_REGISTRATION: "true"
@@ -11,6 +14,9 @@ data:
   GITEA__OAUTH2_CLIENT__ACCOUNT_LINKING: auto
 
 ---
+{{- /* ================================================================== */ -}}
+{{- /* MkDocs content files (text and binary)                             */ -}}
+{{- /* ================================================================== */ -}}
 {{- $binaryExt := list "png" "jpg" "jpeg" "gif" "bmp" "ico" "zip" "tar" "gz" "tgz" "pdf" "bin" }}
 {{- $textData := dict -}}
 {{- $binData  := dict -}}
@@ -29,9 +35,9 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "crucible.fullname" . }}-mkdocs-files
+  name: {{ .Release.Name }}-mkdocs-files
   labels:
-    {{- include "crucible.labels" . | nindent 4 }}
+    {{- include "crucible-local.labels" . | nindent 4 }}
 binaryData:
 {{- range $k, $v := $binData }}
   {{ $k }}: {{ $v }}
@@ -43,18 +49,21 @@ data:
 {{- end }}
 
 ---
+{{- /* ================================================================== */ -}}
+{{- /* Gitea seed script (used by seed-mkdocs job)                        */ -}}
+{{- /* ================================================================== */ -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "crucible.fullname" . }}-gitea-job-script
+  name: {{ .Release.Name }}-gitea-job-script
   labels:
-    {{- include "crucible.labels" . | nindent 4 }}
+    {{- include "crucible-local.labels" . | nindent 4 }}
 data:
   seed-gitea.sh: |
     #!/bin/sh
     set -e
 
-    GITEA_URL=http://{{ include "crucible.fullname" . }}-gitea
+    GITEA_URL=http://{{ .Release.Name }}-gitea
     GITEA_ADMIN_USERNAME={{ .Values.gitea.adminUsername }}
 
     # Wait for Gitea to be ready
@@ -107,7 +116,7 @@ data:
     echo "Repository created or already exists."
 
     # Check if repository is empty before committing
-    REPO_URL="http://$GITEA_ADMIN_USERNAME:$GITEA_ADMIN_PASSWORD@{{ include "crucible.fullname" . }}-gitea/crucible/mkdocs.git"
+    REPO_URL="http://$GITEA_ADMIN_USERNAME:$GITEA_ADMIN_PASSWORD@{{ .Release.Name }}-gitea/crucible/mkdocs.git"
 
     echo "Checking if repository is empty..."
     REMOTE_REFS=$(git ls-remote "$REPO_URL" 2>/dev/null || echo "")
@@ -132,4 +141,4 @@ data:
     git -C /tmp/mkdocs init
     git -C /tmp/mkdocs add -A
     git -C /tmp/mkdocs commit -m "Initial commit"
-    git -C /tmp/mkdocs push -u http://$GITEA_ADMIN_USERNAME:$GITEA_ADMIN_PASSWORD@{{ include "crucible.fullname" . }}-gitea/crucible/mkdocs.git --all
+    git -C /tmp/mkdocs push -u http://$GITEA_ADMIN_USERNAME:$GITEA_ADMIN_PASSWORD@{{ .Release.Name }}-gitea/crucible/mkdocs.git --all
