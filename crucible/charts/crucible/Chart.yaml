@@ -15,4 +15,4 @@ dependencies:
 
   - name: mkdocs-material
     repository: https://helm.cmusei.dev/charts
-    version: 0.2.14
+    version: 0.2.15

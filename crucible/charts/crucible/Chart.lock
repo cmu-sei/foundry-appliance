@@ -7,6 +7,6 @@ dependencies:
   version: 3.2.8
 - name: mkdocs-material
   repository: https://helm.cmusei.dev/charts
-  version: 0.2.14
-digest: sha256:142487bd551d885d02e9b38a4de3deeb4e49d410a7b5822b5fd1db500d85a9b9
-generated: "2026-03-13T03:13:41.445391285Z"
+  version: 0.2.15
+digest: sha256:4ad44c564e9e2ac7d683d06e7119616b6f8a05cf1b93cdbc907179aa72950ef0
+generated: "2026-03-13T03:57:39.589917727Z"
