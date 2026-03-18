@@ -13,10 +13,10 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
 
       - name: Packer cache
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: ~/.cache/packer
           key: ${{ runner.os }}-packer
