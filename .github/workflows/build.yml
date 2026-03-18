@@ -13,83 +13,86 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Packer cache
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/packer
-        key: ${{ runner.os }}-packer
+      - name: Packer cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/packer
+          key: ${{ runner.os }}-packer
 
-    - name: Install Dependencies
-      run: |
-        sudo snap install xmlstarlet
-        echo "deb [arch=amd64 signed-by=/usr/share/keyrings/oracle-virtualbox-2016.gpg] https://download.virtualbox.org/virtualbox/debian noble contrib" | sudo tee /etc/apt/sources.list.d/virtualbox.list > /dev/null
-        wget -O- https://www.virtualbox.org/download/oracle_vbox_2016.asc | sudo gpg --yes --output /usr/share/keyrings/oracle-virtualbox-2016.gpg --dearmor
-        sudo apt-get update
-        sudo apt-get install -y virtualbox-7.1
+      - name: Install Dependencies
+        run: |
+          sudo snap install xmlstarlet
+          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/oracle-virtualbox-2016.gpg] https://download.virtualbox.org/virtualbox/debian noble contrib" | sudo tee /etc/apt/sources.list.d/virtualbox.list > /dev/null
+          wget -O- https://www.virtualbox.org/download/oracle_vbox_2016.asc | sudo gpg --yes --output /usr/share/keyrings/oracle-virtualbox-2016.gpg --dearmor
+          sudo apt-get update
+          sudo apt-get install -y virtualbox-7.1
 
-    - name: Initialize Packer
-      run: packer init crucible-appliance.pkr.hcl
+      - name: Initialize Packer
+        run: packer init crucible-appliance.pkr.hcl
 
-    - name: Build VirtualBox OVF image
-      env:
-        GITHUB_PULL_REQUEST: ${{ github.event.number }}
-      run: |
-        sudo -E ./build-appliance.sh virtualbox -var "virtualbox_headless=true" -force
-        sudo chown -R $USER: ./output-virtualbox
+      - name: Build VirtualBox OVF image
+        env:
+          GITHUB_PULL_REQUEST: ${{ github.event.number }}
+        run: |
+          modprobe -r kvm_amd 2>/dev/null || true
+          modprobe -r kvm_intel 2>/dev/null || true
+          modprobe -r kvm 2>/dev/null || true
+          sudo -E ./build-appliance.sh virtualbox -var "virtualbox_headless=true" -force
+          sudo chown -R $USER: ./output-virtualbox
 
-    - name: Get build_name from OVF file
-      run: echo "build_name=$(sh -c "find . -name '*.ovf' | xargs basename -s '.ovf'")" >> $GITHUB_ENV
-      working-directory: ./output-virtualbox
+      - name: Get build_name from OVF file
+        run: echo "build_name=$(sh -c "find . -name '*.ovf' | xargs basename -s '.ovf'")" >> $GITHUB_ENV
+        working-directory: ./output-virtualbox
 
-    - name: Improve OVF VMware compatibility
-      run: |
-        xml ed --inplace \
-               -N ns='http://schemas.dmtf.org/ovf/envelope/1' \
-               -N vssd="http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_VirtualSystemSettingData" \
-               -u "//ns:System/vssd:VirtualSystemType" \
-               -v "vmx-13" \
-               ${{ env.build_name }}.ovf
-        xml ed --inplace \
-               -N ns='http://schemas.dmtf.org/ovf/envelope/1' \
-               -N rasd='http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_ResourceAllocationSettingData' \
-               -d "//ns:Item[rasd:ResourceSubType[contains(text(), 'PIIX4')]]" \
-               ${{ env.build_name }}.ovf
-        xml ed --inplace \
-               -N ns='http://schemas.dmtf.org/ovf/envelope/1' \
-               -d "//ns:StorageController[@type='PIIX4']" \
-               ${{ env.build_name }}.ovf
-      working-directory: ./output-virtualbox
+      - name: Improve OVF VMware compatibility
+        run: |
+          xml ed --inplace \
+                 -N ns='http://schemas.dmtf.org/ovf/envelope/1' \
+                 -N vssd="http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_VirtualSystemSettingData" \
+                 -u "//ns:System/vssd:VirtualSystemType" \
+                 -v "vmx-13" \
+                 ${{ env.build_name }}.ovf
+          xml ed --inplace \
+                 -N ns='http://schemas.dmtf.org/ovf/envelope/1' \
+                 -N rasd='http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_ResourceAllocationSettingData' \
+                 -d "//ns:Item[rasd:ResourceSubType[contains(text(), 'PIIX4')]]" \
+                 ${{ env.build_name }}.ovf
+          xml ed --inplace \
+                 -N ns='http://schemas.dmtf.org/ovf/envelope/1' \
+                 -d "//ns:StorageController[@type='PIIX4']" \
+                 ${{ env.build_name }}.ovf
+        working-directory: ./output-virtualbox
 
-    - name: Create OVA manifest
-      run: openssl sha256 *.ovf *.vmdk > ${{ env.build_name }}.mf
-      working-directory: ./output-virtualbox
+      - name: Create OVA manifest
+        run: openssl sha256 *.ovf *.vmdk > ${{ env.build_name }}.mf
+        working-directory: ./output-virtualbox
 
-    - name: Package OVA image
-      run: tar -cvf ../${{ env.build_name }}.ova --format=ustar ${{ env.build_name }}{.ovf,-disk001.vmdk,.mf}
-      working-directory: ./output-virtualbox
+      - name: Package OVA image
+        run: tar -cvf ../${{ env.build_name }}.ova --format=ustar ${{ env.build_name }}{.ovf,-disk001.vmdk,.mf}
+        working-directory: ./output-virtualbox
 
-    - name: Upload OVA to Azure Storage
-      run: |
-        az cloud set --name AzureUSGovernment
-        az storage blob upload --file ${{ env.build_name }}.ova \
-                               --container-name ova \
-                               --name appliance/${{ env.build_name }}.ova \
-                               --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
-                               --no-progress
+      - name: Upload OVA to Azure Storage
+        run: |
+          az cloud set --name AzureUSGovernment
+          az storage blob upload --file ${{ env.build_name }}.ova \
+                                 --container-name ova \
+                                 --name appliance/${{ env.build_name }}.ova \
+                                 --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
+                                 --no-progress
 
-    - name: Log OVA URL
-      run: |
-        URL=$(az storage blob url \
-          --container-name ova \
-          --name appliance/${{ env.build_name }}.ova \
-          --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
-          -o tsv)
-        echo "OVA uploaded to: $URL"
+      - name: Log OVA URL
+        run: |
+          URL=$(az storage blob url \
+            --container-name ova \
+            --name appliance/${{ env.build_name }}.ova \
+            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
+            -o tsv)
+          echo "OVA uploaded to: $URL"
 
-        {
-          echo "### :package: Appliance image uploaded"
-          echo ""
-          echo "\`${URL}\`"
-        } >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "### :package: Appliance image uploaded"
+            echo ""
+            echo "\`${URL}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
