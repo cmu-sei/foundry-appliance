@@ -5,6 +5,10 @@ packer {
       version = "~> 1"
       source  = "github.com/hashicorp/virtualbox"
     }
+    qemu = {
+      version = "~> 1"
+      source  = "github.com/hashicorp/qemu"
+    }
     proxmox = {
       version = "~> 1"
       source  = "github.com/hashicorp/proxmox"
@@ -86,6 +90,37 @@ source "virtualbox-iso" "crucible-appliance" {
   ]
 }
 
+source "qemu" "crucible-appliance" {
+  boot_command         = local.boot_command
+  boot_wait            = local.boot_wait
+  cpus                 = local.cpus
+  disk_size            = local.disk_size_virtualbox
+  format               = "qcow2"
+  headless             = true
+  http_directory       = var.use_cidata ? null : "http"
+  cd_content           = var.use_cidata ? { "meta-data" = "", "user-data" = local.user_data } : null
+  cd_label             = var.use_cidata ? "cidata" : null
+  iso_checksum         = local.iso_checksum
+  iso_url              = local.iso_url
+  memory               = local.memory
+  output_directory     = "output-qemu"
+  accelerator          = "kvm"
+  disk_interface       = "virtio-scsi"
+  net_device           = "virtio-net"
+  shutdown_command     = "echo '${var.ssh_password}'|sudo -S shutdown -P now"
+  ssh_password         = var.ssh_password
+  ssh_timeout          = local.ssh_timeout
+  ssh_username         = var.ssh_username
+  vm_name              = "crucible-appliance-${var.appliance_version}"
+
+  // Serial console and QEMU debug logging for CI visibility
+  qemuargs = [
+    ["-serial", "file:qemu-logs/serial-console.log"],
+    ["-d", "guest_errors"],
+    ["-D", "qemu-logs/qemu-debug.log"]
+  ]
+}
+
 source "proxmox-iso" "crucible-appliance" {
   boot_command = local.boot_command
   boot_iso {
@@ -142,6 +177,7 @@ source "proxmox-iso" "crucible-appliance" {
 build {
   sources = [
     "source.virtualbox-iso.crucible-appliance",
+    "source.qemu.crucible-appliance",
     "source.proxmox-iso.crucible-appliance"
   ]
 
