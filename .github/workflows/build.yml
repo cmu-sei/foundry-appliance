@@ -32,8 +32,8 @@ jobs:
       - name: Initialize Packer
         run: packer init crucible-appliance.pkr.hcl
 
-      -name: Disable kvm
-       run: |
+      - name: Disable kvm
+        run: |
           sudo modprobe -r kvm_amd 2>/dev/null
           sudo modprobe -r kvm_intel 2>/dev/null
           sudo modprobe -r kvm 2>/dev/null
