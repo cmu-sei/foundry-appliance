@@ -32,13 +32,16 @@ jobs:
       - name: Initialize Packer
         run: packer init crucible-appliance.pkr.hcl
 
+      -name: Disable kvm
+       run: |
+          sudo modprobe -r kvm_amd 2>/dev/null
+          sudo modprobe -r kvm_intel 2>/dev/null
+          sudo modprobe -r kvm 2>/dev/null
+
       - name: Build VirtualBox OVF image
         env:
           GITHUB_PULL_REQUEST: ${{ github.event.number }}
         run: |
-          modprobe -r kvm_amd 2>/dev/null || true
-          modprobe -r kvm_intel 2>/dev/null || true
-          modprobe -r kvm 2>/dev/null || true
           sudo -E ./build-appliance.sh virtualbox -var "virtualbox_headless=true" -force
           sudo chown -R $USER: ./output-virtualbox
 
