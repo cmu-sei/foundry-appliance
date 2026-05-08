@@ -2,14 +2,8 @@ dependencies:
 - name: cert-manager
   repository: https://charts.jetstack.io
   version: v1.20.0
-- name: nfs-server-provisioner
-  repository: https://kvaps.github.io/charts
-  version: 1.8.0
-- name: ingress-nginx
-  repository: https://kubernetes.github.io/ingress-nginx
-  version: 4.15.0
-- name: postgres
-  repository: https://self-hosters-by-night.github.io/helm-charts
-  version: 0.14.2
-digest: sha256:4f2e96d45217621a837f6ffb5fdf133d8f91dd4be39e06dbb5a8907f6ca17845
-generated: "2026-03-13T03:57:45.489091112Z"
+- name: crucible-infra
+  repository: https://helm.cmusei.dev/charts
+  version: 0.1.0
+digest: sha256:33010533cec5463f4620772042aa1df613a797da58e51ef634ae53fa5783fbfd
+generated: "2026-05-08T12:23:52.437149307Z"
