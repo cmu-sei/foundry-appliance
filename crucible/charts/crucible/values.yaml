@@ -37,9 +37,9 @@ crucible-apps:
             return 302 $scheme://$host/keycloak/admin/crucible/console/;
           }
     externalDatabase:
-      host: infra-postgresql-rw
+      host: crucible-infra-postgresql-rw
       database: keycloak
-      existingSecret: infra-db-keycloak
+      existingSecret: crucible-infra-db-keycloak
       existingSecretUserKey: username
       existingSecretPasswordKey: password
 
@@ -47,9 +47,9 @@ crucible-apps:
     enabled: true
     alloy-api:
       database:
-        host: infra-postgresql-rw
+        host: crucible-infra-postgresql-rw
         name: alloy
-        existingSecret: infra-db-alloy
+        existingSecret: crucible-infra-db-alloy
       resourceOwnerAuthorization:
         userName: crucible
         password: crucible
@@ -72,9 +72,9 @@ crucible-apps:
     blueprint-api:
       certificateMap: crucible-ca-cert
       database:
-        host: infra-postgresql-rw
+        host: crucible-infra-postgresql-rw
         name: blueprint
-        existingSecret: infra-db-blueprint
+        existingSecret: crucible-infra-db-blueprint
       resourceOwnerAuthorization:
         userName: crucible
         password: crucible
@@ -100,9 +100,9 @@ crucible-apps:
     caster-api:
       certificateMap: crucible-ca-cert
       database:
-        host: infra-postgresql-rw
+        host: crucible-infra-postgresql-rw
         name: caster
-        existingSecret: infra-db-caster
+        existingSecret: crucible-infra-db-caster
       client:
         userName: crucible
         password: crucible
@@ -128,9 +128,9 @@ crucible-apps:
     cite-api:
       certificateMap: crucible-ca-cert
       database:
-        host: infra-postgresql-rw
+        host: crucible-infra-postgresql-rw
         name: cite
-        existingSecret: infra-db-cite
+        existingSecret: crucible-infra-db-cite
       ingress:
         className: nginx
         tls:
@@ -153,9 +153,9 @@ crucible-apps:
     gallery-api:
       certificateMap: crucible-ca-cert
       database:
-        host: infra-postgresql-rw
+        host: crucible-infra-postgresql-rw
         name: gallery
-        existingSecret: infra-db-gallery
+        existingSecret: crucible-infra-db-gallery
       ingress:
         className: nginx
         tls:
@@ -178,9 +178,9 @@ crucible-apps:
     gameboard-api:
       certificateMap: crucible-ca-cert
       database:
-        host: infra-postgresql-rw
+        host: crucible-infra-postgresql-rw
         name: gameboard
-        existingSecret: infra-db-gameboard
+        existingSecret: crucible-infra-db-gameboard
       ingress:
         className: nginx
         tls:
@@ -206,9 +206,9 @@ crucible-apps:
     player-api:
       certificateMap: crucible-ca-cert
       database:
-        host: infra-postgresql-rw
+        host: crucible-infra-postgresql-rw
         name: player
-        existingSecret: infra-db-player
+        existingSecret: crucible-infra-db-player
       ingress:
         className: nginx
         tls:
@@ -228,9 +228,9 @@ crucible-apps:
     vm-api:
       certificateMap: crucible-ca-cert
       database:
-        host: infra-postgresql-rw
+        host: crucible-infra-postgresql-rw
         name: player_vm
-        existingSecret: infra-db-player-vm
+        existingSecret: crucible-infra-db-player-vm
       ingress:
         className: nginx
         tls:
@@ -257,9 +257,9 @@ crucible-apps:
     steamfitter-api:
       certificateMap: crucible-ca-cert
       database:
-        host: infra-postgresql-rw
+        host: crucible-infra-postgresql-rw
         name: steamfitter
-        existingSecret: infra-db-steamfitter
+        existingSecret: crucible-infra-db-steamfitter
       resourceOwnerAuthorization:
         userName: crucible
         password: crucible
@@ -285,9 +285,9 @@ crucible-apps:
     topomojo-api:
       certificateMap: crucible-ca-cert
       database:
-        host: infra-postgresql-rw
+        host: crucible-infra-postgresql-rw
         name: topomojo
-        existingSecret: infra-db-topomojo
+        existingSecret: crucible-infra-db-topomojo
       ingress:
         className: nginx
         tls:
@@ -332,10 +332,10 @@ crucible-apps:
       site:
         url: "https://{{ .Values.global.domain }}"
       database:
-        host: infra-postgresql-rw
+        host: crucible-infra-postgresql-rw
         name: moodle
         user: moodle
-        existingSecret: infra-db-moodle
+        existingSecret: crucible-infra-db-moodle
         existingSecretUserKey: username
         existingSecretPasswordKey: password
       oidc:
@@ -349,18 +349,8 @@ crucible-apps:
     extraEnvVars:
       - name: SSL_CERT_FILE
         value: /opt/sei/certs/ca.crt
-      - name: SSL_CERT_DIR
-        value: /opt/sei/certs
       - name: CURL_CA_BUNDLE
         value: /opt/sei/certs/ca.crt
-    extraVolumes:
-      - name: crucible-ca-cert
-        configMap:
-          name: crucible-ca-cert
-    extraVolumeMounts:
-      - name: crucible-ca-cert
-        mountPath: /opt/sei/certs
-        readOnly: true
     ingress:
       hostname: "{{ .Values.global.domain }}"
       path: /
@@ -374,13 +364,16 @@ crucible-apps:
 # Gitea - Git server at /gitea
 # ---------------------------------------------------------------------------
 gitea:
+  global:
+    security:
+      allowInsecureImages: true
   adminUsername: crucible
   adminEmail: administrator@crucible.local
   appName: Crucible Gitea
   rootURL: "https://{{ .Values.global.domain }}/gitea"
   updateStrategy:
     type: Recreate
-  existingSecret: infra-gitea-admin
+  existingSecret: crucible-infra-gitea-admin
   extraEnvVars:
     - name: BITNAMI_EXTRA_CA_CERTIFICATES
       value: /etc/ssl/certs/ca-cert.crt
@@ -388,7 +381,7 @@ gitea:
   extraVolumes:
     - name: ca-cert
       secret:
-        secretName: infra-ca
+        secretName: crucible-infra-ca
   extraVolumeMounts:
     - name: ca-cert
       mountPath: /etc/ssl/certs/ca-cert.crt
@@ -414,10 +407,10 @@ gitea:
   postgresql:
     enabled: false
   externalDatabase:
-    host: infra-postgresql-rw
+    host: crucible-infra-postgresql-rw
     user: gitea
     database: gitea
-    existingSecret: infra-db-gitea
+    existingSecret: crucible-infra-db-gitea
     existingSecretPasswordKey: password
 
 # ---------------------------------------------------------------------------

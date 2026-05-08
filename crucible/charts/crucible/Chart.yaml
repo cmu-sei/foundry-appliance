@@ -7,7 +7,7 @@ version: 0.0.0
 dependencies:
   - name: crucible-apps
     repository: https://helm.cmusei.dev/charts
-    version: 0.2.1
+    version: 0.2.2
 
   - name: gitea
     version: 3.2.8

@@ -45,8 +45,8 @@ helm dependency build crucible/charts/infra
 helm dependency build crucible/charts/crucible
 
 # On a deployed appliance, upgrade after editing values/templates
-helm upgrade -n crucible operators /home/crucible/charts/operators
-helm upgrade -n crucible infra /home/crucible/charts/infra
+helm upgrade -n crucible crucible-operators /home/crucible/charts/operators
+helm upgrade -n crucible crucible-infra /home/crucible/charts/infra
 helm upgrade -n crucible crucible /home/crucible/charts/crucible --set global.version=$(cat /etc/appliance_version)
 ```
 
@@ -61,7 +61,7 @@ helm upgrade -n crucible crucible /home/crucible/charts/crucible --set global.ve
 ### First Boot
 
 - **`configure-nic`** → `crucible/scripts/configure-nic.sh` — Detects the primary NIC and writes a netplan config.
-- **`install-crucible`** → `crucible/scripts/install-crucible.sh` — Installs K3s, creates the `crucible` namespace, installs cert-manager CRDs, then: (1) `helm install operators` (Keycloak Operator + CloudNative-PG), (2) `helm install infra` (waits for CA + CNPG Cluster), (3) `helm install crucible` (all applications).
+- **`install-crucible`** → `crucible/scripts/install-crucible.sh` — Installs K3s, creates the `crucible` namespace, installs cert-manager CRDs, then: (1) `helm install crucible-operators` (Keycloak Operator + CloudNative-PG), (2) `helm install crucible-infra` (waits for CA + CNPG Cluster), (3) `helm install crucible` (all applications).
 
 ### Helm Charts
 
@@ -69,15 +69,15 @@ helm upgrade -n crucible crucible /home/crucible/charts/crucible --set global.ve
 
 **`crucible/charts/infra`** — Wraps the upstream [sei/crucible-infra](https://github.com/cmu-sei/helm-charts/tree/main/charts/crucible-infra) chart. It provides:
 
-- CNPG PostgreSQL `Cluster` with auto-provisioned per-app databases and users (each app gets its own user via CNPG-managed secrets `infra-db-{name}`)
+- CNPG PostgreSQL `Cluster` with auto-provisioned per-app databases and users (each app gets its own user via CNPG-managed secrets `crucible-infra-db-{name}`)
 - ingress-nginx (all apps path-routed under `crucible.local`)
 - NFS server provisioner + PVCs for TopoMojo, Gameboard, Caster
 - pgAdmin at `/pgadmin`
 
 Local additions on top of the upstream chart:
 
-- cert-manager with a self-signed CA chain (`infra-selfsigned` → `infra-ca` → `infra-issuer` → `crucible-cert`) — keeps the appliance working offline
-- Gitea admin password Secret (`infra-gitea-admin`)
+- cert-manager with a self-signed CA chain (`crucible-infra-selfsigned` → `crucible-infra-ca` → `crucible-infra-issuer` → `crucible-cert`) — keeps the appliance working offline
+- Gitea admin password Secret (`crucible-infra-gitea-admin`)
 
 **`crucible/charts/crucible`** — Wraps three subcharts:
 
@@ -117,7 +117,7 @@ crucible/
     operators/               # Wraps sei/crucible-operators (Keycloak + CNPG operators)
     infra/                   # Wraps sei/crucible-infra + local cert-manager CA chain
       templates/
-        secret.yaml          # Gitea admin password (infra-gitea-admin)
+        secret.yaml          # Gitea admin password (crucible-infra-gitea-admin)
         cert-manager.yaml    # Self-signed CA chain and crucible-cert certificate
     crucible/                # Wraps sei/crucible-apps + Gitea + MkDocs
       charts/gitea/          # Local Bitnami Gitea subchart

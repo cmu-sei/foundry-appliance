@@ -20,7 +20,7 @@ spec:
         - name: ca-cert
           secret:
             defaultMode: 420
-            secretName: infra-ca
+            secretName: crucible-infra-ca
       containers:
         - name: gitea-cli
           image: {{ include "crucible-local.gitea.image" . }}
@@ -42,7 +42,7 @@ spec:
             - name: GITEA_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: infra-gitea-admin
+                  name: crucible-infra-gitea-admin
                   key: admin-password
             - name: OIDC_CLIENT_ID
               value: gitea-client
@@ -95,7 +95,7 @@ spec:
             - name: GITEA_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: infra-gitea-admin
+                  name: crucible-infra-gitea-admin
                   key: admin-password
           volumeMounts:
             - name: mkdocs
@@ -120,7 +120,7 @@ spec:
             defaultMode: 0755
         - name: crucible-ca-cert
           secret:
-            secretName: infra-ca
+            secretName: crucible-infra-ca
             items:
             - key: ca.crt
               path: ca.crt

@@ -1,12 +1,12 @@
 dependencies:
 - name: crucible-apps
   repository: https://helm.cmusei.dev/charts
-  version: 0.2.1
+  version: 0.2.2
 - name: gitea
   repository: ""
   version: 3.2.8
 - name: mkdocs-material
   repository: https://helm.cmusei.dev/charts
   version: 0.2.15
-digest: sha256:d6540de38c406c22b25fcbdaaa9730696e26d22a2ea2ede145bc1bdb394abc26
-generated: "2026-05-08T12:23:39.79617041Z"
+digest: sha256:08002cd76988ca4f0ec29a909174d3e8a043e390aaff566a2acd5f2211d9f1cf
+generated: "2026-05-08T17:05:00.836974717Z"
