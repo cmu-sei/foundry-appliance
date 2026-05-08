@@ -1,0 +1,5 @@
+crucible-operators:
+  keycloak:
+    enabled: true
+  cnpg:
+    enabled: true

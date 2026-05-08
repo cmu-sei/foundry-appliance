@@ -36,14 +36,16 @@ If the hypervisor cannot reach Packer's HTTP server (e.g., dev container, CI run
 
 ## Helm Chart Development
 
-The appliance uses a two-chart deployment model. Both charts are local; the crucible chart wraps the upstream `sei/crucible` chart as a subchart dependency alongside Gitea and MkDocs.
+The appliance uses a three-chart deployment model. All charts are local wrappers around the upstream `sei/crucible-operators`, `sei/crucible-infra`, and `sei/crucible-apps` charts.
 
 ```bash
 # Rebuild chart dependencies
+helm dependency build crucible/charts/operators
 helm dependency build crucible/charts/infra
 helm dependency build crucible/charts/crucible
 
 # On a deployed appliance, upgrade after editing values/templates
+helm upgrade -n crucible operators /home/crucible/charts/operators
 helm upgrade -n crucible infra /home/crucible/charts/infra
 helm upgrade -n crucible crucible /home/crucible/charts/crucible --set global.version=$(cat /etc/appliance_version)
 ```
@@ -54,41 +56,45 @@ helm upgrade -n crucible crucible /home/crucible/charts/crucible --set global.ve
 
 1. **`crucible-appliance.pkr.hcl`** — Packer config defining VirtualBox and Proxmox sources; uses `http/user-data` for Ubuntu autoinstall and runs `setup-appliance.sh` via SSH provisioner.
 2. **`http/user-data`** — Ubuntu cloud-config autoinstall: sets hostname/user to `crucible`, installs SSH server and qemu-guest-agent.
-3. **`setup-appliance.sh`** — Runs during the Packer build phase; installs K3s prereqs (kubectl, helm, dnsmasq), builds Helm chart dependencies for both charts, configures MOTD and dnsmasq, installs two systemd one-shot services (`configure-nic` and `install-crucible`) that run on first boot.
+3. **`setup-appliance.sh`** — Runs during the Packer build phase; installs K3s prereqs (kubectl, helm, dnsmasq), builds Helm chart dependencies for all three charts, configures MOTD and dnsmasq, installs two systemd one-shot services (`configure-nic` and `install-crucible`) that run on first boot.
 
 ### First Boot
 
 - **`configure-nic`** → `crucible/scripts/configure-nic.sh` — Detects the primary NIC and writes a netplan config.
-- **`install-crucible`** → `crucible/scripts/install-crucible.sh` — Installs K3s, creates the `crucible` namespace, installs cert-manager CRDs, then: (1) `helm install infra` (waits for CA + PostgreSQL), (2) `helm install crucible` (local chart with all apps).
+- **`install-crucible`** → `crucible/scripts/install-crucible.sh` — Installs K3s, creates the `crucible` namespace, installs cert-manager CRDs, then: (1) `helm install operators` (Keycloak Operator + CloudNative-PG), (2) `helm install infra` (waits for CA + CNPG Cluster), (3) `helm install crucible` (all applications).
 
 ### Helm Charts
 
-**`crucible/charts/infra`** — Local infrastructure chart. Creates everything the crucible chart depends on:
+**`crucible/charts/operators`** — Thin wrapper around the upstream [sei/crucible-operators](https://github.com/cmu-sei/helm-charts/tree/main/charts/crucible-operators) chart. Installs cluster-scoped prerequisites: the Keycloak Operator (`Keycloak` + `KeycloakRealmImport` CRDs) and CloudNative-PG (`Cluster` CRD).
 
-- cert-manager with self-signed CA chain (`infra-selfsigned` → `infra-ca` → `infra-issuer` → `crucible-cert`)
+**`crucible/charts/infra`** — Wraps the upstream [sei/crucible-infra](https://github.com/cmu-sei/helm-charts/tree/main/charts/crucible-infra) chart. It provides:
+
+- CNPG PostgreSQL `Cluster` with auto-provisioned per-app databases and users (each app gets its own user via CNPG-managed secrets `infra-db-{name}`)
 - ingress-nginx (all apps path-routed under `crucible.local`)
-- PostgreSQL (single shared instance)
 - NFS server provisioner + PVCs for TopoMojo, Gameboard, Caster
 - pgAdmin at `/pgadmin`
-- Infrastructure secrets: PostgreSQL password, pgAdmin password, Gitea admin password (application-level secrets — OIDC clients, realm JSON, per-app API secrets — are created by the upstream sei/crucible chart when `createRealm` is enabled)
-- Database creation Job (pre-install hook for all 14 application databases)
 
-**`crucible/charts/crucible`** — Local chart wrapping three subchart dependencies:
+Local additions on top of the upstream chart:
 
-- `sei-crucible` (alias for upstream [sei/crucible](https://github.com/cmu-sei/helm-charts/tree/main/charts/crucible)) — Keycloak + all Crucible apps, configured with `nameOverride: crucible` to keep `crucible-*` resource naming
+- cert-manager with a self-signed CA chain (`infra-selfsigned` → `infra-ca` → `infra-issuer` → `crucible-cert`) — keeps the appliance working offline
+- Gitea admin password Secret (`infra-gitea-admin`)
+
+**`crucible/charts/crucible`** — Wraps three subcharts:
+
+- `crucible-apps` (upstream [sei/crucible-apps](https://github.com/cmu-sei/helm-charts/tree/main/charts/crucible-apps)) — Keycloak (deployed via the Keycloak Operator) + all Crucible apps + Moodle. Configured with `fullnameOverride: crucible` so resource names stay `crucible-*`. `createRealm: true` generates the crucible realm, OIDC client secrets, and the default `crucible` realm admin user on first install.
 - `gitea` (local Bitnami subchart) — Git server at `/gitea` with OIDC wired via post-install Job
 - `mkdocs-material` (from sei repo) — Documentation site at `/start` with content seeded from Gitea
 
 The chart also includes:
 
 - A generated secret for the Gitea OIDC client (not included in the upstream realm)
-- Post-install Jobs for Gitea OIDC configuration, MkDocs seeding, and Keycloak setup (crucible user + gitea-client registration)
+- Post-install Jobs: Gitea OIDC auth source config, MkDocs seeding, and gitea-client registration in the Keycloak crucible realm
 
 ### Key Template Patterns
 
-**Secret persistence across reinstalls**: All secrets use `lookup` to read existing values and `helm.sh/resource-policy: keep`. The infra chart persists PostgreSQL, pgAdmin, and Gitea admin passwords. The upstream sei/crucible chart persists Keycloak auth, OIDC client secrets, and per-app API secrets. The local crucible chart persists the Gitea OIDC client secret.
+**Secret persistence across reinstalls**: All generated secrets use `lookup` + `helm.sh/resource-policy: keep`. The upstream `crucible-infra` chart persists PostgreSQL superuser + per-database user passwords and the pgAdmin password. The upstream `crucible-apps` chart persists Keycloak admin auth and OIDC client secrets (including the realm admin password) in `crucible-oidc-client-secrets`. The local infra chart persists the Gitea admin password; the local crucible chart persists the Gitea OIDC client secret.
 
-**The `crucible-user-guid`** is a UUID generated on first install by the upstream sei/crucible chart and stored in `crucible-keycloak-auth`. It is passed as `Database__AdminId` to both TopoMojo and Gameboard APIs so both apps recognize the `crucible` Keycloak user as the database-level administrator.
+**Admin via realm role**: Gameboard and TopoMojo identify the `crucible` user as admin via the `Administrator` realm role claim (`Oidc__UserRolesClaimMap__administrator: Administrator`) rather than a hardcoded user GUID.
 
 **Global values** referenced across charts:
 
@@ -108,19 +114,18 @@ setup-appliance.sh           # OS configuration during Packer build
 http/user-data               # Ubuntu autoinstall cloud-config
 crucible/
   charts/
-    infra/                   # Infrastructure + secrets
+    operators/               # Wraps sei/crucible-operators (Keycloak + CNPG operators)
+    infra/                   # Wraps sei/crucible-infra + local cert-manager CA chain
       templates/
-        secret.yaml          # Infrastructure secrets (PostgreSQL, pgAdmin, Gitea admin)
-        job.yaml             # Database creation job (pre-install hook)
-        cert-manager.yaml    # CA chain and domain certificate
-        pvc.yaml             # NFS PVCs for TopoMojo, Gameboard, Caster
-    crucible/                # Application stack (wraps sei/crucible + Gitea + MkDocs)
+        secret.yaml          # Gitea admin password (infra-gitea-admin)
+        cert-manager.yaml    # Self-signed CA chain and crucible-cert certificate
+    crucible/                # Wraps sei/crucible-apps + Gitea + MkDocs
       charts/gitea/          # Local Bitnami Gitea subchart
       files/mkdocs/          # MkDocs content seeded into Gitea on install
       templates/
         secret.yaml          # Gitea OIDC client secret (not in upstream realm)
         configmap.yaml       # Gitea env, MkDocs files, seed script
-        job.yaml             # Gitea OIDC, MkDocs seed, Keycloak setup jobs
+        job.yaml             # Gitea OIDC, MkDocs seed, gitea-client registration
     README.md                # Chart architecture documentation
   scripts/
     install-crucible.sh       # First-boot K3s install + Helm deploy

@@ -1,0 +1,10 @@
+apiVersion: v2
+name: operators
+description: Crucible appliance operator prerequisites (Keycloak + CloudNative-PG)
+type: application
+version: 0.0.0
+
+dependencies:
+  - name: crucible-operators
+    repository: https://helm.cmusei.dev/charts
+    version: 0.1.0

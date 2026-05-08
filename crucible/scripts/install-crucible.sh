@@ -57,24 +57,31 @@ until $RUN_AS_USER kubectl get nodes &>/dev/null; do
     sleep 5
 done
 
-# Prep cluster and install Helm charts
+# Prep cluster
 $RUN_AS_USER kubectl create namespace crucible
 $RUN_AS_USER kubectl config set-context --current --namespace=crucible
 $RUN_AS_USER kubectl apply --validate=false -f https://github.com/cert-manager/cert-manager/releases/download/$CERT_MANAGER_VERSION/cert-manager.crds.yaml
 
-# Install infra chart (cert-manager, ingress, PostgreSQL, NFS, pgAdmin, secrets, realm)
+# 1. Install operators chart (Keycloak Operator + CloudNative-PG) cluster-wide
+$RUN_AS_USER helm install operators $CHARTS_DIR/operators --wait
+
+# Wait for operator CRDs and pods to be ready
+$RUN_AS_USER timeout 300 bash -c 'while ! kubectl get crd keycloaks.k8s.keycloak.org &>/dev/null; do echo "Waiting for Keycloak CRDs..."; sleep 5; done'
+$RUN_AS_USER timeout 300 bash -c 'while ! kubectl get crd clusters.postgresql.cnpg.io &>/dev/null; do echo "Waiting for CNPG CRDs..."; sleep 5; done'
+
+# 2. Install infra chart (cert-manager CA chain, CNPG PostgreSQL, ingress, NFS, pgAdmin)
 $RUN_AS_USER helm install infra $CHARTS_DIR/infra --wait
 
-# Wait for CA secret and PostgreSQL to be ready
+# Wait for CA secret and PostgreSQL cluster to be ready
 $RUN_AS_USER timeout 300 bash -c 'while ! kubectl get secret infra-ca &>/dev/null; do echo "Waiting for infra-ca secret..."; sleep 5; done'
-$RUN_AS_USER timeout 300 bash -c 'while ! kubectl get pods -l app.kubernetes.io/name=postgresql -o jsonpath="{.items[0].status.phase}" 2>/dev/null | grep -q Running; do echo "Waiting for PostgreSQL..."; sleep 5; done'
+$RUN_AS_USER timeout 600 bash -c 'while [ "$(kubectl get cluster infra-postgresql -o jsonpath="{.status.readyInstances}" 2>/dev/null)" != "1" ]; do echo "Waiting for PostgreSQL cluster..."; sleep 10; done'
 
 # Create CA cert ConfigMap from infra-ca secret (upstream chart certificateMap requires a ConfigMap)
 $RUN_AS_USER kubectl get secret infra-ca -o jsonpath='{.data.ca\.crt}' | base64 -d > /tmp/ca.crt
 $RUN_AS_USER kubectl create configmap crucible-ca-cert --from-file=ca.crt=/tmp/ca.crt
 rm -f /tmp/ca.crt
 
-# Install crucible chart (Keycloak, all Crucible apps, Gitea, MkDocs)
+# 3. Install crucible chart (Keycloak via operator, all Crucible apps, Gitea, MkDocs)
 $RUN_AS_USER helm install crucible $CHARTS_DIR/crucible --set global.version=$APPLIANCE_VERSION
 
 # Create flag file

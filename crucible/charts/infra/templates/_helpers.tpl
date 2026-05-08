@@ -7,8 +7,6 @@ Expand the name of the chart.
 
 {{/*
 Create a default fully qualified app name.
-We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
-If release name contains chart name it will be used as a full name.
 */}}
 {{- define "infra.fullname" -}}
 {{- if .Values.fullnameOverride }}
@@ -48,25 +46,4 @@ Selector labels
 {{- define "infra.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "infra.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-{{- end }}
-
-{{/*
-PostgreSQL service name
-*/}}
-{{- define "infra.postgresql.serviceName" -}}
-{{- printf "%s-postgresql" (include "infra.fullname" .) -}}
-{{- end }}
-
-{{/*
-PostgreSQL secret name
-*/}}
-{{- define "infra.postgresql.secretName" -}}
-{{- printf "%s-postgresql" (include "infra.fullname" .) -}}
-{{- end }}
-
-{{/*
-TLS certificate secret name
-*/}}
-{{- define "infra.tls.secretName" -}}
-crucible-cert
 {{- end }}

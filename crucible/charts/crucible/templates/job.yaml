@@ -127,20 +127,20 @@ spec:
 
 ---
 {{- /* ================================================================== */ -}}
-{{- /* Keycloak post-install setup:                                        */ -}}
-{{- /*   1. Create default crucible user (with crucible-user-guid)         */ -}}
-{{- /*   2. Register gitea-client (not in the upstream realm)              */ -}}
+{{- /* Register gitea-client in the crucible Keycloak realm.                */ -}}
+{{- /* The upstream crucible-apps realm does not include gitea-client, so   */ -}}
+{{- /* we add it here after the realm import completes.                     */ -}}
 {{- /* ================================================================== */ -}}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ .Release.Name }}-keycloak-setup
+  name: {{ .Release.Name }}-gitea-client-register
   annotations:
-    helm.sh/hook: post-install
+    helm.sh/hook: post-install,post-upgrade
     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
     helm.sh/hook-weight: "20"
 spec:
-  backoffLimit: 5
+  backoffLimit: 20
   ttlSecondsAfterFinished: 300
   template:
     spec:
@@ -150,19 +150,17 @@ spec:
           image: alpine/curl:latest
           env:
             - name: KEYCLOAK_ADMIN_USER
-              value: keycloak-admin
+              valueFrom:
+                secretKeyRef:
+                  name: crucible-keycloak-initial-admin
+                  key: username
             - name: KEYCLOAK_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Release.Name }}-keycloak-auth
-                  key: admin-password
+                  name: crucible-keycloak-initial-admin
+                  key: password
             - name: KEYCLOAK_URL
-              value: "http://{{ .Release.Name }}-keycloak:80/keycloak"
-            - name: KEYCLOAK_CRUCIBLE_USER_GUID
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Release.Name }}-keycloak-auth
-                  key: default-user-guid
+              value: "http://crucible-keycloak-service:8080/keycloak"
             - name: GITEA_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
@@ -176,12 +174,12 @@ spec:
             - |
               set -e
 
-              echo "Waiting for Keycloak to be ready..."
-              until curl -sfk "${KEYCLOAK_URL}/realms/master" > /dev/null 2>&1; do
-                echo "Keycloak not ready, waiting 10 seconds..."
+              echo "Waiting for Keycloak crucible realm to be ready..."
+              until curl -sfk "${KEYCLOAK_URL}/realms/crucible" > /dev/null 2>&1; do
+                echo "Crucible realm not ready, waiting 10 seconds..."
                 sleep 10
               done
-              echo "Keycloak is ready!"
+              echo "Crucible realm is ready!"
 
               echo "Getting admin access token..."
               ACCESS_TOKEN=$(curl -sk -X POST \
@@ -194,46 +192,6 @@ spec:
                 grep -o '"access_token":"[^"]*' | \
                 grep -o '[^"]*$')
 
-              echo "Searching for existing user 'crucible'..."
-              USERS_JSON=$(curl -sk -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-                "${KEYCLOAK_URL}/admin/realms/crucible/users?username=crucible")
-
-              NOW_MS=$(( $(date +%s) * 1000 ))
-
-              if echo "${USERS_JSON}" | grep -q '"id"'; then
-                echo "User 'crucible' already exists, skipping import."
-              else
-                echo "User 'crucible' not found, importing now..."
-                curl -k -X POST \
-                  "${KEYCLOAK_URL}/admin/realms/crucible/partialImport" \
-                  -H "Content-Type: application/json" \
-                  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-                  -d '{
-                    "users": [
-                      {
-                        "id": "'"${KEYCLOAK_CRUCIBLE_USER_GUID}"'",
-                        "username": "crucible",
-                        "email": "administrator@crucible.local",
-                        "firstName": "Crucible",
-                        "lastName": "Administrator",
-                        "enabled": true,
-                        "createdTimestamp": "'"${NOW_MS}"'",
-                        "credentials": [
-                          {
-                            "type": "password",
-                            "value": "crucible",
-                            "userLabel": "initial",
-                            "temporary": true
-                          }
-                        ],
-                        "requiredActions":["UPDATE_PASSWORD"],
-                        "realmRoles": ["crucible-admin"]
-                      }
-                    ]
-                  }'
-              fi
-
-              # Register Gitea as an OIDC client in Keycloak (not included in upstream realm)
               echo "Checking for gitea-client in Keycloak..."
               CLIENTS_JSON=$(curl -sk -H "Authorization: Bearer ${ACCESS_TOKEN}" \
                 "${KEYCLOAK_URL}/admin/realms/crucible/clients?clientId=gitea-client")

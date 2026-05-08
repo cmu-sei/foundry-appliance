@@ -1,14 +1,13 @@
 apiVersion: v2
 name: crucible
-description: Crucible application stack (sei/crucible + Gitea + MkDocs)
+description: Crucible application stack (sei/crucible-apps + Gitea + MkDocs)
 type: application
 version: 0.0.0
 
 dependencies:
-  - name: crucible
-    alias: sei-crucible
+  - name: crucible-apps
     repository: https://helm.cmusei.dev/charts
-    version: 0.1.3
+    version: 0.2.1
 
   - name: gitea
     version: 3.2.8
